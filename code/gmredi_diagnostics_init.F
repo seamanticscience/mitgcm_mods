@@ -218,6 +218,100 @@ c     IF ( useDiagnotics ) THEN
         CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I    diagName, diagCode, diagUnits, diagTitle, diagMate, myThid )
 
+#ifdef GM_BOLUS_ADVEC
+      diagName  = 'GM_U_RES'
+      diagTitle = 'Zonal Component of Residual Velocity (m/s)'
+      diagUnits = 'm/s             '
+      diagCode  = 'UUR     MR      '
+      diagMate  = diagNum + 2
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I   diagName, diagCode, diagUnits, diagTitle, diagMate, myThid )
+
+      diagName  = 'GM_V_RES'
+      diagTitle = 'Meridional Component of Residual Velocity (m/s)'
+      diagUnits = 'm/s             '
+      diagCode  = 'VVR     MR      '
+      diagMate  = diagNum
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I   diagName, diagCode, diagUnits, diagTitle, diagMate, myThid )
+
+      diagName  = 'GM_W_RES'
+      diagTitle = 'Vertical Component of Residual Velocity (m/s)'
+      diagUnits = 'm/s             '
+      diagCode  = 'WM      LR      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I          diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+
+      diagName  = 'GM_UR_TR'
+      diagTitle = 'Zonal Component of Residual Transport (m3/s)'
+      diagUnits = 'm3/s            '
+      diagCode  = 'UUR     MR      '
+      diagMate  = diagNum + 2
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I   diagName, diagCode, diagUnits, diagTitle, diagMate, myThid )
+
+      diagName  = 'GM_VR_TR'
+      diagTitle = 'Meridional Component of Residual Transport (m3/s)'
+      diagUnits = 'm3/s            '
+      diagCode  = 'VVR     MR      '
+      diagMate  = diagNum
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I   diagName, diagCode, diagUnits, diagTitle, diagMate, myThid )
+
+      diagName  = 'GM_WR_TR'
+      diagTitle = 'Vertical Component of Residual Transport (m3/s)'
+      diagUnits = 'm3/s            '
+      diagCode  = 'WM      LR      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I          diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+
+      diagName  = 'GM_U_EDD'
+      diagTitle = 'Zonal Component of Eddy Bolus Velocity (m/s)'
+      diagUnits = 'm/s             '
+      diagCode  = 'UUR     MR      '
+      diagMate  = diagNum + 2
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I   diagName, diagCode, diagUnits, diagTitle, diagMate, myThid )
+
+      diagName  = 'GM_V_EDD'
+      diagTitle = 'Meridional Component of Eddy Bolus Velocity (m/s)'
+      diagUnits = 'm/s             '
+      diagCode  = 'VVR     MR      '
+      diagMate  = diagNum
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I   diagName, diagCode, diagUnits, diagTitle, diagMate, myThid )
+
+      diagName  = 'GM_W_EDD'
+      diagTitle = 'Vertical Component of Eddy Bolus Velocity (m/s)'
+      diagUnits = 'm/s             '
+      diagCode  = 'WM      LR      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I          diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+
+      diagName  = 'GM_UE_TR'
+      diagTitle = 'Zonal Component of Eddy Bolus Transport (m3/s)'
+      diagUnits = 'm3/s            '
+      diagCode  = 'UUR     MR      '
+      diagMate  = diagNum + 2
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I   diagName, diagCode, diagUnits, diagTitle, diagMate, myThid )
+
+      diagName  = 'GM_VE_TR'
+      diagTitle = 'Meridional Component of Eddy Bolus Transport (m3/s)'
+      diagUnits = 'm3/s            '
+      diagCode  = 'VVR     MR      '
+      diagMate  = diagNum
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I   diagName, diagCode, diagUnits, diagTitle, diagMate, myThid )
+
+      diagName  = 'GM_WE_TR'
+      diagTitle = 'Vertical Component of Eddy Bolus Transport (m3/s)'
+      diagUnits = 'm3/s            '
+      diagCode  = 'WM      LR      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I          diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+#endif
+
 #ifdef ALLOW_EDDYPSI
         diagName  = 'GMEdTauX'
         diagTitle = 'eddy-induced stress X-comp. estimated from Kwx'
