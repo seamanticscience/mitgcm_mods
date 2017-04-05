@@ -37,6 +37,10 @@ C     !USES:
 C     !INPUT/OUTPUT PARAMETERS:
 C     myThid -  Number of this instances
       INTEGER myThid
+C     myIter - Iteration number
+C     myTime - Current time of simulation ( s )
+      _RL     myTime
+      INTEGER myIter
 
 C     !LOCAL VARIABLES:
 C     tmpfld :: Temporary array used to compute & write Total Depth ;
@@ -46,6 +50,8 @@ C     no longer needed since MDSIO now allows (2009/06/07) to write local arrays
 c     COMMON / LOCAL_WRITE_GRID / tmpfld
       _RS tmpfld(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RS tmpVar(Nr+1)
+      _RS xAgrid(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
+      _RS yAgrid(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
       INTEGER i,j,k,bi,bj
       LOGICAL writegrid_mdsio
 #ifdef ALLOW_MNC
@@ -62,6 +68,13 @@ C     partial cells, etc.
           DO i=1-OLx,sNx+OLx
 C     Total fluid column thickness (r_unit) :
             tmpfld(i,j,bi,bj) = Ro_surf(i,j,bi,bj) - R_low(i,j,bi,bj)
+C     Calculate face areas for fluxes 
+           DO k=1,Nr          
+             xAgrid(i,j,k,bi,bj) = dyG(i,j,bi,bj)*deepFacC(k)
+     &           *drF(k)*hFacW(i,j,k,bi,bj)
+             yAgrid(i,j,k,bi,bj) = dxG(i,j,bi,bj)*deepFacC(k)
+     &           *drF(k)*hFacS(i,j,k,bi,bj)
+           ENDDO
           ENDDO
          ENDDO
        ENDDO
@@ -107,6 +120,9 @@ C     Write 3D geometry arrays
         CALL WRITE_FLD_XYZ_RS( 'hFacC',' ',hFacC, 0,myThid)
         CALL WRITE_FLD_XYZ_RS( 'hFacW',' ',hFacW, 0,myThid)
         CALL WRITE_FLD_XYZ_RS( 'hFacS',' ',hFacS, 0,myThid)
+C     Face areas for fluxes
+        CALL WRITE_FLD_XYZ_RS( 'rAx',' ',xAgrid, 0,myThid)
+        CALL WRITE_FLD_XYZ_RS( 'rAy',' ',yAgrid, 0,myThid)
         IF ( fluidIsAir )
      &    CALL WRITE_FLD_XY_RS( 'topo_P',' ',Ro_surf,-1,myThid)
         IF ( useOBCS ) THEN
@@ -159,6 +175,8 @@ C       Write the GRID.h variables to a file
         CALL MNC_CW_SET_UDIM(bfname, 0, myThid)
         CALL MNC_CW_SET_CITER(bfname, 2, -1, -1, -1, myThid)
         CALL MNC_CW_SET_UDIM(bfname, 1, myThid)
+C JML FOLLOWING COMMAND INSERTED SO 'GLUEMNC' AND 'XPLODEMNC' WORK....NEEDS AN 'ITER' VARIABLE
+        CALL MNC_CW_RS_W('D',bfname,0,0,'iter',myiter,myThid)
         CALL MNC_CW_RS_W('D',bfname,0,0,'RC',rC,myThid)
         CALL MNC_CW_RS_W('D',bfname,0,0,'RF',rF,myThid)
         CALL MNC_CW_RS_W('D',bfname,0,0,'RU',rF(2),myThid)
@@ -185,6 +203,9 @@ c       CALL MNC_CW_RS_W('D',bfname,0,0,'YV',yG,myThid)
         CALL MNC_CW_RS_W('D',bfname,0,0,'rAw',rAw,myThid)
         CALL MNC_CW_RS_W('D',bfname,0,0,'rAs',rAs,myThid)
         CALL MNC_CW_RS_W('D',bfname,0,0,'rAz',rAz,myThid)
+C     Face areas for fluxes
+        CALL MNC_CW_RS_W('D',bfname,0,0,'rAx',xAgrid,myThid)
+        CALL MNC_CW_RS_W('D',bfname,0,0,'rAy',yAgrid,myThid)
         IF ( usingCurvilinearGrid .OR. rotateGrid ) THEN
           CALL MNC_CW_RS_W('D',bfname,0,0,'AngleCS',angleCosC,myThid)
           CALL MNC_CW_RS_W('D',bfname,0,0,'AngleSN',angleSinC,myThid)
