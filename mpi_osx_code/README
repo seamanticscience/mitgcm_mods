@@ -1,0 +1,6 @@
+README FILE JML 07/07/09
+#Files contained in this directory are:
+
+dic_atmos.F       -    Fix a bug that halts parallel runs when writing out dic_atmos pickups in "interactive atmosphere" mode
+README           -    This File
+SIZE.h                -     Specify grid over multiple processor (grid is 128x64x15 split into 16 equal tiles)
