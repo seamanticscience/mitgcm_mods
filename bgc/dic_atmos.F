@@ -53,7 +53,7 @@ C !FUNCTIONS:       ====================================================
 
 C !LOCAL VARIABLES: ====================================================
 C   total_atmos_moles :: atmosphere total gas content (should be parameter)
-      _RL total_atmos_moles
+C      _RL total_atmos_moles
       INTEGER bi, bj, i,j,k
       INTEGER ntim
 
@@ -70,7 +70,7 @@ C for carbon budget ouput
       _RL year_diff_ocean, year_diff_atmos, year_total
       _RL start_diff_ocean, start_diff_atmos, start_total
 C variables for reading CO2 input files
-      _RL tmp
+      _RL tmp, emissions
       _RL aWght, bWght
 
       LOGICAL timeCO2budget
@@ -109,7 +109,8 @@ C linearly interpolate between file entries
         ENDIF
         bWght = 1. _d 0 - aWght
         tmp=co2atmos(ntim)*bWght+co2atmos(ntim+1)*aWght
-        WRITE(ioUnit,*) 'weights',ntim, aWght, bWght, tmp
+        WRITE(ioUnit,*) 'weights',ntim, aWght, co2atmos(ntim+1), 
+     &                                  bWght, co2atmos(ntim), tmp
 
         DO bj=myByLo(myThid),myByHi(myThid)
          DO bi=myBxLo(myThid),myBxHi(myThid)
@@ -120,11 +121,10 @@ C linearly interpolate between file entries
            ENDDO
          ENDDO
         ENDDO
-
       ENDIF
 
 C interactive atmosphere
-      IF (dic_int1.EQ.3) THEN
+      IF (dic_int1.GE.3) THEN
 
 C Mass dry atmosphere = (5.1352+/-0.0003)d18 kg (Trenberth & Smith,
 C Journal of Climate 2005)
@@ -164,11 +164,38 @@ C for 278ppmv we need total_atmos_carbon=4.9206e+16
        CALL GLOBAL_SUM_TILE_RL( tile_flux,   total_flux,   myThid )
        CALL GLOBAL_SUM_TILE_RL( tile_carbon, total_carbon, myThid )
 
+C Section inserted by JML to add external emisions in mol C
+c read from a file of emission rates in mol C/s (note:
+c                   dic_int2=number entries to read
+c                   dic_int3=start timestep,
+c                   dic_int4=timestep between file entries)
+      if (dic_int1.eq.4) then
+          if (co2atmos(ntim).ne.0. _d 0.or.co2atmos(ntim+1).ne.0. _d 0) then
+c             linearly interpolate between file entries otherwise emissions remain 0
+              ntim=int((myIter-dic_int3)/dic_int4)+1
+              aWght = FLOAT(myIter-dic_int3)
+              bWght = FLOAT(dic_int4)
+              aWght = 0.5 _d 0 + aWght/bWght - FLOAT(ntim-1)
+              if (aWght.gt.1. _d 0) then
+                ntim=ntim+1
+                aWght=aWght-1. _d 0
+              endif
+              bWght = 1. _d 0 - aWght
+              emissions = ( co2atmos(ntim)*bWght
+     &               + co2atmos(ntim+1)*aWght
+     &               ) * (dTtracerLev(1))
+c              print*,'weights',ntim, aWght, bWght, emissions
+          else
+              emissions = 0. _d 0
+          endif
+      endif
+
        IF (istate.EQ.0) THEN
 C use dic_pCO2 as initial atmospheric pCO2 (not restart case):
          _BEGIN_MASTER(myThid)
          atpco2 = dic_pCO2
          total_atmos_carbon = total_atmos_moles*dic_pCO2
+         
          _END_MASTER(myThid)
          IF ( nIter0.GT.PTRACERS_Iter0 .OR.
      &       (nIter0.EQ.PTRACERS_Iter0 .AND. pickupSuff.NE.' ')
@@ -191,26 +218,43 @@ C store initial content:
 C store previous content:
          total_ocean_carbon_old = total_ocean_carbon
          total_atmos_carbon_old = total_atmos_carbon
-C calculate new atmos pCO2
+C C JML calculate new atmos pCO2 and add emissions contribution to 
+C total_atmos_carbon (mol C) after previous timestep's flux.
+       
          total_atmos_carbon = total_atmos_carbon - total_flux
+         
+          if (dic_int1.eq.4) then
+             total_atmos_carbon=total_atmos_carbon + emissions
+          endif
+       
          _END_MASTER(myThid)
        ENDIF
        _BEGIN_MASTER(myThid)
        total_ocean_carbon = total_carbon
        atpco2 = total_atmos_carbon/total_atmos_moles
-
-       WRITE(ioUnit,*) 'QQ atmos C, total, pCo2',
+       
+       IF (debugMode) THEN
+          WRITE(ioUnit,*) 'QQ atmos C, total, pCo2',
      &                     total_atmos_carbon, atpco2
+       ENDIF
+       
        total_carbon=total_atmos_carbon + total_ocean_carbon
        total_carbon_old=total_atmos_carbon_old + total_ocean_carbon_old
        carbon_diff=total_carbon-total_carbon_old
-       WRITE(ioUnit,*) 'QQ total C, current, old, diff',
+       
+       IF (debugMode) THEN
+          WRITE(ioUnit,*) 'QQ total C, current, old, diff',
      &                     total_carbon, total_carbon_old, carbon_diff
+       ENDIF
+       
        carbon_diff=total_ocean_carbon-total_ocean_carbon_old
-       WRITE(ioUnit,*) 'QQ ocean C, current, old, diff',
+       
+       IF (debugMode) THEN
+          WRITE(ioUnit,*) 'QQ ocean C, current, old, diff',
      &         total_ocean_carbon, total_ocean_carbon_old, carbon_diff
-       WRITE(ioUnit,*) 'QQ air-sea flux, addition diff',
+          WRITE(ioUnit,*) 'QQ air-sea flux, addition diff',
      &                     total_flux, carbon_diff-total_flux
+       ENDIF
 
 C if end of forcing cycle, find total change in ocean carbon
        IF (istate.EQ.0) THEN
@@ -228,11 +272,13 @@ C if end of forcing cycle, find total change in ocean carbon
           start_diff_atmos = total_atmos_carbon-total_atmos_carbon_start
           start_total = (total_ocean_carbon+total_atmos_carbon) -
      &               (total_ocean_carbon_start+total_atmos_carbon_start)
-          WRITE(ioUnit,*) 'QQ YEAR END'
-          WRITE(ioUnit,*) 'year diff: ocean, atmos, total',
+          IF (debugMode) THEN
+             WRITE(ioUnit,*) 'QQ YEAR END'
+             WRITE(ioUnit,*) 'year diff: ocean, atmos, total',
      &                  year_diff_ocean,  year_diff_atmos,  year_total
-          WRITE(ioUnit,*) 'start diff: ocean, atmos, total ',
+             WRITE(ioUnit,*) 'start diff: ocean, atmos, total ',
      &                 start_diff_ocean, start_diff_atmos, start_total
+          ENDIF
 
           total_ocean_carbon_year = total_ocean_carbon
           total_atmos_carbon_year = total_atmos_carbon
