@@ -24,7 +24,7 @@ C     *==========================================================*
       _RL  FIce(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  Kwexch_Pre(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  Silica(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
-
+      
        COMMON /CARBON_CHEM/
      &                     ak0,ak1,ak2,akw,akb,aks,akf,
      &                     ak1p,ak2p,ak3p,aksi, fugf, 
@@ -94,10 +94,11 @@ C  DIC_forcingPeriod :: periodic forcing parameter specific for dic (seconds)
 C  DIC_forcingCycle  :: periodic forcing parameter specific for dic (seconds)
 C  dic_pCO2          :: Atmospheric pCO2 to be rad in data.dic
 C  dic_int*          :: place holder to read in a integer number, set at run time
+C JML include iron source due to hydrothermal input into bottom layer            
 
       COMMON /DIC_FILENAMES/
      &        DIC_windFile, DIC_atmospFile, DIC_iceFile,
-     &        DIC_ironFile, DIC_silicaFile,
+     &        DIC_ironFile, DIC_hydroventFile, DIC_silicaFile,
      &        DIC_forcingPeriod, DIC_forcingCycle,
      &        dic_int1, dic_int2, dic_int3, dic_int4, 
      &        dic_pCO2
@@ -106,6 +107,7 @@ C  dic_int*          :: place holder to read in a integer number, set at run tim
       CHARACTER*(MAX_LEN_FNAM) DIC_atmospFile
       CHARACTER*(MAX_LEN_FNAM) DIC_iceFile
       CHARACTER*(MAX_LEN_FNAM) DIC_ironFile
+      CHARACTER*(MAX_LEN_FNAM) DIC_hydroventFile
       CHARACTER*(MAX_LEN_FNAM) DIC_silicaFile
       _RL     DIC_forcingPeriod
       _RL     DIC_forcingCycle
@@ -119,15 +121,19 @@ C  dic_int*          :: place holder to read in a integer number, set at run tim
 C     *==========================================================*
 C     | o Biological Carbon Variables
 C     *==========================================================*
+C JML Added some extras for particle dependent Fe scavenging rates
+C       and prognostic Ligands
       COMMON /BIOTIC_NEEDS/
      &     BIOave, CARave, SURave, SUROave, pCO2ave, pHave,
      &     fluxCO2ave, omegaCave, pfluxave, epfluxave, cfluxave,
      &     DIC_timeAve,
      &     alpha, rain_ratio, InputFe, omegaC,
      &     Kpo4, DOPfraction, zcrit, KRemin,
-     &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP,
+     &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP, R_pop2poc, R_SIP,
      &     O2crit, alpfe, KScav, ligand_stab, ligand_tot, KFE,
-     &     freefemax, 
+     &     freefemax, scav_wsp, scav_inter, scav_exp, scav_surf_min,
+     &     scav_ratio, fesedflux_pcm, FeIntSec, fe_sed_depth_max,
+     &     HydroInputHe3, solfe, R_FeHe3, fe_vent_depth_min,
      &     par, parfrac, k0, lit0,
      &     alphaUniform, rainRatioUniform,
      &     alphamax, alphamin,
@@ -151,10 +157,16 @@ C     For averages
       _RL DIC_timeAve(nSx,nSy)
 
 C     values for biogeochemistry
+C JML Added some extras for particle dependent Fe scavenging rates,
+C       prognostic Ligands, and hajoon's sediment source
+C   fesedflux_pcm :: ratio of sediment iron to sinking organic matter
+C   FeIntSec      :: Sediment Fe flux, intersect value in:
+C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
       _RL par(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL alpha(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL rain_ratio(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL InputFe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+      _RL HydroInputHe3(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL omegaC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
       _RL Kpo4
       _RL DOPfraction
@@ -166,6 +178,8 @@ C     values for biogeochemistry
       _RL R_cp
       _RL R_NP
       _RL R_FeP
+      _RL R_pop2poc
+      _RL R_SIP
       _RL O2crit
       _RL alpfe
       _RL KScav
@@ -173,6 +187,17 @@ C     values for biogeochemistry
       _RL ligand_tot
       _RL KFe
       _RL freefemax
+      _RL scav_wsp
+      _RL scav_inter
+      _RL scav_ratio
+      _RL scav_exp
+      _RL scav_surf_min
+      _RL fesedflux_pcm
+      _RL FeIntSec
+      _RL R_FeHe3
+      _RL solfe
+      _RL fe_vent_depth_min
+      _RL fe_sed_depth_max
 C     values for light limited bio activity
       _RL k0, parfrac, lit0
       _RL alphaUniform
@@ -185,7 +210,17 @@ C     values for light limited bio activity
       _RL cfeload
       _RL feload(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
 
-      LOGICAL QSW_underice      
+      LOGICAL QSW_underice
+
+#ifdef ALLOW_VARIABLE_LIGANDS
+      COMMON /PROGNOSTIC_LIGANDS/
+     &     gamma_lig, lambda_lig_ref, bio_tot_lig
+     
+      _RL gamma_lig
+      _RL lambda_lig_ref
+      _RL bio_tot_lig
+#endif
+      
 #endif /* DIC_BIOTIC */
 
 CEH3 ;;; Local Variables: ***

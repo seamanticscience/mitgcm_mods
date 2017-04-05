@@ -149,6 +149,8 @@ C kBottom is updated later on
            SURO(i,j)   =0. _d 0
 #ifdef ALLOW_FE
            SURFE(i,j)  =0. _d 0
+           SEDFE(i,j)  =0. _d 0
+           HYDROFE(i,j)=0. _d 0
 #endif           
           ENDDO
          ENDDO
@@ -252,6 +254,21 @@ C add all tendencies for PO4, DOP, ALK, DIC
 #endif
 
 #ifdef ALLOW_FE
+           IF ( scav_exp.NE.0. _d 0 ) THEN
+CJML       Use particle depended scavenging rate, exploiting exportflux
+C          and constant sinking rate (See Parekh etal 2005, GBC equation 11)
+               IF ( k.EQ.kSurface ) THEN
+                   Kscav=scav_surf_min
+               ELSE
+C          Calculate POC concentration from sinking particles
+C          Export flux is in mol P.m-3.s-1 and we need mg C.l-1, R_pop2poc does this               
+                   scav_poc=MAX(0. _d 0,exportflux(i,j,k)/scav_wsp)
+     &                          *R_pop2poc
+C          Scavenging rate per second     
+                   Kscav=(scav_ratio*scav_inter*(scav_poc**scav_exp))            
+               ENDIF
+           ENDIF
+           
            GFE(i,j,k) = R_FeP*GPO4(i,j,k)
      &                        -Kscav*freefe(i,j,k)
 #endif /* ALLOW_FE */
@@ -279,6 +296,44 @@ C Surface Sources and sinks
        ENDIF
        
                GFE(i,j,kSurface)=GFE(i,j,kSurface)+SURFE(i,j)
+
+#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))
+       IF ( -rC(kBottom).LE.fe_sed_depth_max ) THEN         
+C include sediment iron source using the flux of po4 into bottom layer            
+C JML pflux*dz*RCP is mol C.m-2.s-1, fesedflux_pcm converts to mol Fe.m-2.s-1   
+               sed_poc=MAX(0. _d 0,pflux(i,j,kBottom))
+     &                          *R_CP*drF(kBottom)
+
+#ifdef SEDIMENT_FE_ELROD
+C Elrod et al (2004) formulation 
+               SEDFE(i,j)  = MAX( 
+     &              0. _d 0, fesedflux_pcm * sed_poc + FeIntSec
+     &            )*recip_drF(kBottom)*recip_hFacC(i,j,kBottom,bi,bj)
+#endif /* SEDIMENT_FE_ELROD */
+#ifdef SEDIMENT_FE_DALE
+C Dale et al (2015) formulation. 
+C Here fesedflux_pcm is gamma = 170 umol Fe m-2 d-1 (170/(86400*1e6) mol Fe m-2 s-1)
+C      sed_poc is mmol m-2 d-1 and O2 is umol l-1
+               SEDFE(i,j)=fesedflux_pcm
+     &            * tanh( sed_poc*1000*86400 
+     &                  / PTR_O2(i,j,kBottom)*1000 )
+     &            *recip_drF(kBottom)*recip_hFacC(i,j,kBottom,bi,bj)
+#endif /* SEDIMENT_FE_DALE */
+       ENDIF
+#endif /* SEDIMENT_FE */
+
+#ifdef HYDROTHERMAL_FE
+C JML include iron source due to hydrothermal input into bottom layer   
+C                                         He3 flux is mol.m-2.s-1
+       IF ( -rC(kBottom).GE.fe_vent_depth_min ) THEN         
+               HYDROFE(i,j)=R_FeHe3*solfe*HydroInputHe3(i,j,bi,bj)
+     &             *recip_drF(kBottom)
+     &             *recip_hFacC(i,j,kBottom,bi,bj)
+       ENDIF
+#endif /* HYDROTHERMAL_FE */     
+               GFE(i,j,kBottom)=GFE(i,j,kBottom)
+     &            +SEDFE(i,j)+HYDROFE(i,j)
+#endif /* ALLOW_FE */
           ENDDO
          ENDDO
 
@@ -387,6 +442,8 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 #ifdef ALLOW_FE
         CALL DIAGNOSTICS_FILL(SURFE     ,'DICFEFLX',0,1 ,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(GFE       ,'DICGFE  ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(SEDFE     ,'DICSEDFE',0,1 ,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(HYDROFE   ,'DICHTVFE',0,1 ,2,bi,bj,myThid)
 #endif
       ENDIF
 
