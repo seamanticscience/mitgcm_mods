@@ -165,7 +165,7 @@ C-
       _RL thetaMin, phiMin
       CHARACTER*(MAX_LEN_FNAM) shelfIceFile
 
-C--   Continuous equation parameters
+C--   Continuous equation parameters (JML: added balanced surface relaxation)
       NAMELIST /PARM01/
      & gravitySign, nh_Am2,
      & gravity, gBaro, rhonil, tAlpha, sBeta,
@@ -223,7 +223,8 @@ C--   Continuous equation parameters
      & temp_EvPrRn, salt_EvPrRn, trac_EvPrRn,
      & temp_addMass, salt_addMass, zonal_filt_lat,
      & inAdExact, smoothAbsFuncRange,
-     & balanceEmPmR, balanceQnet, balancePrintMean
+     & balanceEmPmR, balanceQnet, balancePrintMean,
+     & balanceSrelax, balanceTrelax
 
 C--   Elliptic solver parameters
       NAMELIST /PARM02/
@@ -264,14 +265,14 @@ C--   Gridding parameters
      & Ro_SeaLevel, delZ, delP, delR, delRc, delRFile, delRcFile,
      & rkFac, groundAtK1, thetaMin, phiMin
 
-C--   Input files
+C--   Input files (JML: added files for specified surface relaxation)
       NAMELIST /PARM05/
      & bathyFile, topoFile, shelfIceFile, diffKrFile,
      & viscAhDfile, viscAhZfile, viscA4Dfile, viscA4Zfile,
      & hydrogThetaFile, hydrogSaltFile,
      & maskIniTemp, maskIniSalt, checkIniTemp, checkIniSalt,
      & zonalWindFile, meridWindFile,
-     & thetaClimFile, saltClimFile,
+     & thetaClimFile, saltClimFile, thetaRelaxFile, saltRelaxFile,
      & surfQfile, surfQnetFile, surfQswFile, EmPmRfile, saltFluxFile,
      & lambdaThetaFile, lambdaSaltFile,
      & uVelInitFile, vVelInitFile, pSurfInitFile,

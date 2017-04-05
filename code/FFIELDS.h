@@ -81,6 +81,9 @@ C     eddyPsiX -Zonal Eddy Streamfunction in m^2/s used in taueddy_external_forc
 C     eddyPsiY -Meridional Streamfunction in m^2/s used in taueddy_external_forcing.F
 C     EfluxY - y-component of Eliassen-Palm flux vector
 C     EfluxP - p-component of Eliassen-Palm flux vector
+C   JML: Added for fixed surface relaxation
+C     surfaceRelaxT
+C     surfaceRelaxS
 
       COMMON /FFIELDS_fu/ fu
       COMMON /FFIELDS_fv/ fv
@@ -109,6 +112,15 @@ C     EfluxP - p-component of Eliassen-Palm flux vector
       _RS  lambdaSaltClimRelax(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RS  pLoad    (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RS  sIceLoad (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+
+#ifdef ALLOW_FIXEDTRELAX
+      COMMON /FFIELDS_surfaceRelaxT/ surfaceRelaxT
+      _RS  surfaceRelaxT(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+#endif
+#ifdef ALLOW_FIXEDSRELAX
+      COMMON /FFIELDS_surfaceRelaxS/ surfaceRelaxS
+      _RS  surfaceRelaxS(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+#endif
 
 #ifdef ALLOW_EP_FLUX
       COMMON /efluxFFIELDS/ EfluxY,EfluxP
@@ -148,7 +160,12 @@ C     [0,1]         :: End points for interpolation
 #ifdef ATMOSPHERIC_LOADING
      &               , pLoad0, pLoad1
 #endif
-
+#ifdef ALLOW_FIXEDTRELAX
+     &               , surfaceRelaxT0, surfaceRelaxT1
+#endif
+#ifdef ALLOW_FIXEDSRELAX
+     &               , surfaceRelaxS0, surfaceRelaxS1
+#endif
       _RS  taux0    (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RS  tauy0    (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RS  Qnet0    (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
@@ -170,6 +187,14 @@ C     [0,1]         :: End points for interpolation
 #ifdef SHORTWAVE_HEATING
       _RS  Qsw1     (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RS  Qsw0     (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+#endif
+#ifdef ALLOW_FIXEDTRELAX
+      _RS  surfaceRelaxT0(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+      _RS  surfaceRelaxT1(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+#endif
+#ifdef ALLOW_FIXEDSRELAX
+      _RS  surfaceRelaxS0(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+      _RS  surfaceRelaxS1(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
 #endif
 #endif /* EXCLUDE_FFIELDS_LOAD */
 

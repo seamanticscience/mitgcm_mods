@@ -65,8 +65,11 @@ C     zonalWindFile   :: File containing zonal wind data
 C     meridWindFile   :: File containing meridional wind data
 C     thetaClimFile   :: File containing surface theta climataology used
 C                        in relaxation term -lambda(theta-theta*)
+C JML Added files for fixed relaxation fluxes
+C     thetaRelaxFile  :: File containing fixed surface temperature relaxation fluxes
 C     saltClimFile    :: File containing surface salt climataology used
 C                        in relaxation term -lambda(salt-salt*)
+C     saltRelaxFile   :: File containing fixed surface salinity relaxation fluxes
 C     surfQfile       :: File containing surface heat flux, excluding SW
 C                        (old version, kept for backward compatibility)
 C     surfQnetFile    :: File containing surface net heat flux
@@ -92,7 +95,7 @@ C     the_run_name    :: string identifying the name of the model "run"
      &                viscA4Dfile, viscA4Zfile,
      &                hydrogThetaFile, hydrogSaltFile, diffKrFile,
      &                zonalWindFile, meridWindFile, thetaClimFile,
-     &                saltClimFile,
+     &                saltClimFile, thetaRelaxFile, saltRelaxFile,
      &                EmPmRfile, saltFluxFile,
      &                surfQfile, surfQnetFile, surfQswFile,
      &                lambdaThetaFile, lambdaSaltFile,
@@ -125,6 +128,8 @@ C     the_run_name    :: string identifying the name of the model "run"
       CHARACTER*(MAX_LEN_FNAM) meridWindFile
       CHARACTER*(MAX_LEN_FNAM) thetaClimFile
       CHARACTER*(MAX_LEN_FNAM) saltClimFile
+      CHARACTER*(MAX_LEN_FNAM) thetaRelaxFile
+      CHARACTER*(MAX_LEN_FNAM) saltRelaxFile
       CHARACTER*(MAX_LEN_FNAM) surfQfile
       CHARACTER*(MAX_LEN_FNAM) surfQnetFile
       CHARACTER*(MAX_LEN_FNAM) surfQswFile
@@ -334,6 +339,9 @@ C                          apply AB on tracer tendencies (rather than on Tracer)
 C- Other forcing params -
 C     balanceEmPmR    :: substract global mean of EmPmR at every time step
 C     balanceQnet     :: substract global mean of Qnet at every time step
+C JML Added to remove global mean from relaxation fluxes
+C     balanceSrelax   :: substract global mean of SRELAX at every time step
+C     balanceTrelax   :: substract global mean of TRELAX at every time step
 C     balancePrintMean:: print substracted global means to STDOUT
 C     doThetaClimRelax :: Set true if relaxation to temperature
 C                        climatology is required.
@@ -392,6 +400,7 @@ C     printDomain     :: controls printing of domain fields (bathy, hFac ...).
      & multiDimAdvection, useMultiDimAdvec,
      & momDissip_In_AB, doAB_onGtGs,
      & balanceEmPmR, balanceQnet, balancePrintMean,
+     & balanceSrelax, balanceTrelax,
      & doThetaClimRelax, doSaltClimRelax,
      & allowFreezing, useOldFreezing,
      & periodicExternalForcing,
@@ -477,6 +486,8 @@ C     printDomain     :: controls printing of domain fields (bathy, hFac ...).
       LOGICAL doAB_onGtGs
       LOGICAL balanceEmPmR
       LOGICAL balanceQnet
+      LOGICAL balanceSrelax
+      LOGICAL balanceTrelax
       LOGICAL balancePrintMean
       LOGICAL doThetaClimRelax
       LOGICAL doSaltClimRelax

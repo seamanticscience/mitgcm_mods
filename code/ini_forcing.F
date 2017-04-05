@@ -59,6 +59,13 @@ C-    Initialise all arrays in common blocks
           surfaceForcingT (i,j,bi,bj) = 0. _d 0
           surfaceForcingS (i,j,bi,bj) = 0. _d 0
           surfaceForcingTice(i,j,bi,bj) = 0. _d 0
+C JML Add fixed surface relaxation initialisation
+#ifdef ALLOW_FIXEDTRELAX
+          surfaceRelaxT   (i,j,bi,bj) = 0. _d 0
+#endif
+#ifdef ALLOW_FIXEDSRELAX
+          surfaceRelaxS   (i,j,bi,bj) = 0. _d 0
+#endif
 #ifndef EXCLUDE_FFIELDS_LOAD
           taux0           (i,j,bi,bj) = 0. _d 0
           taux1           (i,j,bi,bj) = 0. _d 0
@@ -77,6 +84,15 @@ C-    Initialise all arrays in common blocks
 #ifdef SHORTWAVE_HEATING
           Qsw0            (i,j,bi,bj) = 0. _d 0
           Qsw1            (i,j,bi,bj) = 0. _d 0
+#endif
+C JML Add fixed surface relaxation initialisation
+#ifdef ALLOW_FIXEDTRELAX
+          surfaceRelaxT0  (i,j,bi,bj) = 0. _d 0
+		  surfaceRelaxT1  (i,j,bi,bj) = 0. _d 0
+#endif
+#ifdef ALLOW_FIXEDSRELAX
+          surfaceRelaxS0  (i,j,bi,bj) = 0. _d 0
+		  surfaceRelaxS1  (i,j,bi,bj) = 0. _d 0
 #endif
 #ifdef ATMOSPHERIC_LOADING
           pLoad0          (i,j,bi,bj) = 0. _d 0
@@ -159,11 +175,25 @@ c      ENDIF
        CALL READ_FLD_XY_RS( lambdaSaltFile, ' ',
      &  lambdaSaltClimRelax, 0, myThid )
       ENDIF
+C JML Add fixed surface relaxation initialisation
+#ifdef ALLOW_FIXEDTRELAX
+      IF ( thetaRelaxFile .NE. ' '  ) THEN
+        CALL READ_FLD_XY_RS( thetaRelaxFile, ' ', 
+     &       surfaceRelaxT, 0, myThid )
+      ENDIF
+#endif
+#ifdef ALLOW_FIXEDSRELAX
+      IF ( saltRelaxFile .NE. ' '  ) THEN
+        CALL READ_FLD_XY_RS( saltRelaxFile, ' ', 
+     &       surfaceRelaxS, 0, myThid )
+      ENDIF
+#endif
 #ifdef SHORTWAVE_HEATING
       IF ( surfQswFile .NE. ' '  ) THEN
        CALL READ_FLD_XY_RS( surfQswFile, ' ', Qsw, 0, myThid )
        IF ( surfQFile .NE. ' '  ) THEN
 C-     Qnet is now (after c54) the net Heat Flux (including SW)
+        _BARRIER
         DO bj = myByLo(myThid), myByHi(myThid)
          DO bi = myBxLo(myThid), myBxHi(myThid)
           DO j=1-OLy,sNy+OLy
@@ -190,9 +220,16 @@ C-     Qnet is now (after c54) the net Heat Flux (including SW)
       CALL EXCH_XY_RS( SSS  , myThid )
       CALL EXCH_XY_RS( lambdaThetaClimRelax, myThid )
       CALL EXCH_XY_RS( lambdaSaltClimRelax , myThid )
+#ifdef ALLOW_FIXEDTRELAX
+	  CALL EXCH_XY_RS( surfaceRelaxT  , myThid )
+#endif
+#ifdef ALLOW_FIXEDSRELAX      
+	  CALL EXCH_XY_RS( surfaceRelaxS  , myThid )
+#endif
 #ifdef SHORTWAVE_HEATING
       CALL EXCH_XY_RS(Qsw  , myThid )
 #endif
+
 #ifdef ATMOSPHERIC_LOADING
       CALL EXCH_XY_RS(pLoad  , myThid )
 C     CALL PLOT_FIELD_XYRS( pLoad, 'S/R INI_FORCING pLoad',1,myThid)

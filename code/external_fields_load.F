@@ -174,6 +174,26 @@ c        ENDIF
          CALL READ_REC_XY_RS( saltClimFile, SSS1,
      &                        intime1, myIter, myThid )
         ENDIF
+        
+C JML Add mechanism to read in fixed T and S relaxation fluxes
+#ifdef ALLOW_FIXEDTRELAX
+        IF ( thetaRelaxFile .NE. ' '  ) THEN
+         CALL READ_REC_XY_RS( thetaRelaxFile, surfaceRelaxT0,
+     &                        intime0, myIter, myThid )
+         CALL READ_REC_XY_RS( thetaRelaxFile, surfaceRelaxT1,
+     &                        intime1, myIter, myThid )
+        ENDIF
+#endif
+
+#ifdef ALLOW_FIXEDSRELAX
+        IF ( saltRelaxFile .NE. ' '  ) THEN
+         CALL READ_REC_XY_RS( saltRelaxFile, surfaceRelaxS0,
+     &                        intime0, myIter, myThid )
+         CALL READ_REC_XY_RS( saltRelaxFile, surfaceRelaxS1,
+     &                        intime1, myIter, myThid )
+        ENDIF
+#endif
+        
 #ifdef SHORTWAVE_HEATING
         IF ( surfQswFile .NE. ' '  ) THEN
          CALL READ_REC_XY_RS( surfQswFile, Qsw0,
@@ -217,6 +237,17 @@ C-    thread synchronisation (barrier) is part of the EXCH S/R calls
         _EXCH_XY_RS(EmPmR1, myThid )
         _EXCH_XY_RS(saltFlux0, myThid )
         _EXCH_XY_RS(saltFlux1, myThid )
+        
+C JML Add mechanism to read in fixed T and S relaxation fluxes
+#ifdef ALLOW_FIXEDSRELAX
+        _EXCH_XY_RS(surfaceRelaxS0, myThid )
+        _EXCH_XY_RS(surfaceRelaxS1, myThid )
+#endif
+#ifdef ALLOW_FIXEDTRELAX
+        _EXCH_XY_RS(surfaceRelaxT0, myThid )
+        _EXCH_XY_RS(surfaceRelaxT1, myThid )
+#endif
+
 #ifdef SHORTWAVE_HEATING
         _EXCH_XY_RS(Qsw0, myThid )
         _EXCH_XY_RS(Qsw1, myThid )
@@ -296,6 +327,28 @@ C--   Interpolate fu,fv,Qnet,EmPmR,SST,SSS,Qsw
            ENDDO
           ENDDO
         ENDIF
+C JML Add mechanism to read in fixed T and S relaxation fluxes
+#ifdef ALLOW_FIXEDTRELAX
+        IF ( thetaRelaxFile .NE. ' '  ) THEN
+          DO j=1-Oly,sNy+Oly
+           DO i=1-Olx,sNx+Olx
+            surfaceRelaxT(i,j,bi,bj)   = bWght*surfaceRelaxT0(i,j,bi,bj)
+     &                       + aWght*surfaceRelaxT1(i,j,bi,bj)
+           ENDDO
+          ENDDO
+        ENDIF
+#endif
+#ifdef ALLOW_FIXEDSRELAX
+		IF ( saltRelaxFile .NE. ' '  ) THEN
+          DO j=1-Oly,sNy+Oly
+           DO i=1-Olx,sNx+Olx
+            surfaceRelaxS(i,j,bi,bj)   = bWght*surfaceRelaxS0(i,j,bi,bj)
+     &                       + aWght*surfaceRelaxS1(i,j,bi,bj)
+           ENDDO
+          ENDDO
+        ENDIF
+#endif
+        
 #ifdef SHORTWAVE_HEATING
         IF ( surfQswFile .NE. ' '  ) THEN
           DO j=1-Oly,sNy+Oly
