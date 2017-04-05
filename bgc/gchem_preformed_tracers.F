@@ -55,7 +55,7 @@ C  k                    :: vertical level
       INTEGER iMin,iMax,jMin,jMax,i,j,k,bi,bj
       INTEGER nTrac,dic_offset
       INTEGER iDIC,iALK,iPO4,iDOP,iDO2,iDFE
-      INTEGER iAPRE,iPPRE,iPCO2,
+      INTEGER iAPRE,iPPRE,iPCO2
       INTEGER kmld(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
 
       CHARACTER*(MAX_LEN_FNAM) fldName
