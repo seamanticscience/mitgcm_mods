@@ -630,8 +630,14 @@ c     CALL PRINT_MESSAGE( msgBuf, ioUnit, SQUEEZE_RIGHT, myThid )
      &   'externForcingCycle =', '   /* period of the cyle (s). */')
       CALL WRITE_0D_RL( tauThetaClimRelax, INDEX_NONE,
      &   'tauThetaClimRelax =', '   /* relaxation time scale (s) */')
+C JML Added flag for balanced TRELAX
+        CALL WRITE_0D_L( balanceTrelax, INDEX_NONE, 'balanceTrelax =',
+     & ' /* Global mean removed from temp relaxation */')
       CALL WRITE_0D_RL( tauSaltClimRelax, INDEX_NONE,
      &   'tauSaltClimRelax =',  '   /* relaxation time scale (s) */')
+C JML Added flag for balanced SRELAX
+      CALL WRITE_0D_L( balanceSrelax, INDEX_NONE, 'balanceSrelax =',
+     & ' /* Global mean removed from salt relaxation */')
       CALL WRITE_0D_RL( latBandClimRelax, INDEX_NONE,
      &   'latBandClimRelax =', '   /* max. Lat. where relaxation */')
 
