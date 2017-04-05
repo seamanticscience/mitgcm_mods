@@ -1,5 +1,5 @@
-C $Header: /u/gcmpack/MITgcm/pkg/ptracers/ptracers_forcing.F,v 1.16 2010/04/06 20:27:45 jmc Exp $
-C $Name:  $
+C $Header: /u/gcmpack/MITgcm/verification/tutorial_global_oce_latlon/code/ptracers_forcing.F,v 1.5 2011/04/25 20:56:16 dfer Exp $
+C $Name: checkpoint63m $
 
 #include "PTRACERS_OPTIONS.h"
 
@@ -21,6 +21,8 @@ C !USES: ===============================================================
 #include "EEPARAMS.h"
 #include "PARAMS.h"
 #include "GRID.h"
+#include "PTRACERS_SIZE.h"
+#include "PTRACERS_PARAMS.h"
 
 C !INPUT PARAMETERS: ===================================================
 C  bi,bj                :: tile indices
@@ -77,6 +79,16 @@ C     because it is needed by KPP_TRANSPORT_PTR.
      &           *recip_drF(k)*recip_hFacC(i,j,k,bi,bj)
          ENDDO
         ENDDO
+
+      ELSEIF ( k .NE. kSurface ) THEN
+        IF (PTRACERS_names(iTracer).EQ.'wm_age') THEN
+          DO j=jMin,jMax
+            DO i=iMin,iMax
+              gPtracer(i,j,k,bi,bj) = gPtracer(i,j,k,bi,bj)
+     &                          + 1. _d 0 * maskC(i,j,k,bi,bj)
+            ENDDO
+          ENDDO
+        ENDIF
       ENDIF
 
 #ifdef ALLOW_RBCS

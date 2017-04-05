@@ -187,6 +187,15 @@ C--    add diagnostics for Adams-Bashforth tendency increment
        CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I           diagName, diagCode, diagUnits, diagTitle, 0, myThid )
 
+C--    add diagnostics for ptracer tendency diagnostic
+       diagName  = 'g'//diagSufx
+       WRITE(diagTitle,'(2A)') locName(1:ilnb),
+     &                   ' tendency    '
+       diagCode  = 'SMR     MR      '
+       diagUnits = trcUnits//'/s       '
+       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I           diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 C--    add diagnostics for other pkg contribution to ptracer solution
        IF ( useKPP ) THEN

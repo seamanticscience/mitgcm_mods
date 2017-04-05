@@ -97,15 +97,28 @@ C  freefe                 :: iron not bound to ligand
 #endif
 #ifdef ALLOW_FE
       _RL  GFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  SURFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+      _RL  SEDFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+      _RL  HYDROFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  freefe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  scav_poc, Kscav_part, sed_poc
 #endif
-       INTEGER i,j,k
+       INTEGER i,j,k,kBottom,kSurface
 #ifdef CAR_DISS
        INTEGER nCALCITEstep
 #endif
 CEOP
 
-       DO k=1,Nr
+C kBottom is updated later on
+      IF ( usingPCoords ) THEN
+       kSurface = Nr
+       kBottom = 1
+      ELSE
+       kSurface = 1
+       kBottom = Nr
+      ENDIF
+
+      DO k=1,Nr
          DO j=1-OLy,sNy+OLy
           DO i=1-OLx,sNx+OLx
            RDOP(i,j,k) =0. _d 0
@@ -134,6 +147,9 @@ CEOP
            SURA(i,j)   =0. _d 0
            SURC(i,j)   =0. _d 0
            SURO(i,j)   =0. _d 0
+#ifdef ALLOW_FE
+           SURFE(i,j)  =0. _d 0
+#endif           
           ENDDO
          ENDDO
 
@@ -234,29 +250,37 @@ C add all tendencies for PO4, DOP, ALK, DIC
              GO2(i,j,k)= 0. _d 0
            endif
 #endif
+
 #ifdef ALLOW_FE
            GFE(i,j,k) = R_FeP*GPO4(i,j,k)
-     &                 -Kscav*freefe(i,j,k)
-#endif
+     &                        -Kscav*freefe(i,j,k)
+#endif /* ALLOW_FE */
           ENDDO
          ENDDO
        ENDDO
 
+C Surface Sources and sinks
          DO j=jmin,jmax
           DO i=imin,imax
-               GALK(i,j,1)=GALK(i,j,1)+SURA(i,j)
-               GDIC(i,j,1)=GDIC(i,j,1)+SURC(i,j)
+               kBottom   = MAX(kLowC(i,j,bi,bj),1)
+          
+               GALK(i,j,kSurface)=GALK(i,j,kSurface)+SURA(i,j)
+               GDIC(i,j,kSurface)=GDIC(i,j,kSurface)+SURC(i,j)
 #ifdef ALLOW_O2
-               GO2(i,j,1) =GO2(i,j,1)+SURO(i,j)
+               GO2(i,j,kSurface) =GO2(i,j,kSurface)+SURO(i,j)
 #endif
 #ifdef ALLOW_FE
-               GFE(i,j,1)=GFE(i,j,1)+alpfe*
-     &                    InputFe(i,j,bi,bj)*recip_drF(1)
-     &                       *recip_hFacC(i,j,1,bi,bj)
-#endif
+       IF ( alpfe.NE.0. _d 0 ) THEN
+               SURFE(i,j)=alpfe*InputFe(i,j,bi,bj)
+     &                   *recip_drF(kSurface)
+     &                   *recip_hFacC(i,j,kSurface,bi,bj)
+       ELSE
+               SURFE(i,j)=0. _d 0
+       ENDIF
+       
+               GFE(i,j,kSurface)=GFE(i,j,kSurface)+SURFE(i,j)
           ENDDO
          ENDDO
-
 
 C update
        DO k=1,Nr
@@ -286,10 +310,9 @@ C update
 #ifdef MINFE
 c find free iron and get rid of insoluble part
        call fe_chem(bi,bj,iMin,iMax,jMin,jMax, PTR_FE, freefe,
-     &                myIter, mythid)
+     &                myIter, mythid)   
 #endif
 #endif
-
 
 #ifdef ALLOW_TIMEAVE
 C save averages
@@ -338,16 +361,33 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
       IF ( useDiagnostics ) THEN
 
-        CALL DIAGNOSTICS_FILL(BIOac  ,'DICBIOA ',0,Nr,2,bi,bj,myThid)
-        CALL DIAGNOSTICS_FILL(CAR    ,'DICCARB ',0,Nr,2,bi,bj,myThid)
-        CALL DIAGNOSTICS_FILL(pCO2   ,'DICPCO2 ',0,1 ,1,bi,bj,myThid)
-        CALL DIAGNOSTICS_FILL(fluxCO2,'DICCFLX ',0,1 ,1,bi,bj,myThid)
-        CALL DIAGNOSTICS_FILL(pH     ,'DICPHAV ',0,1 ,1,bi,bj,myThid)
-        CALL DIAGNOSTICS_FILL(SURC   ,'DICTFLX ',0,1 ,2,bi,bj,myThid)
-#ifdef ALLOW_O2
-        CALL DIAGNOSTICS_FILL(SURO   ,'DICOFLX ',0,1 ,2,bi,bj,myThid)
-#endif
+        CALL DIAGNOSTICS_FILL(BIOac     ,'DICBIOA ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(CAR       ,'DICCARB ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(OmegaC    ,'OMEGAC  ',0,Nr,1,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(pflux     ,'DICPFLUX',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(exportflux,'CEXPFLX ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(cflux     ,'CARBFLUX',0,Nr,2,bi,bj,myThid)
 
+        CALL DIAGNOSTICS_FILL(SURC      ,'DICTFLX ',0,1 ,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(pCO2      ,'DICPCO2 ',0,1 ,1,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(pH        ,'DICPHAV ',0,1 ,1,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(fluxCO2   ,'DICCFLX ',0,1 ,1,bi,bj,myThid)
+
+        CALL DIAGNOSTICS_FILL(SURA      ,'DICAFLX ',0,1 ,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(RDOP      ,'DICRDOP ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(GDIC      ,'DICGDIC ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(GDOP      ,'DICGDOP ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(GPO4      ,'DICGPO4 ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(GALK      ,'DICGALK ',0,Nr,2,bi,bj,myThid)
+       
+#ifdef ALLOW_O2
+        CALL DIAGNOSTICS_FILL(SURO      ,'DICOFLX ',0,1 ,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(GO2       ,'DICGO2  ',0,Nr,2,bi,bj,myThid)
+#endif
+#ifdef ALLOW_FE
+        CALL DIAGNOSTICS_FILL(SURFE     ,'DICFEFLX',0,1 ,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(GFE       ,'DICGFE  ',0,Nr,2,bi,bj,myThid)
+#endif
       ENDIF
 
 #endif /* ALLOW_DIAGNOSTICS */
