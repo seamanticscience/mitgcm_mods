@@ -31,6 +31,7 @@ C !USES: ===============================================================
 #include "PARAMS.h"
 #include "PTRACERS_SIZE.h"
 #include "PTRACERS_FIELDS.h"
+#include "PTRACERS_PARAMS.h"
 #include "GCHEM.h"
 #ifdef ALLOW_DIC
 #include "DIC_VARS.h"
@@ -54,8 +55,11 @@ C  i,j                  :: loop indices
 C  bi,bj                :: tile indices
 C  k                    :: vertical level
       INTEGER bi,bj,iMin,iMax,jMin,jMax
-c     INTEGER i,j
+c     INTEGER i,j,
+      INTEGER dic_offset
 
+      dic_offset=UNSET_I
+      
 ccccccccccccccccccccccccc
 c global calculations   c
 ccccccccccccccccccccccccc
@@ -105,34 +109,37 @@ C$taf loop = parallel
         jMax=sNy
         iMin=1
         iMax=sNx
-c
+
 ccccccccccccccccccccccccccc DIC cccccccccccccccccccccccccccccccc
 
 #ifdef ALLOW_DIC
 #ifdef ALLOW_FE
+          dic_offset=6
           CALL DIC_BIOTIC_FORCING( pTracer(1-OLx,1-OLy,1,bi,bj,1),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,2),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,3),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,4),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,5),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,6),
-     &                          bi,bj,imin,imax,jmin,jmax,
+     &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
 #else
 #ifdef ALLOW_O2
-          CALL DIC_BIOTIC_fORCING( pTracer(1-OLx,1-OLy,1,bi,bj,1),
+          dic_offset=5
+          CALL DIC_BIOTIC_FORCING( pTracer(1-OLx,1-OLy,1,bi,bj,1),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,2),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,3),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,4),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,5),
-     &                          bi,bj,imin,imax,jmin,jmax,
+     &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
 #else
-          CALL DIC_BIOTIC_Forcing( pTracer(1-OLx,1-OLy,1,bi,bj,1),
+          dic_offset=4
+          CALL DIC_BIOTIC_FORCING( pTracer(1-OLx,1-OLy,1,bi,bj,1),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,2),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,3),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,4),
-     &                          bi,bj,imin,imax,jmin,jmax,
+     &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
 #endif
 #endif
@@ -144,24 +151,26 @@ cccccccccccccccccccccccccc END DIC cccccccccccccccccccccccccccccccccc
 #ifdef NUT_SUPPLY
 c articficial supply of nutrients
           CALL DARWIN_NUT_SUPPLY( pTracer(1-OLx,1-OLy,1,bi,bj,1),
-     &                          bi,bj,imin,imax,jmin,jmax,
+     &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
           CALL DARWIN_NUT_SUPPLY( pTracer(1-OLx,1-OLy,1,bi,bj,2),
-     &                          bi,bj,imin,imax,jmin,jmax,
+     &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
           CALL DARWIN_NUT_SUPPLY( pTracer(1-OLx,1-OLy,1,bi,bj,3),
-     &                          bi,bj,imin,imax,jmin,jmax,
+     &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
           CALL DARWIN_NUT_SUPPLY( pTracer(1-OLx,1-OLy,1,bi,bj,4),
-     &                          bi,bj,imin,imax,jmin,jmax,
+     &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
 #endif
 ccccccccccccccc
 C darwin_forcing operates on bi,bj part only, but needs to get full
 C array because of last (iPtr) index
           CALL DARWIN_FORCING(  pTracer(1-OLx,1-OLy,1,1,1,1),
-     &                          bi,bj,imin,imax,jmin,jmax,
+     &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
+C JML dont know if this is even right?     
+          dic_offset=ngud
         ENDIF
 #endif /* ALLOW_DARWIN */
 
@@ -180,6 +189,19 @@ C array because of last (iPtr) index
 #ifdef ALLOW_DIC
        CALL DIC_ATMOS( 1, myTime, myIter, myThid )
        CALL DIC_STORE_FLUXCO2( myTime, myIter, myThid )
+#endif
+
+#if ((defined GCHEM_PREFORMED) || (defined GCHEM_PREFORMED_MLD))
+C JML If the number of ptracers is greater than that required by 
+C  pkg DIC (or DARWIN) then run this routine for the preformed tracers.
+       IF (PTRACERS_numInUse.GT.dic_offset) THEN
+        DO bj=myByLo(myThid),myByHi(myThid)
+         DO bi=myBxLo(myThid),myBxHi(myThid)
+          CALL GCHEM_PREFORMED_TRACERS( dic_offset, bi, bj,  
+     &                    myTime, myIter, myThid )
+         ENDDO
+        ENDDO
+       ENDIF
 #endif
 
 #ifdef ALLOW_COST
