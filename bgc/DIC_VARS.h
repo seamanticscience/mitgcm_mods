@@ -9,17 +9,21 @@ C     | o Carbon Variables
 C     *==========================================================*
 
        COMMON /CARBON_NEEDS/
-     &              AtmospCO2, AtmosP, pH, pCO2, FluxCO2,
+     &              AtmospCO2, AtmosP, pH, pCO2,
+     &              co3, hco3, co2aq, FluxCO2,
      &              wind, FIce, Silica, Kwexch_Pre
       _RL  AtmospCO2(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  AtmosP(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  pH(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  pCO2(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+      _RL  co3(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+      _RL  hco3(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+      _RL  co2aq(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  FluxCO2(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  wind(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  FIce(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
-      _RL  Silica(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  Kwexch_Pre(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+      _RL  Silica(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
 
        COMMON /CARBON_CHEM/
      &                     ak0,ak1,ak2,akw,akb,aks,akf,
@@ -95,7 +99,8 @@ C  dic_int*          :: place holder to read in a integer number, set at run tim
      &        DIC_windFile, DIC_atmospFile, DIC_iceFile,
      &        DIC_ironFile, DIC_silicaFile,
      &        DIC_forcingPeriod, DIC_forcingCycle,
-     &        dic_pCO2, dic_int1, dic_int2, dic_int3, dic_int4
+     &        dic_int1, dic_int2, dic_int3, dic_int4, 
+     &        dic_pCO2
 
       CHARACTER*(MAX_LEN_FNAM) DIC_windFile
       CHARACTER*(MAX_LEN_FNAM) DIC_atmospFile
@@ -114,7 +119,6 @@ C  dic_int*          :: place holder to read in a integer number, set at run tim
 C     *==========================================================*
 C     | o Biological Carbon Variables
 C     *==========================================================*
-
       COMMON /BIOTIC_NEEDS/
      &     BIOave, CARave, SURave, SUROave, pCO2ave, pHave,
      &     fluxCO2ave, omegaCave, pfluxave, epfluxave, cfluxave,
@@ -123,8 +127,8 @@ C     *==========================================================*
      &     Kpo4, DOPfraction, zcrit, KRemin,
      &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP,
      &     O2crit, alpfe, KScav, ligand_stab, ligand_tot, KFE,
-     &     freefemax, par,
-     &     parfrac, k0, lit0,
+     &     freefemax, 
+     &     par, parfrac, k0, lit0,
      &     alphaUniform, rainRatioUniform,
      &     alphamax, alphamin,
      &     calpha, crain_ratio, cInputFe, calpfe, feload, cfeload,
@@ -167,7 +171,7 @@ C     values for biogeochemistry
       _RL KScav
       _RL ligand_stab
       _RL ligand_tot
-      _RL  KFe
+      _RL KFe
       _RL freefemax
 C     values for light limited bio activity
       _RL k0, parfrac, lit0
@@ -181,7 +185,7 @@ C     values for light limited bio activity
       _RL cfeload
       _RL feload(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
 
-      LOGICAL QSW_underice
+      LOGICAL QSW_underice      
 #endif /* DIC_BIOTIC */
 
 CEH3 ;;; Local Variables: ***
