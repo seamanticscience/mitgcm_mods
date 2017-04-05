@@ -10,21 +10,25 @@ C $Name:  $
 C     Package-specific Options & Macros go here
 
 #define DIC_BIOTIC
-#undef  ALLOW_FE
+#define ALLOW_FE
+#define MINFE
+
 #define ALLOW_O2
 #undef READ_PAR
-#undef MINFE
-#undef DIC_NO_NEG
-c these all need to be defined for coupling to
-c atmospheric model
+C could also set PTRACERS_EvPrRn(n)=0., 
+C may need PTRACERS_ref(1,n)=??? in data.ptracers
+#define AD_SAFE
+#define DIC_NO_NEG
+#undef ALLOW_DIC_COST
+C these all need to be defined for coupling to
+C atmospheric model
 #undef USE_QSW
-#undef USE_QSW_UNDERICE
 #undef USE_ATMOSCO2
 #undef USE_PLOAD
 
 #define ALLOW_OLD_VIRTUALFLUX
 
-C put back bugs related to Water-Vapour in carbonate chemistry & air-sea fluxes
+C define to put back bugs related to Water-Vapour in carbonate chemistry & air-sea fluxes
 #undef WATERVAP_BUG
 
 C dissolution only below saturation horizon following method by Karsten Friis
