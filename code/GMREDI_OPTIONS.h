@@ -13,8 +13,7 @@ C Use this file for selecting options within the GM/Redi package
 C     Package-specific Options & Macros go here
 
 C Designed to simplify the Ajoint code:
-C #define GMREDI_WITH_STABLE_ADJOINT
-C -- exclude the clipping/tapering part of the code that is not used
+C  exclude the clipping/tapering part of the code that is not used
 C #define GM_EXCLUDE_CLIPPING
 C #define GM_EXCLUDE_FM07_TAP
 C #define GM_EXCLUDE_AC02_TAP
@@ -40,6 +39,7 @@ C  instead of the Skew-Flux form (=default)
 #define GM_BOLUS_ADVEC
 
 C Allows to use the Boundary-Value-Problem method to evaluate GM Bolus transport
+C Has a switch GM_UseBVP in data.gmredi so wasnt using it anyway
 #define GM_BOLUS_BVP
 
 #endif /* ALLOW_GMREDI */
