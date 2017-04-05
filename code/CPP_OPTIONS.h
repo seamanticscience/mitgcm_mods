@@ -23,7 +23,7 @@ C o Allow latitudinally varying BryanLewis79 vertical diffusivity
 #undef ALLOW_BL79_LAT_VARY
 
 C o Include/exclude Implicit vertical advection code
-#define INCLUDE_IMPLVERTADV_CODE
+#undef INCLUDE_IMPLVERTADV_CODE
 
 C o Include/exclude AdamsBashforth-3rd-Order code
 #undef ALLOW_ADAMSBASHFORTH_3
@@ -35,9 +35,9 @@ C o Include/exclude nonHydrostatic code
 #undef ALLOW_NONHYDROSTATIC
 
 C o Include pressure loading code
-#define ATMOSPHERIC_LOADING
+#undef ATMOSPHERIC_LOADING
 
-C o exclude/allow external forcing-fields load
+C o exclude/allow external forcing-fields load 
 C   this allows to read & do simple linear time interpolation of oceanic
 C   forcing fields, if no specific pkg (e.g., EXF) is used to compute them.
 #undef EXCLUDE_FFIELDS_LOAD
@@ -95,6 +95,14 @@ C o Use LONG.bin, LATG.bin, etc., initialization for ini_curviliear_grid.F
 C   Default is to use "new" grid files (OLD_GRID_IO undef) but OLD_GRID_IO
 C   is still useful with, e.g., single-domain curvilinear configurations.
 #undef OLD_GRID_IO
+
+C JML, use fixed relaxation fields supplied by a monthly control run
+#undef ALLOW_FIXEDSRELAX
+#undef ALLOW_FIXEDTRELAX
+
+C JML, remove the mean from T or S relaxation (defined using flag in data
+C      file) to conserve heat/fw
+#undef BALANCED_RELAXFLUX
 
 C o Execution environment support options
 #include "CPP_EEOPTIONS.h"
