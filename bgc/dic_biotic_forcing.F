@@ -274,6 +274,7 @@ C Surface Sources and sinks
                GFE(i,j,kSurface)=GFE(i,j,kSurface)+SURFE(i,j)
           ENDDO
          ENDDO
+#endif
 
 C update
        DO k=1,Nr
