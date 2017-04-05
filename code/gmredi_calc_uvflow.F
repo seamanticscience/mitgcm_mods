@@ -34,8 +34,12 @@ C     myThid :: thread number
       INTEGER k, bi, bj, myThid
       _RL uFld  (1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL vFld  (1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+      _RL uEddy (1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+      _RL vEddy (1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL uTrans(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL vTrans(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+      _RL uETrans(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+      _RL vETrans(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
 
 #ifdef ALLOW_GMREDI
 #ifdef GM_BOLUS_ADVEC
@@ -48,6 +52,9 @@ C     i, j :: loop indices
       _RL maskp1
       _RL delPsi
 CEOP
+#ifdef ALLOW_DEBUG
+      IF (debugMode) CALL DEBUG_ENTER('GMREDI_CALC_UVFLOW',myThid)
+#endif
 
       IF (GM_AdvForm .AND. .NOT.GM_AdvSeparate
      & .AND. .NOT.GM_InMomAsStress) THEN
@@ -59,23 +66,35 @@ CEOP
         DO i=1-OLx,sNx+OLx
          delPsi = GM_PsiX(i,j,kp1,bi,bj)*maskp1
      &          - GM_PsiX(i,j, k, bi,bj)
-         uFld(i,j)   = uFld(i,j)
-     &               + delPsi*recip_drF(k)*_recip_hFacW(i,j,k,bi,bj)
-         uTrans(i,j) = uTrans(i,j)
-     &               + dyG(i,j,bi,bj)*delPsi*maskW(i,j,k,bi,bj)
+         uEddy(i,j)  = delPsi*recip_drF(k)*_recip_hFacW(i,j,k,bi,bj)
+         uFld (i,j)  = uFld(i,j) + uEddy(i,j)
+         ueTrans(i,j)= dyG(i,j,bi,bj)*delPsi*maskW(i,j,k,bi,bj)
+         uTrans(i,j) = uTrans(i,j) + ueTrans(i,j)
         ENDDO
        ENDDO
        DO j=1-OLy,sNy+OLy
         DO i=1-OLx,sNx+OLx
          delPsi = GM_PsiY(i,j,kp1,bi,bj)*maskp1
      &          - GM_PsiY(i,j, k, bi,bj)
-         vFld(i,j)   = vFld(i,j)
-     &               + delPsi*recip_drF(k)*_recip_hFacS(i,j,k,bi,bj)
-         vTrans(i,j) = vTrans(i,j)
-     &               + dxG(i,j,bi,bj)*delPsi*maskS(i,j,k,bi,bj)
+         vEddy(i,j)  = delPsi*recip_drF(k)*_recip_hFacS(i,j,k,bi,bj)
+         vFld(i,j)   = vFld(i,j) + vEddy(i,j)
+         veTrans(i,j)= dxG(i,j,bi,bj)*delPsi*maskS(i,j,k,bi,bj)
+         vTrans(i,j) = vTrans(i,j) + veTrans(i,j)
         ENDDO
        ENDDO
-       
+
+C JML Residual velocity diagnostics
+        IF (useDiagnostics) THEN
+          CALL DIAGNOSTICS_FILL(uEddy,  'GM_U_EDD',k,1,2,bi,bj,myThid)
+          CALL DIAGNOSTICS_FILL(vEddy , 'GM_V_EDD',k,1,2,bi,bj,myThid)
+          CALL DIAGNOSTICS_FILL(ueTrans,'GM_UE_TR',k,1,2,bi,bj,myThid)
+          CALL DIAGNOSTICS_FILL(veTrans,'GM_VE_TR',k,1,2,bi,bj,myThid)
+          
+          CALL DIAGNOSTICS_FILL(uFld,   'GM_U_RES',k,1,2,bi,bj,myThid)
+          CALL DIAGNOSTICS_FILL(vFld,   'GM_V_RES',k,1,2,bi,bj,myThid)
+          CALL DIAGNOSTICS_FILL(uTrans, 'GM_UR_TR',k,1,2,bi,bj,myThid)
+          CALL DIAGNOSTICS_FILL(vTrans, 'GM_VR_TR',k,1,2,bi,bj,myThid)
+        ENDIF
       ENDIF
 #endif /* GM_BOLUS_ADVEC */
 #endif /* ALLOW_GMREDI */
