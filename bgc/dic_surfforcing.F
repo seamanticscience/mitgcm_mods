@@ -25,7 +25,7 @@ C !USES: ===============================================================
 #include "GRID.h"
 #include "FFIELDS.h"
 #include "DIC_VARS.h"
-
+#include "DIC_ATMOS.h"
 C !INPUT PARAMETERS: ===================================================
 C  myThid               :: thread number
 C  myIter               :: current timestep
@@ -46,7 +46,7 @@ c GDC                   :: tendency due to air-sea exchange
 
 C !LOCAL VARIABLES: ====================================================
        INTEGER i,j, kLev
-       _RL co3dummy
+
 C Number of iterations for pCO2 solvers...
 C Solubility relation coefficients
       _RL SchmidtNoDIC(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
@@ -60,6 +60,11 @@ C local variables for carbon chem
       _RL surftemp(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL surfsalt(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL surfdic(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+C JML 12/09/09 Add some more diagnostics
+#ifdef ALLOW_DIAGNOSTICS	  
+	  _RL catm(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+	  _RL cocean(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+#endif
 #ifdef ALLOW_OLD_VIRTUALFLUX
       _RL VirtualFlux(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
 #endif
@@ -79,8 +84,6 @@ c           AtmospCO2(i,j,bi,bj)=278.0 _d -6
 c        ENDDO
 c       ENDDO
 c#endif
-
-
 C =================================================================
 C determine inorganic carbon chem coefficients
         DO j=jmin,jmax
@@ -106,8 +109,10 @@ cQQQQ check ptracer numbers
      &                          * maskC(i,j,kLev,bi,bj)
              surfphos(i,j)  = 5.1225 _d -4 * maskC(i,j,kLev,bi,bj)
 #endif
-C FOR NON-INTERACTIVE Si
-             surfsi(i,j)   = SILICA(i,j,bi,bj) * maskC(i,j,kLev,bi,bj)
+
+             surfsi(i,j)   = SILICA(i,j,bi,bj)
+     &                          * maskC(i,j,kLev,bi,bj)
+
 #ifdef DIC_BOUNDS
             surftemp(i,j) = max(-4. _d 0, 
      &                          min(50. _d 0, theta(i,j,kLev,bi,bj)))
@@ -168,7 +173,8 @@ C$TAF LOOP = parallel
      I        ak0(i,j,bi,bj), fugf(i,j,bi,bj),
      I        ff(i,j,bi,bj),
      I        bt(i,j,bi,bj),st(i,j,bi,bj),ft(i,j,bi,bj),
-     U        pH(i,j,bi,bj),pCO2(i,j,bi,bj),co3dummy,
+     U        pH(i,j,bi,bj),pCO2(i,j,bi,bj),
+     U        co3(i,j,bi,bj),hco3(i,j,bi,bj),co2aq(i,j,bi,bj),
      I        i,j,kLev,bi,bj,myIter,myThid )
           ELSE
             pCO2(i,j,bi,bj)=0. _d 0
@@ -221,10 +227,31 @@ c Flux = kw*rho*(ff*pCO2atm-k0*FugFac*pCO2ocean)
      &
 #endif
           ELSE
+              Kwexch(i,j)        = 0. _d 0
               FluxCO2(i,j,bi,bj) = 0. _d 0
           ENDIF
 C convert flux (mol kg-1 m s-1) to (mol m-2 s-1)
             FluxCO2(i,j,bi,bj) = FluxCO2(i,j,bi,bj)/permil
+
+#ifdef ALLOW_DIAGNOSTICS
+C JML Add some more diagnostics
+        IF (maskC(i,j,kLev,bi,bj).NE.0. _d 0) THEN
+#ifdef WATERVAP_BUG
+          IF ( useDiagnostics ) THEN
+           catm(i,j) = (ff(i,j,bi,bj)*pCO2sat(i,j))/permil
+		   cocean(i,j) = (pCO2(i,j,bi,bj)*fugf(i,j,bi,bj)*ak0(i,j,bi,bj))/permil
+	      ENDIF
+#else
+          IF ( useDiagnostics ) THEN
+           catm(i,j) = (ak0(i,j,bi,bj)*pCO2sat(i,j))/permil
+		   cocean(i,j) = (ff(i,j,bi,bj)*pCO2(i,j,bi,bj))/permil
+	      ENDIF
+#endif
+        ELSE
+           catm(i,j) = 0. _d 0
+           cocean(i,j) = 0. _d 0
+        ENDIF
+#endif /* ALLOW_DIAGNOSTICS */
 
 #ifdef ALLOW_OLD_VIRTUALFLUX
             IF (maskC(i,j,kLev,bi,bj).NE.0. _d 0) THEN
@@ -258,6 +285,19 @@ C update tendency
      &               )
           ENDDO
          ENDDO
+        
+C JML 12/09/09 Add some more diagnostics
+#ifdef ALLOW_DIAGNOSTICS
+        IF ( useDiagnostics ) THEN
+            CALL DIAGNOSTICS_FILL(Kwexch,'DICCFLXK',0,1,1,bi,bj,myThid)
+            CALL DIAGNOSTICS_FILL(catm  ,'DICFLXCA',0,1,1,bi,bj,myThid)
+            CALL DIAGNOSTICS_FILL(cocean,'DICFLXCO',0,1,1,bi,bj,myThid)
+#ifdef ALLOW_OLD_VIRTUALFLUX           
+            CALL DIAGNOSTICS_FILL
+     &              (VirtualFlux,'DICVCFLX',0,1,1,bi,bj,myThid)
+#endif
+        ENDIF
+#endif /* ALLOW_DIAGNOSTICS */
 
 #endif
         RETURN
