@@ -98,12 +98,9 @@ C  freefe                 :: iron not bound to ligand
 #ifdef ALLOW_FE
       _RL  GFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  SURFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
-      _RL  SEDFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
-      _RL  HYDROFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  freefe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
-      _RL  scav_poc, Kscav_part, sed_poc
 #endif
-       INTEGER i,j,k,kBottom,kSurface
+       INTEGER i,j,k,kSurface
 #ifdef CAR_DISS
        INTEGER nCALCITEstep
 #endif
@@ -112,10 +109,8 @@ CEOP
 C kBottom is updated later on
       IF ( usingPCoords ) THEN
        kSurface = Nr
-       kBottom = 1
       ELSE
        kSurface = 1
-       kBottom = Nr
       ENDIF
 
       DO k=1,Nr
@@ -262,8 +257,6 @@ C add all tendencies for PO4, DOP, ALK, DIC
 C Surface Sources and sinks
          DO j=jmin,jmax
           DO i=imin,imax
-               kBottom   = MAX(kLowC(i,j,bi,bj),1)
-          
                GALK(i,j,kSurface)=GALK(i,j,kSurface)+SURA(i,j)
                GDIC(i,j,kSurface)=GDIC(i,j,kSurface)+SURC(i,j)
 #ifdef ALLOW_O2
