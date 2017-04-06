@@ -1,0 +1,6 @@
+README FILE JML 07/07/09
+
+This folder contains the modified files for independently fixed/relaxing surface temperature and salinity with both ALLOW_FIXEDTRELAX
+and ALLOW_FIXEDSRELAX defined in CPP_OPTIONS.h for use in a fixed boundary condition model. The salt and heat relaxation fluxes
+needed to maintain a steady control state were diagnosed from 100 years of monthly control output to create these climatologies.
+ 

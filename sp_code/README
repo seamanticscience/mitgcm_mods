@@ -1,0 +1,6 @@
+README FILE JML 07/07/09
+#Files contained in this directory are:
+
+MNC_SIZE.h      -     Increase number of NetCDF files allowed open (may be a problem with closing files somewhere!?)
+README            -     This File
+SIZE.h                 -     Specify grid over multiple processor (grid is 128x64x15 split into 4 equal tiles)

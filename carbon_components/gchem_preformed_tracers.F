@@ -55,8 +55,12 @@ C  k                    :: vertical level
       INTEGER iMin,iMax,jMin,jMax,i,j,k,bi,bj
       INTEGER nTrac,dic_offset
       INTEGER iDIC,iALK,iPO4,iDOP,iDO2,iDFE
-      INTEGER iAPRE,iPPRE,iPCO2
+      INTEGER iAPRE,iPPRE,iPCO2,iCSAT,iCDIS
       INTEGER kmld(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+
+#ifdef DIC_CARBON_COMPONENTS
+      _RL csat_atm,co3dummy,hco3dummy,co2aqdummy
+#endif
 
       CHARACTER*(MAX_LEN_FNAM) fldName
 
@@ -73,6 +77,8 @@ C  k                    :: vertical level
       iAPRE=UNSET_I
       iPPRE=UNSET_I
       iPCO2=UNSET_I
+      iCSAT=UNSET_I
+      iCDIS=UNSET_I
       
       iMin=1-Olx
       iMax=sNx+Olx
@@ -103,6 +109,28 @@ C        DO bi = myBxLo(myThid), myBxHi(myThid)
          ENDDO
 C        ENDDO
 C       ENDDO
+
+#ifdef DIC_CARBON_COMPONENTS
+C Call once to fill in 3d carbon chemistry values
+C Treat surface and depth values seperately to be 
+C    consistent with dic_surfforcing
+C These routines take Theta and Salt from DYNVARS.h and
+C    store in the "3d" variables
+#ifdef ALLOW_DEBUG
+      IF (debugMode) CALL DEBUG_CALL(
+     &            'CARBON_COEFFS_SURF',myThid)
+#endif
+       CALL CARBON_COEFFS_SURF(
+     I              bi,bj,iMin,iMax,jMin,jMax,myThid)
+       
+#ifdef ALLOW_DEBUG
+      IF (debugMode) CALL DEBUG_CALL(
+     &           'CARBON_COEFFS_DEPTH',myThid)
+#endif
+       CALL CARBON_COEFFS_DEPTH(
+     I                   bi,bj,iMin,iMax,jMin,jMax,
+     I                   2,Nr,myThid)
+#endif
 
 #ifdef ALLOW_DIC
 C get tracer names that are within the dic package
@@ -259,10 +287,138 @@ C             DO bi = myBxLo(myThid), myBxHi(myThid)
 C             ENDDO
 C            ENDDO 
             iPCO2=nTrac
+            
+        ELSEIF ( fldName(1:4) .EQ. 'csat' ) THEN
+C Csat tracer records saturated dic in the surface ocean 
+C Surface/mixed layer nutrients should already be preformed
+#ifdef DIC_CARBON_COMPONENTS
+#ifdef ALLOW_DEBUG
+        IF (debugMode) CALL DEBUG_MSG(
+     &         'EVALUATING CSAT TRACER',myThid)
+#endif 
+C         DO bj=myByLo(myThid),myByHi(myThid)
+C          DO bi=myBxLo(myThid),myBxHi(myThid)
+           DO j=jMin,jMax
+            DO i=iMin,iMax
+              DO k=1,kmld(i,j,bi,bj)
+               IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
+                CALL CALC_CSAT_APPROX(
+     I           theta(i,j,k,bi,bj),salt(i,j,k,bi,bj),
+     I           AtmospCO2(i,j,bi,bj),pTracer(i,j,k,bi,bj,iPO4),
+     I           SILICA(i,j,k,bi,bj),pTracer(i,j,k,bi,bj,iALK),
+     I           ak13d(i,j,k,bi,bj),ak23d(i,j,k,bi,bj),
+     I           ak1p3d(i,j,k,bi,bj),ak2p3d(i,j,k,bi,bj),
+     I           ak3p3d(i,j,k,bi,bj),
+     I           aks3d(i,j,k,bi,bj),akb3d(i,j,k,bi,bj),
+     I           akw3d(i,j,k,bi,bj),
+     I           aksi3d(i,j,k,bi,bj),akf3d(i,j,k,bi,bj),
+     I           ak03d(i,j,k,bi,bj), fugf3d(i,j,k,bi,bj),
+     I           ff3d(i,j,k,bi,bj),
+     I           bt3d(i,j,k,bi,bj),st3d(i,j,k,bi,bj),ft3d(i,j,k,bi,bj),
+     U           pH_GLOB(i,j,k,bi,bj),csat_atm,co3dummy,
+     I           i,j,k,bi,bj,myIter,myThid )
+     
+                pTracer(i,j,k,bi,bj,nTrac)=csat_atm
+               ELSE
+                pTracer(i,j,k,bi,bj,nTrac)=0. _d 0
+               ENDIF
+             ENDDO
+            ENDDO
+           ENDDO  
+C          ENDDO
+C         ENDDO 
+#endif /* DIC_CARBON_COMPONENTS */
+
+        ELSEIF ( fldName(1:4) .EQ. 'cdis' ) THEN
+C Disequilibrium tracer recording difference between saturated dic in the surface ocean 
+C   and atmospheric pCO2 last time the watermass was at the surface
+#ifdef DIC_CARBON_COMPONENTS
+#ifdef ALLOW_DEBUG
+        IF (debugMode) CALL DEBUG_MSG(
+     &         'EVALUATING CDIS TRACER',myThid)
+#endif  
+C         DO bj=myByLo(myThid),myByHi(myThid)
+C          DO bi=myBxLo(myThid),myBxHi(myThid)
+           DO j=jMin,jMax
+            DO i=iMin,iMax
+             DO k=1,kmld(i,j,bi,bj)
+               IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
+                CALL CALC_CSAT_APPROX(
+     I           theta(i,j,k,bi,bj),salt(i,j,k,bi,bj),
+     I           AtmospCO2(i,j,bi,bj),pTracer(i,j,k,bi,bj,iPO4),
+     I           SILICA(i,j,k,bi,bj),pTracer(i,j,k,bi,bj,iALK),
+     I           ak13d(i,j,k,bi,bj),ak23d(i,j,k,bi,bj),
+     I           ak1p3d(i,j,k,bi,bj),ak2p3d(i,j,k,bi,bj),
+     I           ak3p3d(i,j,k,bi,bj),
+     I           aks3d(i,j,k,bi,bj),akb3d(i,j,k,bi,bj),
+     I           akw3d(i,j,k,bi,bj),
+     I           aksi3d(i,j,k,bi,bj),akf3d(i,j,k,bi,bj),
+     I           ak03d(i,j,k,bi,bj), fugf3d(i,j,k,bi,bj),
+     I           ff3d(i,j,k,bi,bj),
+     I           bt3d(i,j,k,bi,bj),st3d(i,j,k,bi,bj),ft3d(i,j,k,bi,bj),
+     U           pH_GLOB(i,j,k,bi,bj),csat_atm,co3dummy,
+     I           i,j,k,bi,bj,myIter,myThid )
+
+C This occurs AFTER dic and atmospheric pco2 is updated with air-sea fluxes, i.e.
+C    after anthropogenic CO2 uptake or outgassing has occurred   
+                pTracer(i,j,k,bi,bj,nTrac)=
+     &                      pTracer(i,j,k,bi,bj,iDIC)-csat_atm
+               ELSE
+                pTracer(i,j,k,bi,bj,nTrac)=0. _d 0
+               ENDIF
+             ENDDO
+            ENDDO
+           ENDDO  
+C          ENDDO  
+C         ENDDO           
+#endif /* DIC_CARBON_COMPONENTS */
         ENDIF 
        ENDDO
       ENDIF
       
+#if ((defined DIC_CARBON_COMPONENTS) && (defined DIC_COMPONENT_DIAGS))
+C          WRITE(standardMessageUnit,*) 
+C     &      'GCHEM_PREFORMED_TRACERS: iPPRE,iAPRE,iPCO2=',
+C     &      iPPRE,iAPRE,iPCO2
+       
+C Then do Csat, Csoft, Ccarb and Cdis calculation            
+        IF (iAPRE.NE.UNSET_I.AND.iPPRE.NE.UNSET_I
+#ifdef DIC_INSITU_COMPONENTS       
+     &                      .AND.iPCO2.NE.UNSET_I
+#endif /* DIC_INSITU_COMPONENTS */
+     &                      ) THEN
+
+C Reference pCO2 can be read in as dic_pCO2_init set in the first call of DIC_ATMOS
+C Current pCO2 can be directly taken from AtmospCO2
+C Using pCO2 tracer allows insitu calculation of Csat (useful for anthropogenic emissions)
+C set guess of pH for first step here
+C          WRITE(standardMessageUnit,*)  'GCHEM_PREFORMED_TRACERS:',
+C     &     'Calling CALC_DIC_COMPONENTS'
+
+C$taf loop = parallel
+C         DO bj=myByLo(myThid),myByHi(myThid)
+C$taf loop = parallel
+C          DO bi=myBxLo(myThid),myBxHi(myThid)
+#ifdef ALLOW_DEBUG
+      IF (debugMode) CALL DEBUG_CALL('CALC_DIC_COMPONENTS',myThid)
+#endif          
+           CALL CALC_DIC_COMPONENTS(
+     &         pTracer(1-OLx,1-OLy,1,bi,bj,iDIC), 
+     &         pTracer(1-OLx,1-OLy,1,bi,bj,iALK), 
+     &         pTracer(1-OLx,1-OLy,1,bi,bj,iPO4),
+     &         pTracer(1-OLx,1-OLy,1,bi,bj,iDOP),
+     &         pTracer(1-OLx,1-OLy,1,bi,bj,iAPRE),
+     &         pTracer(1-OLx,1-OLy,1,bi,bj,iPPRE),
+#ifdef DIC_INSITU_COMPONENTS       
+     &         pTracer(1-OLx,1-OLy,1,bi,bj,iPCO2),
+#endif /* DIC_INSITU_COMPONENTS */
+     &         dic_pCO2_init(1-OLx,1-OLy,bi,bj),
+     &         bi,bj,iMin,iMax,jMin,jMax,
+     &         myIter,myTime,myThid)
+C          ENDDO
+C         ENDDO
+        ENDIF
+#endif /* DIC_CARBON_COMPONENTS */
 #endif /* ALLOW_DIC */        
 #ifdef ALLOW_DEBUG
       IF (debugMode) CALL DEBUG_LEAVE('GCHEM_PREFORMED_TRACERS',myThid)
