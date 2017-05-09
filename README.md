@@ -3,7 +3,9 @@ Modifications to the core MITgcm code that I have written
 
 This code is currently for an older version of MITgcm (63m, http://mitgcm.org/download/other_checkpoints/MITgcm_c63m.tar.gz) 
 
-One might use this code by:
+Some code in the bgc folder adds preformed tracer functionality to MITgcm (GCHEM_OPTIONS.h, gchem_forcing_sep.F and gchem_preformed_tracers.F and increase PTRACERS_num in PTRACERS_SIZE.h)
+
+One might use this code (partially or in its entirety) by:
 
 1.) Downloading the correct model version.
 
