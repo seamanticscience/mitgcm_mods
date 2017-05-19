@@ -89,6 +89,20 @@ C     Define diagnostics Names :
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
      
+      diagName  = 'DICATCAR'
+      diagTitle = 'Atmospheric carbon inventory (mol C)'
+      diagUnits = 'mol C    '
+      diagCode  = 'SM P    L1      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+     
+      diagName  = 'DICATCO2'
+      diagTitle = 'Atmospheric pCO2 (atm)'
+      diagUnits = 'atm      '
+      diagCode  = 'SM P    L1      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+     
       diagName  = 'DICAFLX '
       diagTitle = 'Tendency of ALK due to air-sea exch (mol/m3/s)'
       diagUnits = 'mol/m3/s      '
