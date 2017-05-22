@@ -32,7 +32,7 @@ C     !LOCAL VARIABLES:
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 C     Define diagnostics Names :
-#ifdef DIC_CARBON_COMPONENTS
+#if ((defined DIC_CARBON_COMPONENTS) && (defined DIC_COMPONENT_DIAGS))
       diagName  = 'CSATINIT'
       diagTitle = 'Saturated DIC at initial atm pCO2'
       diagUnits = 'mol C/m3      '
