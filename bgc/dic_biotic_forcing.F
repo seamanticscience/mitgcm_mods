@@ -14,6 +14,9 @@ C !INTERFACE: ==========================================================
 #endif
 #ifdef ALLOW_FE
      &                            PTR_FE,
+#ifdef ALLOW_VARIABLE_LIGANDS
+     &                            PTR_LIG,
+#endif
 #endif
      &                            bi,bj,imin,imax,jmin,jmax,
      &                             myIter,myTime,myThid)
@@ -54,7 +57,10 @@ C  PTR_FE               :: iron
       _RL  PTR_O2(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
 #endif
 #ifdef ALLOW_FE
-      _RL  PTR_FE(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  PTR_FE (1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+#ifdef ALLOW_VARIABLE_LIGANDS
+      _RL  PTR_LIG(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+#endif
 #endif
       INTEGER bi, bj, imin, imax, jmin, jmax
 
@@ -102,6 +108,13 @@ C  freefe                 :: iron not bound to ligand
       _RL  HYDROFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  freefe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  scav_poc, Kscav_part, sed_poc
+      
+#ifdef ALLOW_VARIABLE_LIGANDS
+      _RL  GLIG(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  lambda_lig(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  lig_incr(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  lig_decr(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+#endif
 #endif
        INTEGER i,j,k,kBottom,kSurface
 #ifdef CAR_DISS
@@ -121,23 +134,29 @@ C kBottom is updated later on
       DO k=1,Nr
          DO j=1-OLy,sNy+OLy
           DO i=1-OLx,sNx+OLx
-           RDOP(i,j,k) =0. _d 0
-           GDIC(i,j,k) =0. _d 0
-           GALK(i,j,k) =0. _d 0
-           GPO4(i,j,k) =0. _d 0
-           GDOP(i,j,k) =0. _d 0
-           CAR(i,j,k)  =0. _d 0
-           BIOac(i,j,k)   =0. _d 0
-           pflux(i,j,k)   =0. _d 0
+           RDOP(i,j,k)     =0. _d 0
+           GDIC(i,j,k)     =0. _d 0
+           GALK(i,j,k)     =0. _d 0
+           GPO4(i,j,k)     =0. _d 0
+           GDOP(i,j,k)     =0. _d 0
+           CAR(i,j,k)      =0. _d 0
+           BIOac(i,j,k)    =0. _d 0
+           pflux(i,j,k)    =0. _d 0
            exportflux(i,j,k)=0. _d 0
-           cflux(i,j,k)   =0. _d 0
-           CAR_S(i,j,k)   =0. _d 0
+           cflux(i,j,k)    =0. _d 0
+           CAR_S(i,j,k)    =0. _d 0
 #ifdef ALLOW_O2
-           GO2(i,j,k)     =0. _d 0
+           GO2(i,j,k)      =0. _d 0
 #endif
 #ifdef ALLOW_FE
-           GFE(i,j,k)     =0. _d 0
-           freefe(i,j,k)  =0. _d 0
+           GFE (i,j,k)     =0. _d 0
+           freefe(i,j,k)   =0. _d 0
+#ifdef ALLOW_VARIABLE_LIGANDS
+           GLIG(i,j,k)     =0. _d 0
+           freefe(i,j,k)   =0. _d 0
+           lig_incr(i,j,k) =0. _d 0
+           lig_decr(i,j,k) =0. _d 0
+#endif
 #endif
           ENDDO
          ENDDO
@@ -174,10 +193,12 @@ C oxygen air-sea interaction
 
 #ifdef ALLOW_FE
 C find free iron
-       CALL FE_CHEM(bi,bj,iMin,iMax,jMin,jMax, PTR_FE, freefe,
-     &                myIter, mythid)
+       CALL FE_CHEM(bi,bj,iMin,iMax,jMin,jMax,PTR_FE,
+#ifdef ALLOW_VARIABLE_LIGANDS
+     &               PTR_LIG, 
 #endif
-
+     &               freefe, myIter, mythid)
+#endif
 
 C biological activity
        CALL BIO_EXPORT( PTR_PO4 ,
@@ -254,6 +275,37 @@ C add all tendencies for PO4, DOP, ALK, DIC
 #endif
 
 #ifdef ALLOW_FE
+#ifdef ALLOW_VARIABLE_LIGANDS
+C Prognostic Ligand code...
+C Here Ligand is produced by excretion during production (proportional to bioac)
+C     and release of iron binding sites during remineralization.           
+           lig_incr(i,j,k)  = (pflux(i,j,k)+BIOac(i,j,k)*DOPfraction)
+     &                             *R_CP*gamma_lig
+
+C Now calculate timescale for degredation 
+C  Initially, the first order way is kind of cheating as it fixes lambda to go exactly
+C towards the ligand concentration that we want 
+C           lambda_lig(i,j,k)= lig_incr(i,j,k)/ligand_tot
+C 
+C Calculate depth-dependent degradation timescale
+C     constrained by gamma_over_lambda, global productivity/surface area  
+C     and nominal ligand concentration
+C           lambda_lig(i,j,k)= gamma_lig/(-rC(k)*goverl_lig)
+C
+C So try to create a more dynamic consumption timescales using Q10
+C  lambda_ref calculated in dic_init_fixed from lambda_over_gamma
+C  and the value of gamma_lig
+           lambda_lig(i,j,k) = lambda_ref*
+     &        (lig_q10**((theta(i,j,k,bi,bj)-lig_tref)/10. _d 0))
+
+C Ligand concentration may also decrease as DOP is consumed           
+           lig_decr(i,j,k)  = -lambda_lig(i,j,k)*PTR_LIG(i,j,k)
+     &                        -gamma_lig*R_CP*RDOP(i,j,k)
+           
+C Now do ligand tendency
+           GLIG(i,j,k)=lig_incr(i,j,k)+lig_decr(i,j,k)
+#endif
+
            IF ( scav_exp.NE.0. _d 0 ) THEN
 CJML       Use particle depended scavenging rate, exploiting exportflux
 C          and constant sinking rate (See Parekh etal 2005, GBC equation 11)
@@ -356,6 +408,11 @@ C update
 #ifdef ALLOW_FE
            PTR_FE(i,j,k)=
      &      PTR_FE(i,j,k)+GFE(i,j,k)*PTRACERS_dTLev(k)
+     
+#ifdef ALLOW_VARIABLE_LIGANDS
+           PTR_LIG(i,j,k)=
+     &      PTR_LIG(i,j,k)+GLIG(i,j,k)*PTRACERS_dTLev(k)
+#endif
 #endif
           ENDDO
          ENDDO
@@ -364,11 +421,14 @@ C update
 #ifdef ALLOW_FE
 #ifdef MINFE
 c find free iron and get rid of insoluble part
-       call fe_chem(bi,bj,iMin,iMax,jMin,jMax, PTR_FE, freefe,
-     &                myIter, mythid)   
+       CALL FE_CHEM(bi,bj,iMin,iMax,jMin,jMax,PTR_FE,
+#ifdef ALLOW_VARIABLE_LIGANDS
+     &               PTR_LIG, 
+#endif
+     &               freefe, myIter, mythid)
 #endif
 #endif
-
+     
 #ifdef ALLOW_TIMEAVE
 C save averages
        IF ( taveFreq.GT.0. ) THEN
@@ -444,6 +504,12 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
         CALL DIAGNOSTICS_FILL(GFE       ,'DICGFE  ',0,Nr,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(SEDFE     ,'DICSEDFE',0,1 ,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(HYDROFE   ,'DICHTVFE',0,1 ,2,bi,bj,myThid)
+#ifdef ALLOW_VARIABLE_LIGANDS
+        CALL DIAGNOSTICS_FILL(GLIG      ,'DICGLIG ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(lambda_lig,'LIGLAMDA',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(lig_incr  ,'LIGINCR ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(lig_decr  ,'LIGDECR ',0,Nr,2,bi,bj,myThid)
+#endif
 #endif
       ENDIF
 

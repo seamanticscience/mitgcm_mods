@@ -17,7 +17,7 @@ C     Package-specific Options & Macros go here
 #undef HYDROTHERMAL_FE
 
 C Prognostic Iron Binding Ligands
-#undef ALLOW_VARIABLE_LIGANDS
+#define ALLOW_VARIABLE_LIGANDS
 
 #define ALLOW_O2
 #undef READ_PAR

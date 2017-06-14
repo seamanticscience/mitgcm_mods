@@ -214,11 +214,14 @@ C     values for light limited bio activity
 
 #ifdef ALLOW_VARIABLE_LIGANDS
       COMMON /PROGNOSTIC_LIGANDS/
-     &     gamma_lig, lambda_lig_ref, bio_tot_lig
+     &     gamma_lig, lambda_over_gamma, lambda_ref,
+     &     lig_q10, lig_tref
      
       _RL gamma_lig
-      _RL lambda_lig_ref
-      _RL bio_tot_lig
+      _RL lambda_over_gamma
+      _RL lambda_ref
+      _RL lig_q10
+      _RL lig_tref
 #endif
       
 #endif /* DIC_BIOTIC */

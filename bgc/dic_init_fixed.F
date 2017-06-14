@@ -79,6 +79,25 @@ C     Set other constant/flag
 #endif /* ndef USE_ATMOSCO2 */
 
 #ifdef DIC_BIOTIC
+
+#ifdef ALLOW_FE
+#ifdef ALLOW_VARIABLE_LIGANDS
+C Given the ratio of steady state bio production divided by the steady state
+C  ligand concentration (i.e. real world estimates for gamma and lambda) then
+C  find the reference timescale of ligand degredation, lambda_ref.
+        IF (gamma_lig.NE.0. _d 0.AND.
+     &     lambda_over_gamma.NE.0. _d 0) THEN
+           lambda_ref=lambda_over_gamma*gamma_lig
+        ELSE
+           WRITE(msgBuf,'(A)')
+     &      'DIC_INIT_FIXED: gamma_lig and gamma_over_lambda are zero'
+           CALL PRINT_ERROR( msgBuf, myThid )
+           STOP 'ABNORMAL END: S/R DIC_INIT_FIXED: 
+     &       variable ligand error' 
+        ENDIF
+#endif /* ALLOW_VARIABLE_LIGANDS */
+#endif /* ALLOW_FE */
+
 #ifdef ALLOW_AUTODIFF
 cph nlev=Nr used in TAF store directive
       nlev=Nr

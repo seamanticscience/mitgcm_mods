@@ -8,8 +8,11 @@ C     !ROUTINE: Fe_CHEM
 C     !INTERFACE:
       SUBROUTINE Fe_CHEM(
      I           bi,bj, iMin,iMax,jMin,jMax,
-     I           fe, freefe,
-     I           myIter, myThid )
+     I           fe, 
+#ifdef ALLOW_VARIABLE_LIGANDS
+     I           ligand_conc,
+#endif
+     I           freefe, myIter, myThid )
 
 C     !DESCRIPTION: \bv
 C     *==========================================================*
@@ -35,8 +38,9 @@ C     iMin,iMax,jMin,jMax :: Range of points for which calculation is performed.
 C     myThid              :: my Thread Id number
       INTEGER bi,bj
       INTEGER iMin,iMax,jMin,jMax
-      _RL     fe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
-      _RL freefe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL     fe     (1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL freefe     (1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL ligand_conc(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       INTEGER myIter, myThid
 CEOP
 
@@ -54,6 +58,16 @@ C
 C  ADAPTED FROM PAYAL
 C
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+#ifndef ALLOW_VARIABLE_LIGANDS
+C  Fill in ligand array with constant conc
+       DO k=1,Nr
+        DO j=jMin,jMax
+         DO i=iMin,iMax
+          ligand_conc(i,j,k)=ligand_tot
+         ENDDO
+        ENDDO
+       ENDDO
+#endif /* ALLOW_VARIABLE_LIGANDS */
 
 C ligand balance in surface layer
 C in surface layer
@@ -62,7 +76,6 @@ C in surface layer
         DO j=jMin,jMax
          DO i=iMin,iMax
           IF ( maskC(i,j,k,bi,bj).GT.0. ) THEN
-
 #ifdef DIC_NO_NEG
               tmpfe =MAX( 0. _d 0 , fe(i,j,k) )
 #else
@@ -70,19 +83,21 @@ C in surface layer
 #endif
 
 C   Ligand,FeL,Fe calculation
-              lig=(-ligand_stab*tmpfe +
-     &              ligand_stab*ligand_tot-1. _d 0
-     &             +((ligand_stab*tmpfe
-     &                -ligand_stab*ligand_tot+1. _d 0)**2
-     &               +4. _d 0*ligand_stab*ligand_tot)**0.5 _d 0
-     &            )/(2. _d 0*ligand_stab)
+           lig=(-ligand_stab*tmpfe +
+     &          ligand_stab*ligand_conc(i,j,k)-1. _d 0
+     &         +((ligand_stab*tmpfe
+     &          -ligand_stab*ligand_conc(i,j,k)+1. _d 0)**2 _d 0
+     &          +4. _d 0*ligand_stab*ligand_conc(i,j,k))**0.5 _d 0
+     &         )/(2. _d 0*ligand_stab)
 
-              FeL = ligand_tot-lig
-              IF (tmpfe.NE.0. _d 0) THEN
-                freefe(i,j,k) = tmpfe -FeL
-              ELSE
-                freefe(i,j,k) = 0. _d 0
-              ENDIF
+           FeL = ligand_conc(i,j,k)-lig  
+              
+           IF (tmpfe.NE.0. _d 0) THEN
+             freefe(i,j,k) = tmpfe - FeL
+           ELSE
+             freefe(i,j,k) = 0. _d 0
+           ENDIF
+
 #ifdef MINFE
 #ifdef AD_SAFE
               thx=freefe(i,j,k)
@@ -94,14 +109,13 @@ C   Ligand,FeL,Fe calculation
 
 #else
               freefe(i,j,k) = MIN(freefe(i,j,k),freefemax)
-#endif
+#endif /* AD_SAFE */
               fe(i,j,k) = FeL+freefe(i,j,k)
-#endif
+#endif /* MINFE */
           ENDIF
          ENDDO
         ENDDO
        ENDDO
-
 #endif /* ALLOW_FE */
       RETURN
       END

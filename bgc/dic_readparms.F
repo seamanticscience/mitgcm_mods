@@ -97,7 +97,8 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
      & fesedflux_pcm, FeIntSec, solfe, R_FeHe3,
      & fe_vent_depth_min, fe_sed_depth_max,
 #ifdef ALLOW_VARIABLE_LIGANDS     
-     & gamma_lig, bio_tot_lig,
+     & gamma_lig, lambda_over_gamma, lambda_ref,
+     & lig_q10, lig_tref,
 #endif
      & alphaUniform, rainRatioUniform 
 #endif
@@ -138,8 +139,12 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        rainRatioUniform = 7. _d -2
 #ifdef ALLOW_VARIABLE_LIGANDS 
 C JML Added vars for prognostic Ligands       
-       gamma_lig   = 0. _d 0
-       bio_tot_lig = 0. _d 0
+       gamma_lig         = 0. _d 0
+       lambda_over_gamma = 0. _d 0
+C lambda_ref is calculated in dic_init_fixed
+       lambda_ref  = 0. _d 0
+       lig_q10     = 2. _d 0
+       lig_tref    = 3.489 _d 0
 #endif
        KScav       = 0.19 _d 0/(360. _d 0*86400. _d 0)
 C JML Added var for particle dependent Fe scavenging
@@ -288,11 +293,19 @@ C- namelist BIOTIC_PARMS
      &  ' /* Iron scavenging rate */')
 #ifdef ALLOW_VARIABLE_LIGANDS
 C JML Prognostic Ligand parameters
-      IF ( gamma_lig.GT.0. _d 0 ) THEN
+      IF ( gamma_lig.NE.0. _d 0 ) THEN
             CALL WRITE_0D_RL(gamma_lig, INDEX_NONE,'gamma_lig =',
      &  ' /* Fraction of biomass that produces ligands */')   
-C            CALL WRITE_0D_RL(goverl_lig, INDEX_NONE,'goverl_lig =',
-C     &  ' /* Gamma over Lambda, ratio of ligand coefficients */')      
+            CALL WRITE_0D_RL(lambda_over_gamma, INDEX_NONE,
+     &       'lambda_over_gamma =',
+     &  ' /* Lambda over Gamma, ratio of ligand coefficients */')      
+             CALL WRITE_0D_RL(lambda_over_gamma*gamma_lig, 
+     &        INDEX_NONE,'lambda_ref =',
+     &  ' /* reference ligand degradation timescale */')   
+            CALL WRITE_0D_RL(lig_q10, INDEX_NONE,'gamma_lig =',
+     &  ' /* Variable ligand degradation Q10 value */')   
+            CALL WRITE_0D_RL(lig_tref, INDEX_NONE,'gamma_lig =',
+     &  ' /* Variable ligand degradation reference temperature */')   
       ENDIF
 #endif
 C JML write out particle depended scavenging parameters
