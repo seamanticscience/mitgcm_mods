@@ -300,10 +300,11 @@ C  and the value of gamma_lig
 
 C Ligand concentration may also decrease as DOP is consumed           
            lig_decr(i,j,k)  = -lambda_lig(i,j,k)*PTR_LIG(i,j,k)
-     &                        -gamma_lig*R_CP*RDOP(i,j,k)
+C     &                        -gamma_lig*R_CP*RDOP(i,j,k)
            
-C Now do ligand tendency
-           GLIG(i,j,k)=lig_incr(i,j,k)+lig_decr(i,j,k)
+C Now do ligand tendency, make sure it stays positive.
+           GLIG(i,j,k)=MAX(lig_incr(i,j,k)+lig_decr(i,j,k)
+     &                     ,0. _d 0)
 #endif
 
            IF ( scav_exp.NE.0. _d 0 ) THEN
