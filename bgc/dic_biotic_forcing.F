@@ -298,14 +298,17 @@ C  and the value of gamma_lig
            lambda_lig(i,j,k) = lambda_ref*
      &        (lig_q10**((theta(i,j,k,bi,bj)-lig_tref)/10. _d 0))
 
-C Ligand concentration may also decrease as DOP is consumed           
-           lig_decr(i,j,k)  = -lambda_lig(i,j,k)*PTR_LIG(i,j,k)
+C Ligand concentration decreases according to the Q10 rate
+C Make sure this is always negative        
+           lig_decr(i,j,k) = MIN(-lambda_lig(i,j,k)
+     &                        *PTR_LIG(i,j,k)*maskC(i,j,k,bi,bj)
+C                             may also decrease as DOP is consumed  
 C     &                        -gamma_lig*R_CP*RDOP(i,j,k)
-           
-C Now do ligand tendency, make sure it stays positive.
-           GLIG(i,j,k)=MAX(lig_incr(i,j,k)+lig_decr(i,j,k)
-     &                     ,0. _d 0)
-#endif
+     &                        ,0. _d 0)
+                
+C Now do ligand tendency
+           GLIG(i,j,k)=lig_incr(i,j,k)+lig_decr(i,j,k)
+#endif /* ALLOW_VARIABLE_LIGANDS */
 
            IF ( scav_exp.NE.0. _d 0 ) THEN
 CJML       Use particle depended scavenging rate, exploiting exportflux
