@@ -128,15 +128,18 @@ C       and prognostic Ligands
      &     fluxCO2ave, omegaCave, pfluxave, epfluxave, cfluxave,
      &     DIC_timeAve,
      &     alpha, rain_ratio, InputFe, omegaC,
-     &     Kpo4, DOPfraction, zcrit, KRemin,
-     &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP, R_pop2poc, R_SIP,
-     &     O2crit, alpfe, KScav, ligand_stab, ligand_tot, KFE,
-     &     freefemax, scav_wsp, scav_inter, scav_exp, scav_surf_min,
-     &     scav_ratio, fesedflux_pcm, FeIntSec, fe_sed_depth_max,
+     &     Kpo4, DOPfraction, zcrit, KRemin, O2crit,
+     &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP, R_SIP,
+     &     alpfe, ligand_stab, ligand_tot, KFE, freefemax, 
+     &     KScav, KScav_yr, KScav_surf, KScav_poc_yr, KScav_poc,
+     &     R_pop2poc, R_dust2fe, poc_wsp,  dust_wsp,
+     &     scav_exp, scav_ratio, KScav_dust_yr, 
+     &     KScav_dust, KScav_background, KScav_background_yr,
+     &     fesedflux_pcm, FeIntSec, fe_sed_depth_max,
      &     HydroInputHe3, solfe, R_FeHe3, fe_vent_depth_min,
      &     par, parfrac, k0, lit0,
-     &     alphaUniform, rainRatioUniform,
-     &     alphamax, alphamin,
+     &     alphaUniform_yr, alphaUniform, rainRatioUniform,
+     &     alphamax, alphamin, 
      &     calpha, crain_ratio, cInputFe, calpfe, feload, cfeload,
      &     nlev, QSW_underice
 
@@ -178,20 +181,29 @@ C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
       _RL R_cp
       _RL R_NP
       _RL R_FeP
-      _RL R_pop2poc
       _RL R_SIP
       _RL O2crit
       _RL alpfe
-      _RL KScav
       _RL ligand_stab
       _RL ligand_tot
       _RL KFe
       _RL freefemax
-      _RL scav_wsp
-      _RL scav_inter
-      _RL scav_ratio
+C Scavenging values
+      _RL KScav_yr
+      _RL KScav
+      _RL KScav_surf
+      _RL KScav_poc_yr
+      _RL KScav_poc
+      _RL R_pop2poc
+      _RL R_dust2fe
+      _RL poc_wsp
+      _RL dust_wsp
       _RL scav_exp
-      _RL scav_surf_min
+      _RL scav_ratio
+      _RL KScav_dust_yr
+      _RL KScav_dust
+      _RL KScav_background_yr
+      _RL KScav_background
       _RL fesedflux_pcm
       _RL FeIntSec
       _RL R_FeHe3
@@ -200,6 +212,7 @@ C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
       _RL fe_sed_depth_max
 C     values for light limited bio activity
       _RL k0, parfrac, lit0
+      _RL alphaUniform_yr
       _RL alphaUniform
       _RL rainRatioUniform
       _RL alphamax, alphamin

@@ -107,7 +107,7 @@ C  freefe                 :: iron not bound to ligand
       _RL  SEDFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  HYDROFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  freefe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
-      _RL  scav_poc, Kscav_part, sed_poc
+      _RL  scav_poc, KScav_part, sed_poc
       
 #ifdef ALLOW_VARIABLE_LIGANDS
       _RL  GLIG(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
@@ -310,23 +310,30 @@ C Now do ligand tendency
            GLIG(i,j,k)=lig_incr(i,j,k)+lig_decr(i,j,k)
 #endif /* ALLOW_VARIABLE_LIGANDS */
 
-           IF ( scav_exp.NE.0. _d 0 ) THEN
+           IF ( KScav_poc.GT.0. _d 0 ) THEN
 CJML       Use particle depended scavenging rate, exploiting exportflux
 C          and constant sinking rate (See Parekh etal 2005, GBC equation 11)
                IF ( k.EQ.kSurface ) THEN
-                   Kscav=scav_surf_min
+                   KScav=KScav_surf
                ELSE
 C          Calculate POC concentration from sinking particles
 C          Export flux is in mol P.m-3.s-1 and we need mg C.l-1, R_pop2poc does this               
-                   scav_poc=MAX(0. _d 0,exportflux(i,j,k)/scav_wsp)
+                   scav_poc=MAX(0. _d 0,exportflux(i,j,k)/poc_wsp)
      &                          *R_pop2poc
 C          Scavenging rate per second     
-                   Kscav=(scav_ratio*scav_inter*(scav_poc**scav_exp))            
+                   KScav=KScav_poc*scav_ratio*(scav_poc**scav_exp)            
                ENDIF
            ENDIF
            
+C          Modify the scavenging rate with other mechanisms (bkgrnd, dust) 
+           KScav=KScav
+     &             +KScav_background
+     &             +KScav_dust*(
+     &             (InputFe(i,j,bi,bj)*recip_hFacC(i,j,kSurface,bi,bj)
+     &             /(R_dust2fe*dust_wsp)))
+           
            GFE(i,j,k) = R_FeP*GPO4(i,j,k)
-     &                        -Kscav*freefe(i,j,k)
+     &                        -KScav*freefe(i,j,k)
 #endif /* ALLOW_FE */
           ENDDO
          ENDDO
