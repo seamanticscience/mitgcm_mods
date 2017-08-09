@@ -73,6 +73,8 @@ C variables for reading CO2 input files
       _RL tmp, emissions
       _RL aWght, bWght
 
+C diagnostic
+      _RL AtmosCarbon(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       LOGICAL timeCO2budget
 CEOP
 
@@ -300,6 +302,31 @@ C--    Set AtmospCO2 for next iteration:
        ENDDO
 
       ENDIF
+
+#ifdef ALLOW_DIAGNOSTICS
+C JML Add CO2 diagnostic to recover time averaged value,
+C     rather than pickup snapshot
+      IF ( useDiagnostics ) THEN
+C--    Set AtmospCO2 for next iteration:
+        DO bj=myByLo(myThid),myByHi(myThid)
+         DO bi=myBxLo(myThid),myBxHi(myThid)
+          DO j=1-OLy,sNy+OLy
+           DO i=1-OLx,sNx+OLx
+            IF (dic_int1.LE.2) THEN
+C Atmos carbon content not defined unless using interactive atmosphere
+             AtmosCarbon(i,j,bi,bj)=AtmospCO2(i,j,bi,bj)*1.77 _d 20
+            ELSE
+             AtmosCarbon(i,j,bi,bj) = total_atmos_carbon
+            ENDIF 
+           ENDDO
+          ENDDO
+         ENDDO
+        ENDDO      
+         
+        CALL DIAGNOSTICS_FILL(AtmosCarbon,'DICATCAR',0,1,0,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(AtmospCO2  ,'DICATCO2',0,1,0,bi,bj,myThid)
+      ENDIF
+#endif
 
 #endif /* ndef USE_ATMOSCO2 */
 
