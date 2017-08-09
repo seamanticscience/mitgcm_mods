@@ -211,13 +211,60 @@ C     Define diagnostics Names :
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
 
+C JML include iron source due to sediment input into bottom layer            
+      diagName  = 'DICSEDFE'
+      diagTitle = 'Input of sedimentary Fe (mol/m3/s)'
+      diagUnits = 'mol/m3/s      '
+      diagCode  = 'SM P    L1      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+
+C JML include iron source due to hydrothermal input into bottom layer                 
+      diagName  = 'DICHTVFE'
+      diagTitle = 'Input of Hydrothermal Vent Fe (mol/m3/s)'
+      diagUnits = 'mol/m3/s      '
+      diagCode  = 'SM P    L1      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+     
       diagName  = 'DICGFE  '
       diagTitle = 'Tendency of FE concentration'
       diagUnits = 'mol FE/m3/s      '
       diagCode  = 'SM      MR      '
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
-#endif
+
+#ifdef ALLOW_VARIABLE_LIGANDS
+      diagName  = 'DICGLIG '
+      diagTitle = 'Tendency of Ligand concentration'
+      diagUnits = 'mol Lig/m3/s      '
+      diagCode  = 'SM      MR      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+
+      diagName  = 'LIGLAMDA'
+      diagTitle = 'Timescale of ligand degradation'
+      diagUnits = '1/s      '
+      diagCode  = 'SM      MR      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+
+      diagName  = 'LIGINCR '
+      diagTitle = 'Ligand production rate'
+      diagUnits = 'mol Lig/m3/s      '
+      diagCode  = 'SM      MR      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+     
+      diagName  = 'LIGDECR '
+      diagTitle = 'Ligand degradation rate'
+      diagUnits = 'mol Lig/m3/s      '
+      diagCode  = 'SM      MR      '
+      CALL DIAGNOSTICS_ADDTOLIST( diagNum,
+     I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+#endif /* ALLOW_VARIABLE_LIGANDS */
+
+#endif /* ALLOW_FE */
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
 #endif /* ALLOW_DIAGNOSTICS */
