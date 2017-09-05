@@ -114,6 +114,18 @@ ccccccccccccccccccccccccccc DIC cccccccccccccccccccccccccccccccc
 
 #ifdef ALLOW_DIC
 #ifdef ALLOW_FE
+#ifdef ALLOW_VARIABLE_LIGANDS
+          dic_offset=7
+          CALL DIC_BIOTIC_FORCING( pTracer(1-OLx,1-OLy,1,bi,bj,1),
+     &                          pTracer(1-OLx,1-OLy,1,bi,bj,2),
+     &                          pTracer(1-OLx,1-OLy,1,bi,bj,3),
+     &                          pTracer(1-OLx,1-OLy,1,bi,bj,4),
+     &                          pTracer(1-OLx,1-OLy,1,bi,bj,5),
+     &                          pTracer(1-OLx,1-OLy,1,bi,bj,6),
+     &                          pTracer(1-OLx,1-OLy,1,bi,bj,7),
+     &                          bi,bj,iMin,iMax,jMin,jMax,
+     &                          myIter,myTime,myThid)
+#else
           dic_offset=6
           CALL DIC_BIOTIC_FORCING( pTracer(1-OLx,1-OLy,1,bi,bj,1),
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,2),
@@ -123,6 +135,7 @@ ccccccccccccccccccccccccccc DIC cccccccccccccccccccccccccccccccc
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,6),
      &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
+#endif /* ALLOW_VARIABLE_LIGANDS */
 #else
 #ifdef ALLOW_O2
           dic_offset=5
@@ -141,10 +154,10 @@ ccccccccccccccccccccccccccc DIC cccccccccccccccccccccccccccccccc
      &                          pTracer(1-OLx,1-OLy,1,bi,bj,4),
      &                          bi,bj,iMin,iMax,jMin,jMax,
      &                          myIter,myTime,myThid)
-#endif
-#endif
+#endif /* ALLOW_O2 */
+#endif /* ALLOW_FE */
+#endif /* ALLOW_DIC */
 
-#endif
 cccccccccccccccccccccccccc END DIC cccccccccccccccccccccccccccccccccc
 #ifdef ALLOW_DARWIN
         IF ( useDARWIN ) THEN

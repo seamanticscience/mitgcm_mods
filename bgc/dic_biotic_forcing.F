@@ -14,6 +14,9 @@ C !INTERFACE: ==========================================================
 #endif
 #ifdef ALLOW_FE
      &                            PTR_FE,
+#ifdef ALLOW_VARIABLE_LIGANDS
+     &                            PTR_LIG,
+#endif
 #endif
      &                            bi,bj,imin,imax,jmin,jmax,
      &                             myIter,myTime,myThid)
@@ -54,7 +57,10 @@ C  PTR_FE               :: iron
       _RL  PTR_O2(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
 #endif
 #ifdef ALLOW_FE
-      _RL  PTR_FE(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  PTR_FE (1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+#ifdef ALLOW_VARIABLE_LIGANDS
+      _RL  PTR_LIG(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+#endif
 #endif
       INTEGER bi, bj, imin, imax, jmin, jmax
 
@@ -98,9 +104,19 @@ C  freefe                 :: iron not bound to ligand
 #ifdef ALLOW_FE
       _RL  GFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  SURFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+      _RL  SEDFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
+      _RL  HYDROFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  freefe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  scav_poc, KScav_part, sed_poc
+      
+#ifdef ALLOW_VARIABLE_LIGANDS
+      _RL  GLIG(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  lambda_lig(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  lig_incr(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  lig_decr(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
 #endif
-       INTEGER i,j,k,kSurface
+#endif
+       INTEGER i,j,k,kBottom,kSurface
 #ifdef CAR_DISS
        INTEGER nCALCITEstep
 #endif
@@ -109,30 +125,38 @@ CEOP
 C kBottom is updated later on
       IF ( usingPCoords ) THEN
        kSurface = Nr
+       kBottom = 1
       ELSE
        kSurface = 1
+       kBottom = Nr
       ENDIF
 
       DO k=1,Nr
          DO j=1-OLy,sNy+OLy
           DO i=1-OLx,sNx+OLx
-           RDOP(i,j,k) =0. _d 0
-           GDIC(i,j,k) =0. _d 0
-           GALK(i,j,k) =0. _d 0
-           GPO4(i,j,k) =0. _d 0
-           GDOP(i,j,k) =0. _d 0
-           CAR(i,j,k)  =0. _d 0
-           BIOac(i,j,k)   =0. _d 0
-           pflux(i,j,k)   =0. _d 0
+           RDOP(i,j,k)     =0. _d 0
+           GDIC(i,j,k)     =0. _d 0
+           GALK(i,j,k)     =0. _d 0
+           GPO4(i,j,k)     =0. _d 0
+           GDOP(i,j,k)     =0. _d 0
+           CAR(i,j,k)      =0. _d 0
+           BIOac(i,j,k)    =0. _d 0
+           pflux(i,j,k)    =0. _d 0
            exportflux(i,j,k)=0. _d 0
-           cflux(i,j,k)   =0. _d 0
-           CAR_S(i,j,k)   =0. _d 0
+           cflux(i,j,k)    =0. _d 0
+           CAR_S(i,j,k)    =0. _d 0
 #ifdef ALLOW_O2
-           GO2(i,j,k)     =0. _d 0
+           GO2(i,j,k)      =0. _d 0
 #endif
 #ifdef ALLOW_FE
-           GFE(i,j,k)     =0. _d 0
-           freefe(i,j,k)  =0. _d 0
+           GFE (i,j,k)     =0. _d 0
+           freefe(i,j,k)   =0. _d 0
+#ifdef ALLOW_VARIABLE_LIGANDS
+           GLIG(i,j,k)     =0. _d 0
+           freefe(i,j,k)   =0. _d 0
+           lig_incr(i,j,k) =0. _d 0
+           lig_decr(i,j,k) =0. _d 0
+#endif
 #endif
           ENDDO
          ENDDO
@@ -144,6 +168,8 @@ C kBottom is updated later on
            SURO(i,j)   =0. _d 0
 #ifdef ALLOW_FE
            SURFE(i,j)  =0. _d 0
+           SEDFE(i,j)  =0. _d 0
+           HYDROFE(i,j)=0. _d 0
 #endif           
           ENDDO
          ENDDO
@@ -167,10 +193,12 @@ C oxygen air-sea interaction
 
 #ifdef ALLOW_FE
 C find free iron
-       CALL FE_CHEM(bi,bj,iMin,iMax,jMin,jMax, PTR_FE, freefe,
-     &                myIter, mythid)
+       CALL FE_CHEM(bi,bj,iMin,iMax,jMin,jMax,PTR_FE,
+#ifdef ALLOW_VARIABLE_LIGANDS
+     &               PTR_LIG, 
 #endif
-
+     &               freefe, myIter, mythid)
+#endif
 
 C biological activity
        CALL BIO_EXPORT( PTR_PO4 ,
@@ -247,8 +275,65 @@ C add all tendencies for PO4, DOP, ALK, DIC
 #endif
 
 #ifdef ALLOW_FE
+#ifdef ALLOW_VARIABLE_LIGANDS
+C Prognostic Ligand code...
+C Here Ligand is produced by excretion during production (proportional to bioac)
+C     and release of iron binding sites during remineralization.           
+           lig_incr(i,j,k)  = (pflux(i,j,k)+BIOac(i,j,k)*DOPfraction)
+     &                             *R_CP*gamma_lig
+
+C Now calculate timescale for degredation 
+C  Initially, the first order way is kind of cheating as it fixes lambda to go exactly
+C towards the ligand concentration that we want 
+C           lambda_lig(i,j,k)= lig_incr(i,j,k)/ligand_tot
+C 
+C Calculate depth-dependent degradation timescale
+C     constrained by gamma_over_lambda, global productivity/surface area  
+C     and nominal ligand concentration
+C           lambda_lig(i,j,k)= gamma_lig/(-rC(k)*goverl_lig)
+C
+C So try to create a more dynamic consumption timescales using Q10
+C  lambda_ref calculated in dic_init_fixed from lambda_over_gamma
+C  and the value of gamma_lig
+           lambda_lig(i,j,k) = lambda_ref*
+     &        (lig_q10**((theta(i,j,k,bi,bj)-lig_tref)/10. _d 0))
+
+C Ligand concentration decreases according to the Q10 rate
+C Make sure this is always negative        
+           lig_decr(i,j,k) = MIN(-lambda_lig(i,j,k)
+     &                        *PTR_LIG(i,j,k)*maskC(i,j,k,bi,bj)
+C                             may also decrease as DOP is consumed  
+C     &                        -gamma_lig*R_CP*RDOP(i,j,k)
+     &                        ,0. _d 0)
+                
+C Now do ligand tendency
+           GLIG(i,j,k)=lig_incr(i,j,k)+lig_decr(i,j,k)
+#endif /* ALLOW_VARIABLE_LIGANDS */
+
+           IF ( KScav_poc.GT.0. _d 0 ) THEN
+CJML       Use particle depended scavenging rate, exploiting exportflux
+C          and constant sinking rate (See Parekh etal 2005, GBC equation 11)
+               IF ( k.EQ.kSurface ) THEN
+                   KScav=KScav_surf
+               ELSE
+C          Calculate POC concentration from sinking particles
+C          Export flux is in mol P.m-3.s-1 and we need mg C.l-1, R_pop2poc does this               
+                   scav_poc=MAX(0. _d 0,exportflux(i,j,k)/poc_wsp)
+     &                          *R_pop2poc
+C          Scavenging rate per second     
+                   KScav=KScav_poc*scav_ratio*(scav_poc**scav_exp)            
+               ENDIF
+           ENDIF
+           
+C          Modify the scavenging rate with other mechanisms (bkgrnd, dust) 
+           KScav=KScav
+     &             +KScav_background
+     &             +KScav_dust*(
+     &             (InputFe(i,j,bi,bj)*recip_hFacC(i,j,kSurface,bi,bj)
+     &             /(R_dust2fe*dust_wsp)))
+           
            GFE(i,j,k) = R_FeP*GPO4(i,j,k)
-     &                        -Kscav*freefe(i,j,k)
+     &                        -KScav*freefe(i,j,k)
 #endif /* ALLOW_FE */
           ENDDO
          ENDDO
@@ -257,6 +342,8 @@ C add all tendencies for PO4, DOP, ALK, DIC
 C Surface Sources and sinks
          DO j=jmin,jmax
           DO i=imin,imax
+               kBottom   = MAX(kLowC(i,j,bi,bj),1)
+          
                GALK(i,j,kSurface)=GALK(i,j,kSurface)+SURA(i,j)
                GDIC(i,j,kSurface)=GDIC(i,j,kSurface)+SURC(i,j)
 #ifdef ALLOW_O2
@@ -272,9 +359,46 @@ C Surface Sources and sinks
        ENDIF
        
                GFE(i,j,kSurface)=GFE(i,j,kSurface)+SURFE(i,j)
+
+#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))
+       IF ( -rC(kBottom).LE.fe_sed_depth_max ) THEN         
+C include sediment iron source using the flux of po4 into bottom layer            
+C JML pflux*dz*RCP is mol C.m-2.s-1, fesedflux_pcm converts to mol Fe.m-2.s-1   
+               sed_poc=MAX(0. _d 0,pflux(i,j,kBottom))
+     &                          *R_CP*drF(kBottom)
+
+#ifdef SEDIMENT_FE_ELROD
+C Elrod et al (2004) formulation 
+               SEDFE(i,j)  = MAX( 
+     &              0. _d 0, fesedflux_pcm * sed_poc + FeIntSec
+     &            )*recip_drF(kBottom)*recip_hFacC(i,j,kBottom,bi,bj)
+#endif /* SEDIMENT_FE_ELROD */
+#ifdef SEDIMENT_FE_DALE
+C Dale et al (2015) formulation. 
+C Here fesedflux_pcm is gamma = 170 umol Fe m-2 d-1 (170/(86400*1e6) mol Fe m-2 s-1)
+C      sed_poc is mmol m-2 d-1 and O2 is umol l-1
+               SEDFE(i,j)=fesedflux_pcm
+     &            * tanh( sed_poc*1000*86400 
+     &                  / PTR_O2(i,j,kBottom)*1000 )
+     &            *recip_drF(kBottom)*recip_hFacC(i,j,kBottom,bi,bj)
+#endif /* SEDIMENT_FE_DALE */
+       ENDIF
+#endif /* SEDIMENT_FE */
+
+#ifdef HYDROTHERMAL_FE
+C JML include iron source due to hydrothermal input into bottom layer   
+C                                         He3 flux is mol.m-2.s-1
+       IF ( -rC(kBottom).GE.fe_vent_depth_min ) THEN         
+               HYDROFE(i,j)=R_FeHe3*solfe*HydroInputHe3(i,j,bi,bj)
+     &             *recip_drF(kBottom)
+     &             *recip_hFacC(i,j,kBottom,bi,bj)
+       ENDIF
+#endif /* HYDROTHERMAL_FE */     
+               GFE(i,j,kBottom)=GFE(i,j,kBottom)
+     &            +SEDFE(i,j)+HYDROFE(i,j)
+#endif /* ALLOW_FE */
           ENDDO
          ENDDO
-#endif
 
 C update
        DO k=1,Nr
@@ -295,6 +419,11 @@ C update
 #ifdef ALLOW_FE
            PTR_FE(i,j,k)=
      &      PTR_FE(i,j,k)+GFE(i,j,k)*PTRACERS_dTLev(k)
+     
+#ifdef ALLOW_VARIABLE_LIGANDS
+           PTR_LIG(i,j,k)=
+     &      PTR_LIG(i,j,k)+GLIG(i,j,k)*PTRACERS_dTLev(k)
+#endif
 #endif
           ENDDO
          ENDDO
@@ -303,11 +432,14 @@ C update
 #ifdef ALLOW_FE
 #ifdef MINFE
 c find free iron and get rid of insoluble part
-       call fe_chem(bi,bj,iMin,iMax,jMin,jMax, PTR_FE, freefe,
-     &                myIter, mythid)   
+       CALL FE_CHEM(bi,bj,iMin,iMax,jMin,jMax,PTR_FE,
+#ifdef ALLOW_VARIABLE_LIGANDS
+     &               PTR_LIG, 
+#endif
+     &               freefe, myIter, mythid)
 #endif
 #endif
-
+     
 #ifdef ALLOW_TIMEAVE
 C save averages
        IF ( taveFreq.GT.0. ) THEN
@@ -381,6 +513,14 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 #ifdef ALLOW_FE
         CALL DIAGNOSTICS_FILL(SURFE     ,'DICFEFLX',0,1 ,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(GFE       ,'DICGFE  ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(SEDFE     ,'DICSEDFE',0,1 ,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(HYDROFE   ,'DICHTVFE',0,1 ,2,bi,bj,myThid)
+#ifdef ALLOW_VARIABLE_LIGANDS
+        CALL DIAGNOSTICS_FILL(GLIG      ,'DICGLIG ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(lambda_lig,'LIGLAMDA',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(lig_incr  ,'LIGINCR ',0,Nr,2,bi,bj,myThid)
+        CALL DIAGNOSTICS_FILL(lig_decr  ,'LIGDECR ',0,Nr,2,bi,bj,myThid)
+#endif
 #endif
       ENDIF
 

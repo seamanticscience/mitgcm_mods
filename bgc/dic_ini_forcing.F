@@ -57,6 +57,12 @@ C First call requires that we initialize everything to zero for safety
 # ifdef ALLOW_FE
       CALL LEF_ZERO( feinput0,myThid )
       CALL LEF_ZERO( feinput1,myThid )
+      
+#ifdef HYDROTHERMAL_FE
+C JML include iron source due to hydrothermal input into bottom layer            
+      CALL LEF_ZERO( htvinput0,myThid )
+      CALL LEF_ZERO( htvinput1,myThid )
+#endif
 # endif
 
 #ifdef READ_PAR
@@ -84,6 +90,10 @@ c set reasonable values to those that need at least something
 #endif
 #ifdef ALLOW_FE
              InputFe(i,j,bi,bj)= 1. _d -11*maskC(i,j,1,bi,bj)
+#ifdef HYDROTHERMAL_FE
+C JML include iron source due to hydrothermal input into bottom layer            
+             HydroInputHe3(i,j,bi,bj)= 0. _d 0*maskC(i,j,1,bi,bj)
+#endif
 #endif
           ENDDO
          ENDDO

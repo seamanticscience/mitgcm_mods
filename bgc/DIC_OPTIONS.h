@@ -12,6 +12,12 @@ C     Package-specific Options & Macros go here
 #define DIC_BIOTIC
 #define ALLOW_FE
 #define MINFE
+#undef SEDIMENT_FE_ELROD
+#undef SEDIMENT_FE_DALE
+#undef HYDROTHERMAL_FE
+
+C Prognostic Iron Binding Ligands
+#undef ALLOW_VARIABLE_LIGANDS
 
 #define ALLOW_O2
 #undef READ_PAR

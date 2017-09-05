@@ -60,7 +60,7 @@ C                  is computed --> determines nlev as the indice of the
 C                  first layer deeper than -zcrit
 C   O2crit      :: critical oxygen level (mol/m3)
 C   R_OP, R_CP  :: stochiometric ratios
-C   R_NP, R_FeP
+C   R_NP, R_FeP, R_pop2poc
 C   zca         :: scale depth for CaCO3 remineralization (m)
 CC Parameters for light/nutrient limited bioac
 C   parfrac     :: fraction of Qsw that is PAR
@@ -70,28 +70,45 @@ C   KPO4        :: half saturation phosphate constant (mol/m3)
 C   KFE         :: half saturation fe constant (mol/m3)
 CC Iron chemisty values
 C   alpfe       :: solubility of aeolian fe
+C   fesedflux_pcm :: ratio of sediment iron to sinking organic matter
+C   FeIntSec    :: y-axis crossing for Fe_flux = fesedflux_pcm*pflux + FeIntSec
 C   freefemax   :: max solubility of free iron (mol/m3)
 CC Control variables
-C   KScav       :: iron scavenging rate QQ
+C   KScav       :: iron scavenging rate (s-1)
 C   ligand_stab :: ligand-free iron stability constant (m3/mol)
 C   ligand_tot  :: total free ligand  (mol/m3)
+CC JML Added some extras for particle dependent Fe scavenging rates
+CC See Parekh etal 2005, GBC equation 11
+C   KScav_surf :: surface scavenging rate (s-1)
+C   poc_wsp    :: Constant particulate sinking rate (m/s)
+C   KScav_poc  :: ????
+C   scav_exp    :: Honeyman exponent
 C   alpha       :: timescale for biological activity
 C                  read in alphaUniform and filled in 2d array alpha
 C   rain_ratio  :: inorganic/organic carbon rain ratio
 C                  read in rainRatioUniform and filled in 2d array rain_ratio
 
       NAMELIST /BIOTIC_PARMS/
-     & DOPfraction, KDOPRemin, KRemin, zcrit,
-     & O2crit, R_OP, R_CP, R_NP, R_FeP, zca,
-     & parfrac, k0, lit0, KPO4, KFE,
-     & alpfe, freefemax,
-     & KScav, ligand_stab, ligand_tot,
-     & alphaUniform, rainRatioUniform
+     & DOPfraction, KDOPRemin, KRemin, zcrit, zca,
+     & O2crit, R_OP, R_CP, R_NP, R_FeP, R_SIP,
+     & parfrac, k0, lit0, KPO4, KFE, 
+     & KScav, KScav_yr, KScav_surf, KScav_poc_yr, KScav_poc,
+     & R_pop2poc, R_dust2fe, poc_wsp,  dust_wsp,
+     & scav_exp, scav_ratio, KScav_dust_yr, 
+     & KScav_dust, KScav_background, KScav_background_yr,
+     & alpfe, freefemax, ligand_stab, ligand_tot, 
+     & fesedflux_pcm, FeIntSec, solfe, R_FeHe3,
+     & fe_vent_depth_min, fe_sed_depth_max,
+#ifdef ALLOW_VARIABLE_LIGANDS     
+     & gamma_lig, lambda_over_gamma, lambda_ref,
+     & lig_q10, lig_tref,
+#endif
+     & alphaUniform_yr, alphaUniform, rainRatioUniform 
 #endif
 
       NAMELIST /DIC_FORCING/
      &          DIC_windFile, DIC_atmospFile, DIC_iceFile,
-     &          DIC_ironFile, DIC_silicaFile,
+     &          DIC_ironFile, DIC_silicaFile, DIC_hydroventFile,
      &          DIC_forcingPeriod, DIC_forcingCycle,
      &          dic_int1, dic_int2, dic_int3, dic_int4, dic_pCO2
 
@@ -101,6 +118,7 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
        permil      = 1. _d 0 / 1024.5 _d 0
        Pa2Atm      = 1.01325 _d 5
+
 #ifdef DIC_BIOTIC
        DOPfraction = 0.67 _d 0
        KDOPRemin   = 1. _d 0/(6. _d 0*30. _d 0*86400. _d 0)
@@ -110,7 +128,8 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        R_OP        =-170. _d 0
        R_CP        = 117. _d 0
        R_NP        = 16. _d 0
-       R_FeP       = 0.000468 _d 0
+       R_FeP       = 4.68 _d -4
+       R_SIP       = 15. _d 0
        zca         = 3500. _d 0
        parfrac     = 0.4 _d 0
        k0          = 0.02 _d 0
@@ -119,22 +138,84 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        KFE         = 1.2 _d -7
        alpfe       = 0.01 _d 0
        freefemax   = 3. _d -7
-       KScav       = 0.19 _d 0/(360. _d 0*86400. _d 0)
+C      Alpha productivity rate default is 2e-3 molP/m3/yr 
+C      (as high as 6e-3 molP/m3/yr in Parekh etal 2005, GBC eqn3)       
+       alphaUniform_yr  = 2. _d -3
+       alphaUniform     = alphaUniform_yr/(360. _d 0 * 86400. _d 0)
+       rainRatioUniform = 7. _d -2
+
+C JML Added var for particle/dust dependent Fe scavenging
+C      KScav is the uniform value when scavenging is constant rate
+       KScav_yr       = 0.19 _d 0
+       KScav          = KScav_yr/(360. _d 0*86400. _d 0)
+C      KScav can be modified, but use constant value here for the surface
+       KScav_surf     = KScav
+C      KScav_poc is the initial partical dependent scavenging rate     
+C      in l^scav_exp.mg^-scav_exp.d-1 (See Parekh etal 2005, GBC eqn11, ==0.079*360)
+       KScav_poc_yr   = 0. _d 0
+       KScav_poc      = KScav_poc_yr/(360. _d 0*86400. _d 0)
+C      R_pop2poc converts POP in mol P.m-3.s-1 to POC in mg C.l-1
+       R_pop2poc      = R_CP * 12. _d 0
+C      poc_wsp is the sinking speed of POC used for for particle dependent scavenging 
+       poc_wsp        = 2900. _d 0/(360. _d 0*86400. _d 0)
+C      scav_exp is the Honeyman exponent for particle dependent scavenging  (==0.58)
+       scav_exp       = 0.58 _d 0
+C      scav_ratio converts Honeyman's thorium scavenging rates to iron (==0.2) 
+       scav_ratio     = 0.2 _d 0   
+C      Dust concentration-dependent scavenging requires iron input to be converted back
+C        to dust concentration (mol Fe/m2/s to g dust/m2/s)...
+       R_dust2fe      = 3.5 _d -2/58.845 _d 0
+C      ...and a sinking speed (see Aumont et al 2015, GMD)  
+       dust_wsp       = 2. _d 0
+C      and an initial dust scavenging rate (m3/g/s) (==150*360/86400*360)
+       KScav_dust_yr  = 0. _d 0
+       KScav_dust     = KScav_dust_yr/(360. _d 0*86400. _d 0)
+C      KScav_background is an additional rate added on top of the other values 
+       KScav_background_yr = 0. _d 0 
+       KScav_background    = KScav_background_yr/(360. _d 0*86400. _d 0)
+
+C These values for hydrothermal input of iron from Tagliabue et al (2014)       
+       R_FeHe3     = 4.5 _d 8
+       solfe       = 2. _d -3
+       fe_vent_depth_min = 750. _d 0
+       
+C Hajoon's sedimentary iron source (JML different coeffs tho)
+       fe_sed_depth_max = 6000. _d 0
+C    For Elrod et al (2004) use:
+       fesedflux_pcm = 6.8 _d -4       
+       FeIntSec      = -0.5 _d -6 / 86400. _d 0
+C    For Dale et al (2015) use:
+C       fesedflux_pcm = 170. _d 0 / (86400. _d 0 * 1. _d 6)      
+C       FeIntSec      = 0
+       
+C Ligand parameters for the iron cycle       
        ligand_stab = 1. _d 8
        ligand_tot  = 1. _d -6
-       alphaUniform     = 2. _d -3/(360. _d 0 * 86400. _d 0)
-       rainRatioUniform = 7. _d -2
-#endif
+#ifdef ALLOW_VARIABLE_LIGANDS 
+C JML Added vars for prognostic Ligands       
+       gamma_lig         = 0. _d 0
+       lambda_over_gamma = 0. _d 0
+C lambda_ref is calculated in dic_init_fixed
+       lambda_ref  = 0. _d 0
+       lig_q10     = 2. _d 0
+       lig_tref    = 3.489 _d 0
+#endif /* ALLOW_VARIABLE_LIGANDS */
+#endif /* DIC_BIOTIC */
+
        DIC_windFile  = ' '
        DIC_atmospFile= ' '
        DIC_iceFile   = ' '
        DIC_ironFile  = ' '
        DIC_silicaFile= ' '
+C JML include iron source due to hydrothermal input into bottom layer            
+       DIC_hydroventFile=' '       
        dic_int1    = 0
        dic_int2    = 0
        dic_int3    = 0
        dic_int4    = 0
        dic_pCO2    = 278. _d -6
+C Reference for saturated carbon diagnostic CSATINIT
+
 c default periodic forcing to same as for physics
        DIC_forcingPeriod = externForcingPeriod
        DIC_forcingCycle  = externForcingCycle
@@ -237,8 +318,48 @@ C- namelist BIOTIC_PARMS
      &  ' /* Solubility of aeolian fe */')
        CALL WRITE_0D_RL( freefemax, INDEX_NONE,'freefemax =',
      &  ' /* Max solubility of free iron (mol/m3) */')
-       CALL WRITE_0D_RL( KScav, INDEX_NONE,'KScav =',
-     &  ' /* Iron scavenging rate */')
+#ifdef ALLOW_VARIABLE_LIGANDS
+C JML Prognostic Ligand parameters
+      IF ( gamma_lig.NE.0. _d 0 ) THEN
+            CALL WRITE_0D_RL(gamma_lig, INDEX_NONE,'gamma_lig =',
+     &  ' /* Fraction of biomass that produces ligands */')   
+            CALL WRITE_0D_RL(lambda_over_gamma, INDEX_NONE,
+     &       'lambda_over_gamma =',
+     &  ' /* Lambda over Gamma, ratio of ligand coefficients */')      
+             CALL WRITE_0D_RL(lambda_over_gamma*gamma_lig, 
+     &        INDEX_NONE,'lambda_ref =',
+     &  ' /* reference ligand degradation timescale */')   
+            CALL WRITE_0D_RL(lig_q10, INDEX_NONE,'gamma_lig =',
+     &  ' /* Variable ligand degradation Q10 value */')   
+            CALL WRITE_0D_RL(lig_tref, INDEX_NONE,'gamma_lig =',
+     &  ' /* Variable ligand degradation reference temperature */')   
+      ENDIF
+#endif
+C JML Fe Scavenging parameters
+       CALL WRITE_0D_RL( KScav_yr, INDEX_NONE,'KScav_yr =',
+     &  ' /* Iron scavenging rate (1/yr)*/')
+       CALL WRITE_0D_RL( KScav_background_yr, INDEX_NONE,
+     &  'KScav_background_yr =',
+     &  ' /* Background scavenging rate (1/yr)*/')
+       CALL WRITE_0D_RL( KScav_dust_yr, INDEX_NONE,'KScav_dust_yr =',
+     &  ' /* Iron scavenging rate due to dust (1/yr)*/')
+       CALL WRITE_0D_RL( dust_wsp, INDEX_NONE,'dust_wsp',
+     &  ' /* Dust particle sinking speed (m/s) */')
+       CALL WRITE_0D_RL( R_dust2fe, INDEX_NONE,'R_dust2fe =',
+     &  ' /* Content of iron in dust (3.5%/58gFe/mol) */')
+C JML write out particle depended scavenging parameters
+      IF ( KScav_poc_yr.GT.0. _d 0 ) THEN
+            CALL WRITE_0D_RL(KScav_poc_yr, INDEX_NONE,'KScav_poc_yr =',
+     &  ' /* Iron scavenging rate due to organic particles (1/yr)*/')
+            CALL WRITE_0D_RL( scav_exp, INDEX_NONE,'scav_exp =',
+     &  ' /* Honeyman exponent for scavenging */')
+            CALL WRITE_0D_RL( scav_ratio, INDEX_NONE,'scav_ratio =',
+     &  ' /* Honeyman ratio of thorium to iron scavenging */')
+            CALL WRITE_0D_RL( poc_wsp, INDEX_NONE,'poc_wsp',
+     &  ' /* Organic particle sinking speed (m/s) */')
+            CALL WRITE_0D_RL( R_pop2poc, INDEX_NONE,'R_pop2poc =',
+     &  ' /* Stochiometric ratio R_pop2poc */')
+      ENDIF
        CALL WRITE_0D_RL( ligand_stab, INDEX_NONE,'ligand_stab =',
      &  ' /* Ligand-free iron stability constant (m3/mol) */')
        CALL WRITE_0D_RL( ligand_tot, INDEX_NONE,'ligand_tot =',
