@@ -38,8 +38,9 @@ C define to put back bugs related to Water-Vapour in carbonate chemistry & air-s
 #undef WATERVAP_BUG
 
 C define to include carbon component calculations
-#undef DIC_CARBON_COMPONENTS
-#undef DIC_INSITU_COMPONENTS
+#define DIC_CARBON_COMPONENTS
+#define DIC_COMPONENT_DIAGS
+#define DIC_INSITU_COMPONENTS
 
 C define to include C13 calculations
 #undef ALLOW_C13

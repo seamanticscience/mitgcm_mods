@@ -55,7 +55,7 @@ C !OUTPUT PARAMETERS: ===================================================
 
 #ifdef ALLOW_PTRACERS
 #ifdef DIC_BIOTIC
-#ifdef DIC_CARBON_COMPONENTS
+#if ((defined DIC_CARBON_COMPONENTS) && (defined DIC_COMPONENT_DIAGS))
 C !LOCAL VARIABLES: ====================================================
 C  i,j,k                  :: loop indices
 c  ko                     :: loop-within-loop index
