@@ -175,6 +175,57 @@ C     Make sure we are not trying to use some arrays that are unavailable
       ENDIF
 #endif
 
+#ifdef GM_K3D
+# ifndef HAVE_LAPACK
+      WRITE(msgBuf, '(A)')
+     &     'Must use CPP option HAVE_LAPACK when using GM_K3D'
+      CALL PRINT_ERROR( msgBuf, myThid )
+      STOP ' ABNORMAL END: S/R GMREDI_CHECK'
+# endif
+
+      IF ( GM_useK3D) THEN
+        CALL WRITE_0D_L( GM_useK3D, INDEX_NONE,
+     &   'GM_useK3D =', '     /* if TRUE => use K3D for diffusivity */')
+
+        IF ( GM_K3D_use_constK ) THEN
+          CALL WRITE_0D_L( GM_K3D_use_constK, INDEX_NONE,
+     &         'GM_K3D_use_constK =',
+     &         '     /* if TRUE => Uses a constant K for'//
+     &         ' the eddy transport closure */')
+
+          CALL WRITE_0D_L( GM_K3D_smooth, INDEX_NONE,
+     &         'GM_K3D_smooth =',
+     &         ' /* if TRUE => Expands in terms of baroclinic modes */')
+
+          IF ( GM_K3D_smooth ) THEN
+            CALL WRITE_0D_I( GM_K3D_NModes, INDEX_NONE,
+     &           'GM_K3D_NModes =',
+     &           ' /* Number of modes for expansion */')
+          ENDIF
+
+        ELSE
+          CALL WRITE_0D_I( GM_K3D_NModes, INDEX_NONE,
+     &         'GM_K3D_NModes =',
+     &         ' /* Number of modes for expansion */')
+
+        ENDIF
+
+      ENDIF
+
+C     Make sure that we use K3D with the advective form only.
+C     The skew form is not presently supported.
+      IF ( GM_useK3D .AND. .NOT. GM_AdvForm) THEN
+        WRITE(msgBuf,'(A)')
+     &       ' GMREDI_CHECK: GM_useK3D=.TRUE. but GM_AdvForm=.FALSE.'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        WRITE(msgBuf,'(A)')
+     &       ' GMREDI_CHECK: To use GM_useK3D set GM_AdvForm=.TRUE.'
+       CALL PRINT_ERROR( msgBuf, myThid )
+       STOP ' ABNORMAL END: S/R GMREDI_CHECK'
+      ENDIF
+
+#endif
+
 #ifndef GM_EXTRA_DIAGONAL
 C     Make sure we are not trying to use some arrays that are unavailable
       IF ( GM_ExtraDiag ) THEN
@@ -222,10 +273,18 @@ C     Make sure we are not trying to use some arrays that are unavailable
 
       IF ( GM_InMomAsStress ) THEN
 #ifdef ALLOW_EDDYPSI
-       WRITE(msgBuf,'(A)')
-     &   ' GMREDI_CHECK: Bug in ALLOW_EDDYPSI with GM_InMomAsStress'
-       CALL PRINT_ERROR( msgBuf, myThid )
-       STOP 'ABNORMAL END: S/R GMREDI_CHECK'
+        IF (.NOT. GM_AdvForm) THEN
+          WRITE(msgBuf,'(2A)') ' GMREDI_CHECK: ',
+     &         'GM_InMomAsStress=.TRUE. but GM_AdvForm=.FALSE.'
+          CALL PRINT_ERROR( msgBuf, myThid )
+          STOP 'ABNORMAL END: S/R GMREDI_CHECK'
+        ENDIF
+        IF (.NOT. GM_useK3D) THEN
+          WRITE(msgBuf,'(3A)')
+     &         ' GMREDI_CHECK: Using GM_InMomAsStress and not',
+     &         ' GM_useK3D. GM_InMomAsStress=.true. has only been',
+     &         ' tested with GM_K3D=.true.'
+        ENDIF
 #else /* ALLOW_EDDYPSI */
        WRITE(msgBuf,'(2A)')
      &  ' GMREDI_CHECK: need to define ALLOW_EDDYPSI in CPP_OPTIONS.h',

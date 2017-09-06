@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/gmredi/gmredi_readparms.F,v 1.22 2011/07/13 22:59:53 jmc Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/gmredi/gmredi_readparms.F,v 1.37 2017/08/09 15:23:37 mlosch Exp $
 C $Name:  $
 
 #include "GMREDI_OPTIONS.h"
@@ -50,6 +50,8 @@ C     GM_slopeSqCutoff :: slope^2 cut-off value
      &          GM_background_K,
      &          GM_iso2dFile, GM_iso1dFile,
      &          GM_bol2dFile, GM_bol1dFile,
+     &          GM_background_K3dFile,
+     &          GM_isopycK3dFile,
      &          GM_taper_scheme,
      &          GM_maxSlope,
      &          GM_Kmin_horiz,
@@ -64,7 +66,28 @@ C     GM_slopeSqCutoff :: slope^2 cut-off value
      &          GM_MNC,
      &          GM_UseBVP, GM_BVP_cMin, GM_BVP_ModeNumber,
      &          GM_useSubMeso, subMeso_Ceff, subMeso_invTau,
-     &          subMeso_LfMin, subMeso_Lmax
+     &          subMeso_LfMin, subMeso_Lmax, GM_K3D_b1,
+     &          GM_K3D_gamma, GM_useK3D, GM_K3D_vecFreq,
+     &          GM_K3D_EadyMinDepth, GM_K3D_EadyMaxDepth,
+     &          GM_K3D_Lambda, GM_K3D_smallK, GM_K3D_surfK,
+     &          GM_K3D_maxC, GM_K3D_minCori, GM_K3D_minN2,
+     &          GM_K3D_surfMinDepth, GM_maxK3D, GM_K3D_Rmax,
+     &          GM_K3D_constK, GM_K3D_use_constK, GM_K3D_smooth,
+     &          GM_K3D_beta_eq_0, GM_K3D_Rmin, GM_K3D_ThickSheet,
+     &          GM_K3D_constRedi, GM_K3D_minRenorm,
+     &          GM_K3D_maxRenorm
+
+C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
+
+      IF ( .NOT.useGMRedi ) THEN
+C-    pkg GMREDI is not used
+        _BEGIN_MASTER(myThid)
+C-    Track pkg activation status:
+C     print a (weak) warning if data.gmredi is found
+         CALL PACKAGES_UNUSED_MSG( 'useGMRedi', ' ', ' ' )
+        _END_MASTER(myThid)
+        RETURN
+      ENDIF
 
       _BEGIN_MASTER(myThid)
 
@@ -89,6 +112,8 @@ C--   Default values GM/Redi
       GM_iso1dFile        = ' '
       GM_bol2dFile        = ' '
       GM_bol1dFile        = ' '
+      GM_background_K3dFile = ' '
+      GM_isopycK3dFile      = ' '
 
 C--   Default values GM/Redi I/O control
 c     GM_dumpFreq         = -1.
@@ -117,6 +142,32 @@ C--   Default values Sub-Meso (corresponding tau = 5.8 days):
       subMeso_Ceff   =  7.0 _d -2
       subMeso_Lmax   = 110. _d +3
 
+C--   Default values for K3D
+      GM_useK3D        = .FALSE.
+      GM_K3D_beta_eq_0 = .TRUE.
+      GM_K3D_use_constK= .FALSE.
+      GM_K3D_ThickSheet= .FALSE.
+      GM_K3D_smooth    = .TRUE.
+      GM_K3D_surfK     = .FALSE.
+      GM_K3D_constRedi = .FALSE.
+      GM_K3D_constK    = 1000.0
+      GM_K3D_gamma     = 1.0
+      GM_K3D_b1        = 4.0
+      GM_K3D_EadyMinDepth = 50.0
+      GM_K3D_EadyMaxDepth = 1000.0
+      GM_K3D_Lambda    = 1.0
+      GM_K3D_smallK    = 100.0
+      GM_K3D_maxC      = 0.15
+      GM_maxK3D        = 20e3
+      GM_K3D_Rmin      = 30e3
+      GM_K3D_Rmax      = 75e3
+      GM_K3D_minCori   = zeroRL
+      GM_K3D_minN2     = 1.0e-8
+      GM_K3D_surfMinDepth = 100.0
+      GM_K3D_vecFreq   = 2592000.0
+      GM_K3D_minRenorm = oneRL
+      GM_K3D_maxRenorm = 20.0
+
       WRITE(msgBuf,'(A)') ' GM_READPARMS: opening data.gmredi'
       CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
      &                    SQUEEZE_RIGHT , 1)
@@ -131,7 +182,11 @@ C     Read parameters from open data file
       CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
      &                    SQUEEZE_RIGHT , 1)
 C     Close the open data file
+#ifdef SINGLE_DISK_IO
       CLOSE(iUnit)
+#else
+      CLOSE(iUnit,STATUS='DELETE')
+#endif /* SINGLE_DISK_IO */
 
 C     Default value for GM_isopycK is equal to GM_background_K :
       IF (GM_isopycK.EQ.-999.) GM_isopycK = GM_background_K

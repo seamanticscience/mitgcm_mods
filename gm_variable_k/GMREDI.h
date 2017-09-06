@@ -24,6 +24,13 @@ C     GM_useFM2006N2   :: JML Add additional option for 3d N2 variations in vert
 C      parameterisation as in Ferreira & Marshall (2006) OM, 10.1016/j.ocemod.2005.12.001
 C     GM_MNC           ::
 C     GM_MDSIO         ::
+C     GM_useK3D        :: use the 3 dimensional calculation for K
+C     GM_K3D_beta_eq_0 :: Ignores the beta term when calculating grad(q)
+C     GM_K3D_ThickSheet:: Use a thick PV sheet
+C     GM_K3D_surfK     :: Imposes a constant K in the surface layer
+C     GM_K3D_constRedi :: Imposes a constant K for the Redi isoneutral diffusivity
+C     GM_K3D_use_constK:: Imposes a constant K for the eddy transport
+C     GM_K3D_smooth    :: Expand PV closure in terms of baroclinic modes (=.FALSE. for debugging only!)
       LOGICAL GM_AdvForm
       LOGICAL GM_AdvSeparate
       LOGICAL GM_useBVP
@@ -32,6 +39,13 @@ C     GM_MDSIO         ::
       LOGICAL GM_InMomAsStress
       LOGICAL GM_MNC
       LOGICAL GM_MDSIO
+      LOGICAL GM_useK3D
+      LOGICAL GM_K3D_ThickSheet
+      LOGICAL GM_K3D_surfK
+      LOGICAL GM_K3D_constRedi
+      LOGICAL GM_K3D_use_constK
+      LOGICAL GM_K3D_beta_eq_0
+      LOGICAL GM_K3D_smooth
       LOGICAL GM_useHMM2011
       LOGICAL GM_useFM2006N2
       
@@ -40,11 +54,17 @@ C     GM_MDSIO         ::
      &                   GM_useBVP,  GM_useSubMeso,
      &                   GM_ExtraDiag, GM_MNC, GM_MDSIO,
      &                   GM_InMomAsStress,
+     &                   GM_useK3D, GM_K3D_smooth, GM_K3D_use_constK,
+     &                   GM_K3D_beta_eq_0, GM_K3D_ThickSheet,
+     &                   GM_K3D_surfK, GM_K3D_constRedi
      &                   GM_useHMM2011, GM_useFM2006N2
 
 C--   GM/Redi Integer-type parameters
 C     GM_BVP_modeNumber :: vertical mode number used for speed "c" in BVP transport
+C     GM_K3D_NModes :: number of vertical modes used for calculating Xi in K3D
       INTEGER GM_BVP_modeNumber
+      INTEGER GM_K3D_NModes
+      PARAMETER (GM_K3D_NModes=6)
       COMMON /GM_PARAMS_I/
      &                   GM_BVP_modeNumber
 
@@ -54,15 +74,21 @@ C     GM_iso2dFile :: input file for 2.D horiz scaling of Isopycnal diffusivity
 C     GM_iso1dFile :: input file for 1.D vert. scaling of Isopycnal diffusivity
 C     GM_bol2dFile :: input file for 2.D horiz scaling of Thickness diffusivity
 C     GM_bol1dFile :: input file for 1.D vert. scaling of Thickness diffusivity
+C     GM_isopycK3dFile :: input file for 3.D GM_isopycK
+C     GM_background_K3dFile :: input file for 3.D GM_background_K
+
       CHARACTER*(40) GM_taper_scheme
       CHARACTER*(MAX_LEN_FNAM) GM_iso2dFile
       CHARACTER*(MAX_LEN_FNAM) GM_iso1dFile
       CHARACTER*(MAX_LEN_FNAM) GM_bol2dFile
       CHARACTER*(MAX_LEN_FNAM) GM_bol1dFile
+      CHARACTER*(MAX_LEN_FNAM) GM_isopycK3dFile
+      CHARACTER*(MAX_LEN_FNAM) GM_background_K3dFile
       COMMON /GM_PARAMS_C/
      &                   GM_taper_scheme,
      &                   GM_iso2dFile, GM_iso1dFile,
-     &                   GM_bol2dFile, GM_bol1dFile
+     &                   GM_bol2dFile, GM_bol1dFile,
+     &                   GM_isopycK3dFile, GM_background_K3dFile
 
 C--   COMMON /GM_PARAMS_R/ GM/Redi real-type parameters
 C     GM_isopycK       :: Isopycnal diffusivity [m^2/s] (Redi-tensor)
@@ -82,6 +108,22 @@ C     subMeso_Ceff   :: efficiency coefficient of Mixed-Layer Eddies [-]
 C     subMeso_invTau :: inverse of mixing time-scale in sub-meso parameteriz. [s^-1]
 C     subMeso_LfMin  :: minimum value for length-scale "Lf" [m]
 C     subMeso_Lmax   :: maximum horizontal grid-scale length [m]
+C     Variable K with PV diffusion parameters:
+C     GM_K3D_gamma   :: mixing efficiency for 3D eddy diffusivity [-]
+C     GM_K3D_b1      :: an empirically determined constant of O(1)
+C     GM_K3D_EadyMinDepth :: upper depth for Eady calculation
+C     GM_K3D_EadyMaxDepth :: lower depth for Eady calculation
+C     GM_maxK3D      :: Upper bound on the diffusivity
+C     GM_K3D_constK  :: Constant diffusivity to use when GM_useK3D=.TRUE. and
+C                       GM_K3D_use_constK=.TRUE. and/or GM_K3D_constRedi=.TRUE.
+C     GM_K3D_Rmax    :: Upper bound on the length scale used for calculating urms
+C     GM_K3D_Rmin    :: Lower bound on the length scale used for calculating the eddy radius
+C     GM_K3D_minCori :: minimum value for f (to stop things blowing up near the equator)
+C     GM_K3D_minN2   :: minimum value for the square of the buoyancy frequency
+C     GM_K3D_surfMinDepth :: minimum value for the depth of the surface layer
+C     GM_K3D_vecFreq :: Frequency at which to update the baroclinic modes
+C     GM_K3D_minRenorm:: minimum value for the renormalisation factor
+C     GM_K3D_maxRenorm:: maximum value for the renormalisation factor
 
       _RL GM_isopycK
       _RL GM_background_K
@@ -96,6 +138,23 @@ C     subMeso_Lmax   :: maximum horizontal grid-scale length [m]
       _RL GM_Visbeck_maxSlope
       _RL GM_Visbeck_minVal_K
       _RL GM_Visbeck_maxVal_K
+      _RL GM_K3D_gamma
+      _RL GM_K3D_b1
+      _RL GM_K3D_EadyMinDepth
+      _RL GM_K3D_EadyMaxDepth
+      _RL GM_K3D_Lambda
+      _RL GM_K3D_smallK
+      _RL GM_K3D_maxC
+      _RL GM_maxK3D
+      _RL GM_K3D_constK
+      _RL GM_K3D_Rmax
+      _RL GM_K3D_Rmin
+      _RL GM_K3D_minCori
+      _RL GM_K3D_minN2
+      _RL GM_K3D_surfMinDepth
+      _RL GM_K3D_vecFreq
+      _RL GM_K3D_minRenorm
+      _RL GM_K3D_maxRenorm
       _RL GM_facTrL2dz
       _RL GM_facTrL2ML
       _RL GM_maxTransLay
@@ -115,6 +174,13 @@ C     subMeso_Lmax   :: maximum horizontal grid-scale length [m]
      &                   GM_Visbeck_depth,
      &                   GM_Visbeck_minDepth, GM_Visbeck_maxSlope,
      &                   GM_Visbeck_minVal_K, GM_Visbeck_maxVal_K,
+     &                   GM_K3D_gamma, GM_K3D_b1, GM_K3D_EadyMinDepth,
+     &                   GM_K3D_EadyMaxDepth, GM_K3D_Lambda,
+     &                   GM_K3D_smallK, GM_K3D_maxC,
+     &                   GM_maxK3D, GM_K3D_minCori, GM_K3D_minN2,
+     &                   GM_K3D_surfMinDepth, GM_K3D_Rmax, GM_K3D_Rmin,
+     &                   GM_K3D_constK, GM_K3D_vecFreq,
+     &                   GM_K3D_minRenorm, GM_K3D_maxRenorm,
      &                   GM_facTrL2dz, GM_facTrL2ML, GM_maxTransLay,
      &                   GM_Scrit, GM_Sd, GM_BVP_cMin,
      &                   subMeso_Ceff, subMeso_invTau, subMeso_LfMin
@@ -200,6 +266,25 @@ C     for Visbeck et al. parameterization)
       COMMON /GM_Visbeck/ GM_diffK_3d
 #endif
 
+#ifdef GM_K3D
+C     K3D          :: The three dimensional eddy mixing coeffixint [m**2/s]
+C     modesC       :: First baroclinic mode at the centre of a tracer cell [-]
+C     modesW       :: First N baroclinic mode at the western face of a tracer cell [-]
+C     modesS       :: First N baroclinic mode at the southern face of a tracer cell [-]
+C     Rdef         :: Deformation radius [m]
+C     gradf        :: gradient of the Coriolis paramater at a cell centre, 1/(m*s)
+
+      _RL K3D(1-Olx:sNx+Olx,1-Oly:sNy+Oly,1:Nr,nSx,nSy)
+      _RL modesC(1,1-Olx:sNx+Olx,1-Oly:sNy+Oly,1:Nr,nSx,nSy)
+      _RL modesW(GM_K3D_NModes,1-Olx:sNx+Olx,
+     &     1-Oly:sNy+Oly,1:Nr,nSx,nSy)
+      _RL modesS(GM_K3D_NModes,1-Olx:sNx+Olx,
+     &     1-Oly:sNy+Oly,1:Nr,nSx,nSy)
+      _RL Rdef(1-Olx:sNx+Olx,1-Oly:sNy+Oly,nSx,nSy)
+      _RL gradf(1-Olx:sNx+Olx,1-Oly:sNy+Oly,nSx,nSy)
+
+      COMMON /GM_K3D/ K3D, modesC, modesW, modesS, Rdef, gradf
+#endif
 #endif /* ALLOW_GMREDI */
 
 CEH3 ;;; Local Variables: ***
