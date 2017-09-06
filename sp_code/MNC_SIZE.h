@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/mnc/MNC_SIZE.h,v 1.7 2006/04/05 21:07:36 edhill Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/mnc/MNC_SIZE.h,v 1.9 2008/06/23 20:52:58 utke Exp $
 C $Name:  $
 C
 
