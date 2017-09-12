@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/model/inc/PARAMS.h,v 1.260 2012/04/11 03:52:43 jmc Exp $
+C $Header: /u/gcmpack/MITgcm/model/inc/PARAMS.h,v 1.287 2017/05/02 18:11:05 jmc Exp $
 C $Name:  $
 C
 
@@ -13,9 +13,6 @@ C     model standard input file are stored into the variables held
 C     here. Notes describing the parameters can also be found here.
 
 CEOP
-
-C     Macros for special grid options
-#include "PARAMS_MACROS.h"
 
 C--   Contants
 C     Useful physical values
@@ -36,11 +33,10 @@ C                        (+ 4 digits Processor-Rank) instead of current dir.
 C     adTapeDir       :: read-write checkpointing tape files from/to this
 C                        directory name instead of current dir. Conflicts
 C                        mdsioLocalDir, so only one of the two can be set.
-C                        In contrast to mdsioLocalDir, if specified adTapeDir
-C                        must exist before the model starts.
 C     tRefFile      :: File containing reference Potential Temperat.  tRef (1.D)
 C     sRefFile      :: File containing reference salinity/spec.humid. sRef (1.D)
 C     rhoRefFile    :: File containing reference density profile rhoRef (1.D)
+C     gravityFile   :: File containing gravity vertical profile (1.D)
 C     delRFile      :: File containing vertical grid spacing delR  (1.D array)
 C     delRcFile     :: File containing vertical grid spacing delRc (1.D array)
 C     hybSigmFile   :: File containing hybrid-sigma vertical coord. coeff. (2x 1.D)
@@ -52,6 +48,9 @@ C     bathyFile       :: File containing bathymetry. If not defined bathymetry
 C                        is taken from inline function.
 C     topoFile        :: File containing the topography of the surface (unit=m)
 C                        (mainly used for the atmosphere = ground height).
+C     addWwallFile    :: File containing 2-D additional Western  cell-edge wall
+C     addSwallFile    :: File containing 2-D additional Southern cell-edge wall
+C                        (e.g., to add "thin-wall" where it is =1)
 C     hydrogThetaFile :: File containing initial hydrographic data (3-D)
 C                        for potential temperature.
 C     hydrogSaltFile  :: File containing initial hydrographic data (3-D)
@@ -74,23 +73,23 @@ C     surfQfile       :: File containing surface heat flux, excluding SW
 C                        (old version, kept for backward compatibility)
 C     surfQnetFile    :: File containing surface net heat flux
 C     surfQswFile     :: File containing surface shortwave radiation
-C     dQdTfile        :: File containing thermal relaxation coefficient
 C     EmPmRfile       :: File containing surface fresh water flux
 C           NOTE: for backward compatibility EmPmRfile is specified in
 C                 m/s when using external_fields_load.F.  It is converted
 C                 to kg/m2/s by multiplying by rhoConstFresh.
 C     saltFluxFile    :: File containing surface salt flux
 C     pLoadFile       :: File containing pressure loading
+C     addMassFile     :: File containing source/sink of fluid in the interior
 C     eddyPsiXFile    :: File containing zonal Eddy streamfunction data
 C     eddyPsiYFile    :: File containing meridional Eddy streamfunction data
 C     the_run_name    :: string identifying the name of the model "run"
       COMMON /PARM_C/
      &                buoyancyRelation, eosType,
      &                pickupSuff, mdsioLocalDir, adTapeDir,
-     &                tRefFile, sRefFile, rhoRefFile,
+     &                tRefFile, sRefFile, rhoRefFile, gravityFile,
      &                delRFile, delRcFile, hybSigmFile,
      &                delXFile, delYFile, horizGridFile,
-     &                bathyFile, topoFile,
+     &                bathyFile, topoFile, addWwallFile, addSwallFile,
      &                viscAhDfile, viscAhZfile,
      &                viscA4Dfile, viscA4Zfile,
      &                hydrogThetaFile, hydrogSaltFile, diffKrFile,
@@ -100,8 +99,8 @@ C     the_run_name    :: string identifying the name of the model "run"
      &                surfQfile, surfQnetFile, surfQswFile,
      &                lambdaThetaFile, lambdaSaltFile,
      &                uVelInitFile, vVelInitFile, pSurfInitFile,
-     &                dQdTfile, ploadFile,
-     &                eddyPsiXFile, eddyPsiYFile,
+     &                pLoadFile, addMassFile,
+     &                eddyPsiXFile, eddyPsiYFile, geothermalFile,
      &                the_run_name
       CHARACTER*(MAX_LEN_FNAM) buoyancyRelation
       CHARACTER*(6)  eosType
@@ -111,6 +110,7 @@ C     the_run_name    :: string identifying the name of the model "run"
       CHARACTER*(MAX_LEN_FNAM) tRefFile
       CHARACTER*(MAX_LEN_FNAM) sRefFile
       CHARACTER*(MAX_LEN_FNAM) rhoRefFile
+      CHARACTER*(MAX_LEN_FNAM) gravityFile
       CHARACTER*(MAX_LEN_FNAM) delRFile
       CHARACTER*(MAX_LEN_FNAM) delRcFile
       CHARACTER*(MAX_LEN_FNAM) hybSigmFile
@@ -118,6 +118,7 @@ C     the_run_name    :: string identifying the name of the model "run"
       CHARACTER*(MAX_LEN_FNAM) delYFile
       CHARACTER*(MAX_LEN_FNAM) horizGridFile
       CHARACTER*(MAX_LEN_FNAM) bathyFile, topoFile
+      CHARACTER*(MAX_LEN_FNAM) addWwallFile, addSwallFile
       CHARACTER*(MAX_LEN_FNAM) hydrogThetaFile, hydrogSaltFile
       CHARACTER*(MAX_LEN_FNAM) diffKrFile
       CHARACTER*(MAX_LEN_FNAM) viscAhDfile
@@ -138,10 +139,11 @@ C     the_run_name    :: string identifying the name of the model "run"
       CHARACTER*(MAX_LEN_FNAM) uVelInitFile
       CHARACTER*(MAX_LEN_FNAM) vVelInitFile
       CHARACTER*(MAX_LEN_FNAM) pSurfInitFile
-      CHARACTER*(MAX_LEN_FNAM) dQdTfile
-      CHARACTER*(MAX_LEN_FNAM) ploadFile
+      CHARACTER*(MAX_LEN_FNAM) pLoadFile
+      CHARACTER*(MAX_LEN_FNAM) addMassFile
       CHARACTER*(MAX_LEN_FNAM) eddyPsiXFile
       CHARACTER*(MAX_LEN_FNAM) eddyPsiYFile
+      CHARACTER*(MAX_LEN_FNAM) geothermalFile
       CHARACTER*(MAX_LEN_FNAM) lambdaThetaFile
       CHARACTER*(MAX_LEN_FNAM) lambdaSaltFile
       CHARACTER*(MAX_LEN_PREC/2) the_run_name
@@ -153,6 +155,8 @@ C     cg2dChkResFreq      :: Frequency with which to check residual
 C                            in con. grad solver.
 C     cg2dPreCondFreq     :: Frequency for updating cg2d preconditioner
 C                            (non-linear free-surf.)
+C     cg2dUseMinResSol    :: =0 : use last-iteration/converged solution
+C                            =1 : use solver minimum-residual solution
 C     cg3dMaxIters        :: Maximum number of iterations in the
 C                            three-dimensional con. grad solver.
 C     cg3dChkResFreq      :: Frequency with which to check residual
@@ -160,9 +164,7 @@ C                            in con. grad solver.
 C     printResidualFreq   :: Frequency for printing residual in CG iterations
 C     nIter0              :: Start time-step number of for this run
 C     nTimeSteps          :: Number of timesteps to execute
-C     writeStatePrec      :: Precision used for writing model state.
-C     writeBinaryPrec     :: Precision used for writing binary files
-C     readBinaryPrec      :: Precision used for reading binary files
+C     nTimeSteps_l2       :: Number of inner timesteps to execute per timestep
 C     selectCoriMap       :: select setting of Coriolis parameter map:
 C                           =0 f-Plane (Constant Coriolis, = f0)
 C                           =1 Beta-Plane Coriolis (= f0 + beta.y)
@@ -175,9 +177,19 @@ C     select_rStar        :: option related to r* vertical coordinate
 C                           =0 (default) use r coord. ; > 0 use r*
 C     selectNHfreeSurf    :: option for Non-Hydrostatic (free-)Surface formulation:
 C                           =0 (default) hydrostatic surf. ; > 0 add NH effects.
+C     selectP_inEOS_Zc    :: select which pressure to use in EOS (for z-coords)
+C                           =0: simply: -g*rhoConst*z
+C                           =1: use pRef = integral{-g*rho(Tref,Sref,pRef)*dz}
+C                           =2: use hydrostatic dynamical pressure
+C                           =3: use full (Hyd+NH) dynamical pressure
 C     selectAddFluid      :: option to add mass source/sink of fluid in the interior
 C                            (3-D generalisation of oceanic real-fresh water flux)
 C                           =0 off ; =1 add fluid ; =-1 virtual flux (no mass added)
+C     selectImplicitDrag  :: select Implicit treatment of bottom/top drag
+C                           = 0: fully explicit
+C                           = 1: implicit on provisional velocity
+C                                (i.e., before grad.Eta increment)
+C                           = 2: fully implicit (combined with Impl Surf.Press)
 C     momForcingOutAB     :: =1: take momentum forcing contribution
 C                            out of (=0: in) Adams-Bashforth time stepping.
 C     tracForcingOutAB    :: =1: take tracer (Temp,Salt,pTracers) forcing contribution
@@ -188,53 +200,73 @@ C     saltAdvScheme       :: Salt. Horiz.advection scheme selector
 C     saltVertAdvScheme   :: Salt. Vert. Advection scheme selector
 C     selectKEscheme      :: Kinetic Energy scheme selector (Vector Inv.)
 C     selectVortScheme    :: Scheme selector for Vorticity term (Vector Inv.)
+C     selectBotDragQuadr  :: quadratic bottom drag discretisation option:
+C                           =0: average KE from grid center to U & V location
+C                           =1: use local velocity norm @ U & V location
+C                           =2: same with wet-point averaging of other component
+C     readBinaryPrec      :: Precision used for reading binary files
+C     writeStatePrec      :: Precision used for writing model state.
+C     writeBinaryPrec     :: Precision used for writing binary files
+C     rwSuffixType        :: controls the format of the mds file suffix.
+C                          =0 (default): use iteration number (myIter, I10.10);
+C                          =1: 100*myTime (100th sec); =2: myTime (seconds);
+C                          =3: myTime/360 (10th of hr); =4: myTime/3600 (hours).
 C     monitorSelect       :: select group of variables to monitor
 C                            =1 : dynvars ; =2 : + vort ; =3 : + surface
 C-    debugLevel          :: controls printing of algorithm intermediate results
 C                            and statistics ; higher -> more writing
+C-    plotLevel           :: controls printing of field maps ; higher -> more flds
 
       COMMON /PARM_I/
-     &        cg2dMaxIters, cg2dChkResFreq, cg2dPreCondFreq,
+     &        cg2dMaxIters, cg2dChkResFreq,
+     &        cg2dPreCondFreq, cg2dUseMinResSol,
      &        cg3dMaxIters, cg3dChkResFreq,
      &        printResidualFreq,
-     &        nIter0, nTimeSteps, nEndIter,
-     &        writeStatePrec,
-     &        writeBinaryPrec, readBinaryPrec,
+     &        nIter0, nTimeSteps, nTimeSteps_l2, nEndIter,
      &        selectCoriMap,
      &        selectSigmaCoord,
      &        nonlinFreeSurf, select_rStar,
-     &        selectNHfreeSurf,
-     &        selectAddFluid,
+     &        selectNHfreeSurf, selectP_inEOS_Zc,
+     &        selectAddFluid, selectImplicitDrag,
      &        momForcingOutAB, tracForcingOutAB,
      &        tempAdvScheme, tempVertAdvScheme,
      &        saltAdvScheme, saltVertAdvScheme,
      &        selectKEscheme, selectVortScheme,
-     &        monitorSelect, debugLevel
+     &        selectBotDragQuadr,
+     &        readBinaryPrec, writeBinaryPrec, writeStatePrec,
+     &        rwSuffixType, monitorSelect, debugLevel, plotLevel
       INTEGER cg2dMaxIters
       INTEGER cg2dChkResFreq
       INTEGER cg2dPreCondFreq
+      INTEGER cg2dUseMinResSol
       INTEGER cg3dMaxIters
       INTEGER cg3dChkResFreq
       INTEGER printResidualFreq
       INTEGER nIter0
       INTEGER nTimeSteps
+      INTEGER nTimeSteps_l2
       INTEGER nEndIter
-      INTEGER writeStatePrec
-      INTEGER writeBinaryPrec
-      INTEGER readBinaryPrec
       INTEGER selectCoriMap
       INTEGER selectSigmaCoord
       INTEGER nonlinFreeSurf
       INTEGER select_rStar
       INTEGER selectNHfreeSurf
+      INTEGER selectP_inEOS_Zc
       INTEGER selectAddFluid
+      INTEGER selectImplicitDrag
       INTEGER momForcingOutAB, tracForcingOutAB
       INTEGER tempAdvScheme, tempVertAdvScheme
       INTEGER saltAdvScheme, saltVertAdvScheme
       INTEGER selectKEscheme
       INTEGER selectVortScheme
+      INTEGER selectBotDragQuadr
+      INTEGER readBinaryPrec
+      INTEGER writeStatePrec
+      INTEGER writeBinaryPrec
+      INTEGER rwSuffixType
       INTEGER monitorSelect
       INTEGER debugLevel
+      INTEGER plotLevel
 
 C--   COMMON /PARM_L/ Logical valued parameters used by the model.
 C- Coordinate + Grid params:
@@ -246,22 +278,24 @@ C     usingPCoords     :: Set to indicate that we are working in a pressure
 C                         type coordinate (p or p*).
 C     usingZCoords     :: Set to indicate that we are working in a height
 C                         type coordinate (z or z*)
-C     useDynP_inEos_Zc   :: use the dynamical pressure in EOS (with Z-coord.)
-C                           this requires specific code for restart & exchange
 C     usingCartesianGrid :: If TRUE grid generation will be in a cartesian
 C                           coordinate frame.
 C     usingSphericalPolarGrid :: If TRUE grid generation will be in a
 C                                spherical polar frame.
 C     rotateGrid      :: rotate grid coordinates to geographical coordinates
 C                        according to Euler angles phiEuler, thetaEuler, psiEuler
-C     usingCurvilinearGrid :: If TRUE, use a curvilinear grid (to be provided)
 C     usingCylindricalGrid :: If TRUE grid generation will be Cylindrical
+C     usingCurvilinearGrid :: If TRUE, use a curvilinear grid (to be provided)
+C     hasWetCSCorners :: domain contains CS-type corners where dynamics is solved
 C     deepAtmosphere :: deep model (drop the shallow-atmosphere approximation)
 C     setInterFDr    :: set Interface depth (put cell-Center at the middle)
 C     setCenterDr    :: set cell-Center depth (put Interface at the middle)
+C     useMin4hFacEdges :: set hFacW,hFacS as minimum of adjacent hFacC factor
 C- Momentum params:
 C     no_slip_sides  :: Impose "no-slip" at lateral boundaries.
 C     no_slip_bottom :: Impose "no-slip" at bottom boundary.
+C     bottomVisc_pCell :: account for partial-cell in bottom visc. (no-slip BC)
+C     useSmag3D      :: Use isotropic 3-D Smagorinsky
 C     useFullLeith   :: Set to true to use full Leith viscosity(may be unstable
 C                       on irregular grids)
 C     useStrainTensionVisc:: Set to true to use Strain-Tension viscous terms
@@ -285,20 +319,21 @@ C     useJamartMomAdv :: Use wet-point method for V.I. non-linear term
 C     upwindVorticity :: bias interpolation of vorticity in the Coriolis term
 C     highOrderVorticity :: use 3rd/4th order interp. of vorticity (V.I., advection)
 C     useAbsVorticity :: work with f+zeta in Coriolis terms
-C     upwindShear        :: use 1rst order upwind interp. (V.I., vertical advection)
+C     upwindShear     :: use 1rst order upwind interp. (V.I., vertical advection)
 C     momStepping    :: Turns momentum equation time-stepping off
-C     calc_wVelocity :: Turns of vertical velocity calculation off
+C     calc_wVelocity :: Turns vertical velocity calculation off
 C- Temp. & Salt params:
-C     tempStepping   :: Turns temperature equation time-stepping off
-C     saltStepping   :: Turns salinity equation time-stepping off
+C     tempStepping   :: Turns temperature equation time-stepping on/off
+C     saltStepping   :: Turns salinity equation time-stepping on/off
+C     addFrictionHeating :: account for frictional heating
 C     tempAdvection  :: Flag which turns advection of temperature on and off.
+C     tempVertDiff4  :: use vertical bi-harmonic diffusion for temperature
 C     tempIsActiveTr :: Pot.Temp. is a dynamically active tracer
-C     tempForcing    :: Flag which turns external forcing of temperature on
-C                       and off.
+C     tempForcing    :: Flag which turns external forcing of temperature on/off
 C     saltAdvection  :: Flag which turns advection of salinity on and off.
+C     saltVertDiff4  :: use vertical bi-harmonic diffusion for salinity
 C     saltIsActiveTr :: Salinity  is a dynamically active tracer
-C     saltForcing    :: Flag which turns external forcing of salinity on
-C                       and off.
+C     saltForcing    :: Flag which turns external forcing of salinity on/off
 C     maskIniTemp    :: apply mask to initial Pot.Temp.
 C     maskIniSalt    :: apply mask to initial salinity
 C     checkIniTemp   :: check for points with identically zero initial Pot.Temp.
@@ -319,17 +354,20 @@ C                            at the surface due to Linear Free Surface
 C     useRealFreshWaterFlux :: if True (=Natural BCS), treats P+R-E flux
 C                         as a real Fresh Water (=> changes the Sea Level)
 C                         if F, converts P+R-E to salt flux (no SL effect)
+C     storePhiHyd4Phys :: store hydrostatic potential for use in Physics/EOS
+C                         this requires specific code for restart & exchange
 C     quasiHydrostatic :: Using non-hydrostatic terms in hydrostatic algorithm
 C     nonHydrostatic   :: Using non-hydrostatic algorithm
 C     use3Dsolver      :: set to true to use 3-D pressure solver
 C     implicitIntGravWave :: treat Internal Gravity Wave implicitly
 C     staggerTimeStep   :: enable a Stagger time stepping U,V (& W) then T,S
+C     applyExchUV_early :: Apply EXCH to U,V earlier, just before integr_continuity
 C     doResetHFactors   :: Do reset thickness factors @ beginning of each time-step
 C     implicitDiffusion :: Turns implicit vertical diffusion on
 C     implicitViscosity :: Turns implicit vertical viscosity on
-C     tempImplVertAdv :: Turns on implicit vertical advection for Temperature
-C     saltImplVertAdv :: Turns on implicit vertical advection for Salinity
-C     momImplVertAdv  :: Turns on implicit vertical advection for Momentum
+C     tempImplVertAdv   :: Turns on implicit vertical advection for Temperature
+C     saltImplVertAdv   :: Turns on implicit vertical advection for Salinity
+C     momImplVertAdv    :: Turns on implicit vertical advection for Momentum
 C     multiDimAdvection :: Flag that enable multi-dimension advection
 C     useMultiDimAdvec  :: True if multi-dim advection is used at least once
 C     momDissip_In_AB   :: if False, put Dissipation tendency contribution
@@ -339,16 +377,14 @@ C                          apply AB on tracer tendencies (rather than on Tracer)
 C- Other forcing params -
 C     balanceEmPmR    :: substract global mean of EmPmR at every time step
 C     balanceQnet     :: substract global mean of Qnet at every time step
-C JML Added to remove global mean from relaxation fluxes
-C     balanceSrelax   :: substract global mean of SRELAX at every time step
-C     balanceTrelax   :: substract global mean of TRELAX at every time step
 C     balancePrintMean:: print substracted global means to STDOUT
 C     doThetaClimRelax :: Set true if relaxation to temperature
 C                        climatology is required.
 C     doSaltClimRelax  :: Set true if relaxation to salinity
 C                        climatology is required.
+C     balanceThetaClimRelax :: substract global mean effect at every time step
+C     balanceSaltClimRelax :: substract global mean effect at every time step
 C     allowFreezing  :: Allows surface water to freeze and form ice
-C     useOldFreezing :: use the old version (before checkpoint52a_pre, 2003-11-12)
 C     periodicExternalForcing :: Set true if forcing is time-dependant
 C- I/O parameters -
 C     globalFiles    :: Selects between "global" and "tiled" files.
@@ -368,15 +404,14 @@ C     snapshot_mdsio     :: use mdsio for "snapshot" (dumpfreq/diagfreq) output
 C     monitor_stdio      :: use stdio for monitor output
 C     dumpInitAndLast :: dumps model state to files at Initial (nIter0)
 C                        & Last iteration, in addition multiple of dumpFreq iter.
-C     printDomain     :: controls printing of domain fields (bathy, hFac ...).
 
       COMMON /PARM_L/
      & fluidIsAir, fluidIsWater,
-     & usingPCoords, usingZCoords, useDynP_inEos_Zc,
+     & usingPCoords, usingZCoords,
      & usingCartesianGrid, usingSphericalPolarGrid, rotateGrid,
-     & usingCurvilinearGrid, usingCylindricalGrid,
-     & deepAtmosphere, setInterFDr, setCenterDr,
-     & no_slip_sides, no_slip_bottom,
+     & usingCylindricalGrid, usingCurvilinearGrid, hasWetCSCorners,
+     & deepAtmosphere, setInterFDr, setCenterDr, useMin4hFacEdges,
+     & no_slip_sides, no_slip_bottom, bottomVisc_pCell, useSmag3D,
      & useFullLeith, useStrainTensionVisc, useAreaViscLength,
      & momViscosity, momAdvection, momForcing,
      & momPressureForcing, metricTerms, useNHMTerms,
@@ -386,48 +421,50 @@ C     printDomain     :: controls printing of domain fields (bathy, hFac ...).
      & upwindVorticity, highOrderVorticity,
      & useAbsVorticity, upwindShear,
      & momStepping, calc_wVelocity, tempStepping, saltStepping,
-     & tempAdvection, tempIsActiveTr, tempForcing,
-     & saltAdvection, saltIsActiveTr, saltForcing,
+     & addFrictionHeating,
+     & tempAdvection, tempVertDiff4, tempIsActiveTr, tempForcing,
+     & saltAdvection, saltVertDiff4, saltIsActiveTr, saltForcing,
      & maskIniTemp, maskIniSalt, checkIniTemp, checkIniSalt,
      & useSRCGSolver,
      & rigidLid, implicitFreeSurface,
      & uniformLin_PhiSurf, uniformFreeSurfLev,
      & exactConserv, linFSConserveTr, useRealFreshWaterFlux,
-     & quasiHydrostatic, nonHydrostatic, use3Dsolver,
-     & implicitIntGravWave, staggerTimeStep, doResetHFactors,
+     & storePhiHyd4Phys, quasiHydrostatic, nonHydrostatic,
+     & use3Dsolver, implicitIntGravWave, staggerTimeStep,
+     & applyExchUV_early, doResetHFactors,
      & implicitDiffusion, implicitViscosity,
      & tempImplVertAdv, saltImplVertAdv, momImplVertAdv,
      & multiDimAdvection, useMultiDimAdvec,
      & momDissip_In_AB, doAB_onGtGs,
      & balanceEmPmR, balanceQnet, balancePrintMean,
-     & balanceSrelax, balanceTrelax,
+     & balanceThetaClimRelax, balanceSaltClimRelax,
      & doThetaClimRelax, doSaltClimRelax,
-     & allowFreezing, useOldFreezing,
+     & allowFreezing,
      & periodicExternalForcing,
      & globalFiles,
      & pickupStrictlyMatch, usePickupBeforeC54, startFromPickupAB2,
      & pickup_read_mdsio, pickup_write_mdsio, pickup_write_immed,
      & writePickupAtEnd,
      & timeave_mdsio, snapshot_mdsio, monitor_stdio,
-     & outputTypesInclusive, dumpInitAndLast,
-     & printDomain,
-     & inAdMode, inAdTrue, inAdFalse, inAdExact
+     & outputTypesInclusive, dumpInitAndLast
 
       LOGICAL fluidIsAir
       LOGICAL fluidIsWater
       LOGICAL usingPCoords
       LOGICAL usingZCoords
-      LOGICAL useDynP_inEos_Zc
       LOGICAL usingCartesianGrid
       LOGICAL usingSphericalPolarGrid, rotateGrid
       LOGICAL usingCylindricalGrid
-      LOGICAL usingCurvilinearGrid
+      LOGICAL usingCurvilinearGrid, hasWetCSCorners
       LOGICAL deepAtmosphere
       LOGICAL setInterFDr
       LOGICAL setCenterDr
-      LOGICAL useNHMTerms
+      LOGICAL useMin4hFacEdges
+
       LOGICAL no_slip_sides
       LOGICAL no_slip_bottom
+      LOGICAL bottomVisc_pCell
+      LOGICAL useSmag3D
       LOGICAL useFullLeith
       LOGICAL useStrainTensionVisc
       LOGICAL useAreaViscLength
@@ -435,12 +472,31 @@ C     printDomain     :: controls printing of domain fields (bathy, hFac ...).
       LOGICAL momAdvection
       LOGICAL momForcing
       LOGICAL momPressureForcing
+      LOGICAL metricTerms
+      LOGICAL useNHMTerms
+
       LOGICAL useCoriolis
+      LOGICAL use3dCoriolis
+      LOGICAL useCDscheme
       LOGICAL vectorInvariantMomentum
+      LOGICAL useEnergyConservingCoriolis
+      LOGICAL useJamartWetPoints
+      LOGICAL useJamartMomAdv
+      LOGICAL upwindVorticity
+      LOGICAL highOrderVorticity
+      LOGICAL useAbsVorticity
+      LOGICAL upwindShear
+      LOGICAL momStepping
+      LOGICAL calc_wVelocity
+      LOGICAL tempStepping
+      LOGICAL saltStepping
+      LOGICAL addFrictionHeating
       LOGICAL tempAdvection
+      LOGICAL tempVertDiff4
       LOGICAL tempIsActiveTr
       LOGICAL tempForcing
       LOGICAL saltAdvection
+      LOGICAL saltVertDiff4
       LOGICAL saltIsActiveTr
       LOGICAL saltForcing
       LOGICAL maskIniTemp
@@ -455,26 +511,14 @@ C     printDomain     :: controls printing of domain fields (bathy, hFac ...).
       LOGICAL exactConserv
       LOGICAL linFSConserveTr
       LOGICAL useRealFreshWaterFlux
+      LOGICAL storePhiHyd4Phys
       LOGICAL quasiHydrostatic
       LOGICAL nonHydrostatic
       LOGICAL use3Dsolver
       LOGICAL implicitIntGravWave
       LOGICAL staggerTimeStep
+      LOGICAL applyExchUV_early
       LOGICAL doResetHFactors
-      LOGICAL momStepping
-      LOGICAL calc_wVelocity
-      LOGICAL tempStepping
-      LOGICAL saltStepping
-      LOGICAL metricTerms
-      LOGICAL use3dCoriolis
-      LOGICAL useCDscheme
-      LOGICAL useEnergyConservingCoriolis
-      LOGICAL useJamartWetPoints
-      LOGICAL useJamartMomAdv
-      LOGICAL upwindVorticity
-      LOGICAL highOrderVorticity
-      LOGICAL useAbsVorticity
-      LOGICAL upwindShear
       LOGICAL implicitDiffusion
       LOGICAL implicitViscosity
       LOGICAL tempImplVertAdv
@@ -486,13 +530,12 @@ C     printDomain     :: controls printing of domain fields (bathy, hFac ...).
       LOGICAL doAB_onGtGs
       LOGICAL balanceEmPmR
       LOGICAL balanceQnet
-      LOGICAL balanceSrelax
-      LOGICAL balanceTrelax
       LOGICAL balancePrintMean
       LOGICAL doThetaClimRelax
       LOGICAL doSaltClimRelax
+      LOGICAL balanceThetaClimRelax
+      LOGICAL balanceSaltClimRelax
       LOGICAL allowFreezing
-      LOGICAL useOldFreezing
       LOGICAL periodicExternalForcing
       LOGICAL globalFiles
       LOGICAL pickupStrictlyMatch
@@ -503,8 +546,6 @@ C     printDomain     :: controls printing of domain fields (bathy, hFac ...).
       LOGICAL timeave_mdsio, snapshot_mdsio, monitor_stdio
       LOGICAL outputTypesInclusive
       LOGICAL dumpInitAndLast
-      LOGICAL printDomain
-      LOGICAL inAdMode, inAdTrue, inAdFalse, inAdExact
 
 C--   COMMON /PARM_R/ "Real" valued parameters used by the model.
 C     cg2dTargetResidual
@@ -536,21 +577,31 @@ C                :: most cell face (Lat-Lon grid) (Note: this is an "inert"
 C                :: parameter but it makes geographical references simple.)
 C     ygOrigin   :: Origin of the Y-axis (Cartesian Grid) / Latitude of Southern
 C                :: most face (Lat-Lon grid).
-C     gravity   :: Accel. due to gravity ( m/s^2 )
-C     recip_gravity and its inverse
-C     gBaro     :: Accel. due to gravity used in barotropic equation ( m/s^2 )
-C     rhoNil    :: Reference density for the linear equation of state
-C     rhoConst  :: Vertically constant reference density (Boussinesq)
-C     rhoFacC   :: normalized (by rhoConst) reference density at cell-Center
-C     rhoFacF   :: normalized (by rhoConst) reference density at cell-interFace
+C     rSphere    :: Radius of sphere for a spherical polar grid ( m ).
+C     recip_rSphere :: Reciprocal radius of sphere ( m^-1 ).
+C     radius_fromHorizGrid :: sphere Radius of input horiz. grid (Curvilinear Grid)
+C     seaLev_Z   :: the reference height of sea-level (usually zero)
+C     top_Pres   :: pressure (P-Coords) or reference pressure (Z-Coords) at the top
+C     rSigmaBnd  :: vertical position (in r-unit) of r/sigma transition (Hybrid-Sigma)
+C     gravity    :: Acceleration due to constant gravity ( m/s^2 )
+C     recip_gravity :: Reciprocal gravity acceleration ( s^2/m )
+C     gBaro      :: Accel. due to gravity used in barotropic equation ( m/s^2 )
+C     gravFacC   :: gravity factor (vs surf. gravity) vert. profile at cell-Center
+C     gravFacF   :: gravity factor (vs surf. gravity) vert. profile at cell-interF
+C     rhoNil     :: Reference density for the linear equation of state
+C     rhoConst   :: Vertically constant reference density (Boussinesq)
+C     rho1Ref    :: reference vertical profile for density (anelastic)
+C     rhoFacC    :: normalized (by rhoConst) reference density at cell-Center
+C     rhoFacF    :: normalized (by rhoConst) reference density at cell-interFace
 C     rhoConstFresh :: Constant reference density for fresh water (rain)
-C     rho1Ref   :: reference vertical profile for density
-C     tRef      :: reference vertical profile for potential temperature
-C     sRef      :: reference vertical profile for salinity/specific humidity
-C     phiRef    :: reference potential (pressure/rho, geopotential) profile
-C     dBdrRef   :: vertical gradient of reference buoyancy  [(m/s/r)^2]:
-C               :: z-coord: = N^2_ref = Brunt-Vaissala frequency [s^-2]
-C               :: p-coord: = -(d.alpha/dp)_ref          [(m^2.s/kg)^2]
+C     thetaConst :: Constant reference for potential temperature
+C     tRef       :: reference vertical profile for potential temperature
+C     sRef       :: reference vertical profile for salinity/specific humidity
+C     pRef4EOS   :: reference pressure used in EOS (case selectP_inEOS_Zc=1)
+C     phiRef     :: reference potential (press/rho, geopot) profile (m^2/s^2)
+C     dBdrRef    :: vertical gradient of reference buoyancy  [(m/s/r)^2]:
+C                :: z-coord: = N^2_ref = Brunt-Vaissala frequency [s^-2]
+C                :: p-coord: = -(d.alpha/dp)_ref          [(m^2.s/kg)^2]
 C     rVel2wUnit :: units conversion factor (Non-Hydrostatic code),
 C                :: from r-coordinate vertical velocity to vertical velocity [m/s].
 C                :: z-coord: = 1 ; p-coord: wSpeed [m/s] = rVel [Pa/s] * rVel2wUnit
@@ -565,9 +616,6 @@ C     rUnit2mass :: units conversion factor (surface forcing),
 C                :: from vertical r-coordinate unit to mass per unit area [kg/m2].
 C                :: z-coord: = rhoConst  ( [m] * rho = [kg/m2] ) ;
 C                :: p-coord: = 1/gravity ( [Pa] /  g = [kg/m2] ) ;
-C     rSphere    :: Radius of sphere for a spherical polar grid ( m ).
-C     recip_rSphere  :: Reciprocal radius of sphere ( m ).
-C     radius_fromHorizGrid :: sphere Radius of input horiz. grid (Curvilinear Grid)
 C     f0         :: Reference coriolis parameter ( 1/s )
 C                   ( Southern edge f for beta plane )
 C     beta       :: df/dy ( s^-1.m^-1 )
@@ -581,13 +629,13 @@ C     viscAh     :: Eddy viscosity coeff. for mixing of
 C                   momentum laterally ( m^2/s )
 C     viscAhW    :: Eddy viscosity coeff. for mixing of vertical
 C                   momentum laterally, no effect for hydrostatic
-C                   model, defaults to viscAh if unset ( m^2/s )
+C                   model, defaults to viscAhD if unset ( m^2/s )
 C                   Not used if variable horiz. viscosity is used.
 C     viscA4     :: Biharmonic viscosity coeff. for mixing of
 C                   momentum laterally ( m^4/s )
 C     viscA4W    :: Biharmonic viscosity coeff. for mixing of vertical
 C                   momentum laterally, no effect for hydrostatic
-C                   model, defaults to viscA4 if unset ( m^2/s )
+C                   model, defaults to viscA4D if unset ( m^2/s )
 C                   Not used if variable horiz. viscosity is used.
 C     viscAhD    :: Eddy viscosity coeff. for mixing of momentum laterally
 C                   (act on Divergence part) ( m^2/s )
@@ -597,6 +645,7 @@ C     viscA4D    :: Biharmonic viscosity coeff. for mixing of momentum laterally
 C                   (act on Divergence part) ( m^4/s )
 C     viscA4Z    :: Biharmonic viscosity coeff. for mixing of momentum laterally
 C                   (act on Vorticity  part) ( m^4/s )
+C     smag3D_coeff :: Isotropic 3-D Smagorinsky coefficient (-)
 C     viscC2leith  :: Leith non-dimensional viscosity factor (grad(vort))
 C     viscC2leithD :: Modified Leith non-dimensional visc. factor (grad(div))
 C     viscC4leith  :: Leith non-dimensional viscosity factor (grad(vort))
@@ -619,16 +668,20 @@ C     viscA4GridMax:: maximum and minimum biharmonic viscosity coefficients ...
 C     viscA4GridMin::  in terms of non-dimensional grid-size dependent viscosity
 C     diffKhT   :: Laplacian diffusion coeff. for mixing of
 C                 heat laterally ( m^2/s )
-C     diffKrNrT :: vertical profile of Laplacian diffusion coeff.
-C                 for mixing of heat vertically ( units of r^2/s )
 C     diffK4T   :: Biharmonic diffusion coeff. for mixing of
 C                 heat laterally ( m^4/s )
+C     diffKrNrT :: vertical profile of Laplacian diffusion coeff.
+C                 for mixing of heat vertically ( units of r^2/s )
+C     diffKr4T  :: vertical profile of Biharmonic diffusion coeff.
+C                 for mixing of heat vertically ( units of r^4/s )
 C     diffKhS  ::  Laplacian diffusion coeff. for mixing of
 C                 salt laterally ( m^2/s )
-C     diffKrNrS :: vertical profile of Laplacian diffusion coeff.
-C                 for mixing of salt vertically ( units of r^2/s ),
 C     diffK4S   :: Biharmonic diffusion coeff. for mixing of
 C                 salt laterally ( m^4/s )
+C     diffKrNrS :: vertical profile of Laplacian diffusion coeff.
+C                 for mixing of salt vertically ( units of r^2/s ),
+C     diffKr4S  :: vertical profile of Biharmonic diffusion coeff.
+C                 for mixing of salt vertically ( units of r^4/s )
 C     diffKrBL79surf :: T/S surface diffusivity (m^2/s) Bryan and Lewis, 1979
 C     diffKrBL79deep :: T/S deep diffusivity (m^2/s) Bryan and Lewis, 1979
 C     diffKrBL79scl  :: depth scale for arctan fn (m) Bryan and Lewis, 1979
@@ -648,7 +701,7 @@ C                    Frequency of checkpointing and dumping of the model state
 C                    are referenced to this clock. ( s )
 C     deltaTMom    :: Timestep for momemtum equations ( s )
 C     dTtracerLev  :: Timestep for tracer equations ( s ), function of level k
-C     deltaTfreesurf :: Timestep for free-surface equation ( s )
+C     deltaTFreeSurf :: Timestep for free-surface equation ( s )
 C     freeSurfFac  :: Parameter to turn implicit free surface term on or off
 C                     freeSurFac = 1. uses implicit free surface
 C                     freeSurFac = 0. uses rigid lid
@@ -657,7 +710,7 @@ C     alph_AB      :: Adams-Bashforth-3 primary factor
 C     beta_AB      :: Adams-Bashforth-3 secondary factor
 C     implicSurfPress :: parameter of the Crank-Nickelson time stepping :
 C                     Implicit part of Surface Pressure Gradient ( 0-1 )
-C     implicDiv2Dflow :: parameter of the Crank-Nickelson time stepping :
+C     implicDiv2DFlow :: parameter of the Crank-Nickelson time stepping :
 C                     Implicit part of barotropic flow Divergence ( 0-1 )
 C     implicitNHPress :: parameter of the Crank-Nickelson time stepping :
 C                     Implicit part of Non-Hydrostatic Pressure Gradient ( 0-1 )
@@ -714,9 +767,6 @@ C     hMixCriteria:: criteria for mixed-layer diagnostic
 C     dRhoSmall   :: parameter for mixed-layer diagnostic
 C     hMixSmooth  :: Smoothing parameter for mixed-layer diag (default=0=no smoothing)
 C     ivdc_kappa  :: implicit vertical diffusivity for convection [m^2/s]
-C     Ro_SeaLevel :: standard position of Sea-Level in "R" coordinate, used as
-C                    starting value (k=1) for vertical coordinate (rf(1)=Ro_SeaLevel)
-C     rSigmaBnd   :: vertical position (in r-unit) of r/sigma transition (Hybrid-Sigma)
 C     sideDragFactor     :: side-drag scaling factor (used only if no_slip_sides)
 C                           (default=2: full drag ; =1: gives half-slip BC)
 C     bottomDragLinear    :: Linear    bottom-drag coefficient (units of [r]/s)
@@ -727,18 +777,20 @@ C                           is to be replace by a smoother function
 C                           (affects myabs, mymin, mymax)
 C     nh_Am2        :: scales the non-hydrostatic terms and changes internal scales
 C                      (i.e. allows convection at different Rayleigh numbers)
+C     tCylIn        :: Temperature of the cylinder inner boundary
+C     tCylOut       :: Temperature of the cylinder outer boundary
 C     phiEuler      :: Euler angle, rotation about original z-axis
 C     thetaEuler    :: Euler angle, rotation about new x-axis
 C     psiEuler      :: Euler angle, rotation about new z-axis
       COMMON /PARM_R/ cg2dTargetResidual, cg2dTargetResWunit,
      & cg2dpcOffDFac, cg3dTargetResidual,
-     & delR, delRc, xgOrigin, ygOrigin,
-     & deltaT, deltaTmom, dTtracerLev, deltaTfreesurf, deltaTClock,
+     & delR, delRc, xgOrigin, ygOrigin, rSphere, recip_rSphere,
+     & radius_fromHorizGrid, seaLev_Z, top_Pres, rSigmaBnd,
+     & deltaT, deltaTMom, dTtracerLev, deltaTFreeSurf, deltaTClock,
      & abEps, alph_AB, beta_AB,
-     & rSphere, recip_rSphere, radius_fromHorizGrid,
      & f0, beta, fPrime, omega, rotationPeriod,
-     & viscFacAdj, viscAh, viscAhW, viscAhMax,
-     & viscAhGrid, viscAhGridMax, viscAhGridMin,
+     & viscFacAdj, viscAh, viscAhW, smag3D_coeff,
+     & viscAhMax, viscAhGrid, viscAhGridMax, viscAhGridMin,
      & viscC2leith, viscC2leithD,
      & viscC2smag, viscC4smag,
      & viscAhD, viscAhZ, viscA4D, viscA4Z,
@@ -746,18 +798,19 @@ C     psiEuler      :: Euler angle, rotation about new z-axis
      & viscA4Grid, viscA4GridMax, viscA4GridMin,
      & viscAhReMax, viscA4ReMax,
      & viscC4leith, viscC4leithD, viscArNr,
-     & diffKhT, diffK4T, diffKrNrT,
-     & diffKhS, diffK4S, diffKrNrS,
+     & diffKhT, diffK4T, diffKrNrT, diffKr4T,
+     & diffKhS, diffK4S, diffKrNrS, diffKr4S,
      & diffKrBL79surf, diffKrBL79deep, diffKrBL79scl, diffKrBL79Ho,
      & BL79LatVary,
      & diffKrBLEQsurf, diffKrBLEQdeep, diffKrBLEQscl, diffKrBLEQHo,
      & tauCD, rCD, epsAB_CD,
-     & freeSurfFac, implicSurfPress, implicDiv2Dflow, implicitNHPress,
+     & freeSurfFac, implicSurfPress, implicDiv2DFlow, implicitNHPress,
      & hFacMin, hFacMinDz, hFacInf, hFacSup,
      & gravity, recip_gravity, gBaro,
-     & rhoNil, rhoConst, recip_rhoConst,
-     & rhoFacC, recip_rhoFacC, rhoFacF, recip_rhoFacF,
-     & rhoConstFresh, rho1Ref, tRef, sRef, phiRef, dBdrRef,
+     & gravFacC, recip_gravFacC, gravFacF, recip_gravFacF,
+     & rhoNil, rhoConst, recip_rhoConst, rho1Ref,
+     & rhoFacC, recip_rhoFacC, rhoFacF, recip_rhoFacF, rhoConstFresh,
+     & thetaConst, tRef, sRef, pRef4EOS, phiRef, dBdrRef,
      & rVel2wUnit, wUnit2rVel, mass2rUnit, rUnit2mass,
      & baseTime, startTime, endTime,
      & chkPtFreq, pChkPtFreq, dumpFreq, adjDumpFreq,
@@ -769,7 +822,6 @@ C     psiEuler      :: Euler angle, rotation about new z-axis
      & convertFW2Salt, temp_EvPrRn, salt_EvPrRn,
      & temp_addMass, salt_addMass, hFacMinDr, hFacMinDp,
      & ivdc_kappa, hMixCriteria, dRhoSmall, hMixSmooth,
-     & Ro_SeaLevel, rSigmaBnd,
      & sideDragFactor, bottomDragLinear, bottomDragQuadratic, nh_Am2,
      & smoothAbsFuncRange,
      & tCylIn, tCylOut,
@@ -783,15 +835,18 @@ C     psiEuler      :: Euler angle, rotation about new z-axis
       _RL delRc(Nr+1)
       _RL xgOrigin
       _RL ygOrigin
-      _RL deltaT
-      _RL deltaTClock
-      _RL deltaTmom
-      _RL dTtracerLev(Nr)
-      _RL deltaTfreesurf
-      _RL abEps, alph_AB, beta_AB
       _RL rSphere
       _RL recip_rSphere
       _RL radius_fromHorizGrid
+      _RL seaLev_Z
+      _RL top_Pres
+      _RL rSigmaBnd
+      _RL deltaT
+      _RL deltaTClock
+      _RL deltaTMom
+      _RL dTtracerLev(Nr)
+      _RL deltaTFreeSurf
+      _RL abEps, alph_AB, beta_AB
       _RL f0
       _RL beta
       _RL fPrime
@@ -799,7 +854,7 @@ C     psiEuler      :: Euler angle, rotation about new z-axis
       _RL rotationPeriod
       _RL freeSurfFac
       _RL implicSurfPress
-      _RL implicDiv2Dflow
+      _RL implicDiv2DFlow
       _RL implicitNHPress
       _RL hFacMin
       _RL hFacMinDz
@@ -813,6 +868,7 @@ C     psiEuler      :: Euler angle, rotation about new z-axis
       _RL viscAhW
       _RL viscAhD
       _RL viscAhZ
+      _RL smag3D_coeff
       _RL viscAhMax
       _RL viscAhReMax
       _RL viscAhGrid, viscAhGridMax, viscAhGridMin
@@ -830,11 +886,13 @@ C     psiEuler      :: Euler angle, rotation about new z-axis
       _RL viscC4leithD
       _RL viscC4smag
       _RL diffKhT
-      _RL diffKrNrT(Nr)
       _RL diffK4T
+      _RL diffKrNrT(Nr)
+      _RL diffKr4T(Nr)
       _RL diffKhS
-      _RL diffKrNrS(Nr)
       _RL diffK4S
+      _RL diffKrNrS(Nr)
+      _RL diffKr4S(Nr)
       _RL diffKrBL79surf
       _RL diffKrBL79deep
       _RL diffKrBL79scl
@@ -845,17 +903,20 @@ C     psiEuler      :: Euler angle, rotation about new z-axis
       _RL diffKrBLEQscl
       _RL diffKrBLEQHo
       _RL tauCD, rCD, epsAB_CD
-      _RL gravity
-      _RL recip_gravity
+      _RL gravity,       recip_gravity
       _RL gBaro
+      _RL gravFacC(Nr),   recip_gravFacC(Nr)
+      _RL gravFacF(Nr+1), recip_gravFacF(Nr+1)
       _RL rhoNil
       _RL rhoConst,      recip_rhoConst
+      _RL rho1Ref(Nr)
       _RL rhoFacC(Nr),   recip_rhoFacC(Nr)
       _RL rhoFacF(Nr+1), recip_rhoFacF(Nr+1)
       _RL rhoConstFresh
-      _RL rho1Ref(Nr)
+      _RL thetaConst
       _RL tRef(Nr)
       _RL sRef(Nr)
+      _RL pRef4EOS(Nr)
       _RL phiRef(2*Nr+1)
       _RL dBdrRef(Nr)
       _RL rVel2wUnit(Nr+1), wUnit2rVel(Nr+1)
@@ -894,21 +955,17 @@ C     psiEuler      :: Euler angle, rotation about new z-axis
       _RL hMixCriteria
       _RL dRhoSmall
       _RL hMixSmooth
-      _RL Ro_SeaLevel
-      _RL rSigmaBnd
       _RL sideDragFactor
       _RL bottomDragLinear
       _RL bottomDragQuadratic
       _RL smoothAbsFuncRange
       _RL nh_Am2
-      _RL tCylIn
-      _RL tCylOut
+      _RL tCylIn, tCylOut
       _RL phiEuler, thetaEuler, psiEuler
 
 C--   COMMON /PARM_A/ Thermodynamics constants ?
-      COMMON /PARM_A/ HeatCapacity_Cp,recip_Cp
+      COMMON /PARM_A/ HeatCapacity_Cp
       _RL HeatCapacity_Cp
-      _RL recip_Cp
 
 C--   COMMON /PARM_ATM/ Atmospheric physical parameters (Ideal Gas EOS, ...)
 C     celsius2K :: convert centigrade (Celsius) degree to Kelvin
@@ -937,6 +994,7 @@ C Logical flags for selecting packages
       LOGICAL useZONAL_FILT
       LOGICAL useOPPS
       LOGICAL usePP81
+      LOGICAL useKL10
       LOGICAL useMY82
       LOGICAL useGGL90
       LOGICAL useKPP
@@ -948,9 +1006,12 @@ C Logical flags for selecting packages
       LOGICAL useBulkForce
       LOGICAL useEBM
       LOGICAL useCheapAML
+      LOGICAL useAUTODIFF
       LOGICAL useGrdchk
       LOGICAL useSMOOTH
+      LOGICAL usePROFILES
       LOGICAL useECCO
+      LOGICAL useCTRL
       LOGICAL useSBO
       LOGICAL useFLT
       LOGICAL usePTRACERS
@@ -965,9 +1026,10 @@ C Logical flags for selecting packages
       LOGICAL useStreamIce
       LOGICAL useICEFRONT
       LOGICAL useThSIce
+      LOGICAL useLand
       LOGICAL useATM2d
       LOGICAL useAIM
-      LOGICAL useLand
+      LOGICAL useAtm_Phys
       LOGICAL useFizhi
       LOGICAL useGridAlt
       LOGICAL useDiagnostics
@@ -979,26 +1041,18 @@ C Logical flags for selecting packages
       LOGICAL useMYPACKAGE
       COMMON /PARM_PACKAGES/
      &        useGAD, useOBCS, useSHAP_FILT, useZONAL_FILT,
-     &        useOPPS, usePP81, useMY82, useGGL90, useKPP,
+     &        useOPPS, usePP81, useKL10, useMY82, useGGL90, useKPP,
      &        useGMRedi, useBBL, useDOWN_SLOPE,
      &        useCAL, useEXF, useBulkForce, useEBM, useCheapAML,
-     &        useGrdchk, useSMOOTH, useECCO, useSBO, useFLT,
+     &        useGrdchk, useSMOOTH, usePROFILES, useECCO, useCTRL,
+     &        useSBO, useFLT, useAUTODIFF,
      &        usePTRACERS, useGCHEM, useRBCS, useOffLine, useMATRIX,
      &        useFRAZIL, useSEAICE, useSALT_PLUME, useShelfIce,
-     &        useStreamIce, useICEFRONT, useThSIce,
-     &        useATM2D, useAIM, useLand, useFizhi, useGridAlt,
+     &        useStreamIce, useICEFRONT, useThSIce, useLand,
+     &        useATM2D, useAIM, useAtm_Phys, useFizhi, useGridAlt,
      &        useDiagnostics, useREGRID, useLayers, useMNC,
      &        useRunClock, useEMBED_FILES,
      &        useMYPACKAGE
-
-C     Logical flags for turning off parts of the code in adjoint mode
-      LOGICAL useKPPinAdMode, useKPPinFwdMode
-      LOGICAL useGMrediInAdMode, useGMrediInFwdMode
-      LOGICAL useSEAICEinAdMode, useSEAICEinFwdMode
-      COMMON /PARM_PACKAGES_ADJ/
-     &       useKPPinAdMode, useKPPinFwdMode,
-     &       useGMrediInAdMode, useGMrediInFwdMode,
-     &       useSEAICEinAdMode, useSEAICEinFwdMode
 
 CEH3 ;;; Local Variables: ***
 CEH3 ;;; mode:fortran ***

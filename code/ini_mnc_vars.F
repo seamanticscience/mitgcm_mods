@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/model/src/ini_mnc_vars.F,v 1.10 2012/04/07 16:24:12 jmc Exp $
+C $Header: /u/gcmpack/MITgcm/model/src/ini_mnc_vars.F,v 1.13 2017/06/01 20:50:56 mlosch Exp $
 C $Name:  $
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
@@ -19,9 +19,9 @@ C     units, etc. primarily for state and snapshot variables.
 C     !USES:
       IMPLICIT NONE
 #include "SIZE.h"
-#include "GRID.h"
 #include "EEPARAMS.h"
 #include "PARAMS.h"
+#include "GRID.h"
 
 C     !INPUT/OUTPUT PARAMETERS:
 C     myThid :: my Thread Id number
@@ -150,7 +150,10 @@ C     Grid variables  ------------------------------------------------
       CALL MNC_CW_ADD_VNAME('HFacC', 'Cen_xy_Hn__C__t', 4,5,myThid)
       CALL MNC_CW_ADD_VNAME('HFacW', 'U_xy_Hn__C__t', 4,5,myThid)
       CALL MNC_CW_ADD_VNAME('HFacS', 'V_xy_Hn__C__t', 4,5,myThid)
-      
+C Face areas for fluxes
+      CALL MNC_CW_ADD_VNAME('rAx', 'U_xy_Hn__C__t', 4,5,myThid)
+      CALL MNC_CW_ADD_VNAME('rAy', 'V_xy_Hn__C__t', 4,5,myThid)
+
       CALL MNC_CW_ADD_VATTR_TEXT('drC','description',
      &     'r cell center separation',myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('drF','description',
@@ -200,9 +203,6 @@ C     Grid variables  ------------------------------------------------
       CALL MNC_CW_ADD_VATTR_TEXT('HFacS','description',
      &     'vertical fraction of open cell at South face',myThid)
 C Face areas for fluxes
-      CALL MNC_CW_ADD_VNAME('rAx', 'U_xy_Hn__C__t', 4,5,myThid)
-      CALL MNC_CW_ADD_VNAME('rAy', 'V_xy_Hn__C__t', 4,5,myThid)
-
       CALL MNC_CW_ADD_VATTR_TEXT('rAx','description',
      &       'Area of open cell at West face for u transports', myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('rAy','description',
@@ -216,11 +216,11 @@ C     Create MNC definitions for DYNVARS.h variables  ----------------
 #ifdef ALLOW_CAL
       IF ( useCAL ) THEN
        CALL CAL_GETDATE( -1, startTime, locDate, myThid )
-C     format: seconds since 1992-01-01, 00:00:00
+C     format: seconds since 1992-01-01 00:00:00
        WRITE(timeUnits,'(A,I4.4,5(A,I2.2))')
      &      'seconds since ', locDate(1)/10000,       '-',
      &      (locDate(1) - locDate(1)/10000*10000)/100,'-',
-     &      (locDate(1) - locDate(1)/100*100),        ', ',
+     &      (locDate(1) - locDate(1)/100*100),        ' ',
      &       locDate(2)/10000,                        ':',
      &      (locDate(2) - locDate(2)/10000*10000)/100,':',
      &      (locDate(2) - locDate(2)/100*100)
@@ -315,7 +315,7 @@ C     CALL MNC_CW_ADD_VNAME('fV', 'Cen_xy_Hn__-__t', 0,0, myThid)
 C     CALL MNC_CW_ADD_VATTR_TEXT('','units','', myThid)
 C     CALL MNC_CW_ADD_VATTR_TEXT('','long_name',
 C     &     'potential_temperature', myThid)
-      
+
       CALL MNC_CW_ADD_VNAME('fV', 'V_xy_Hn__C__t', 0,0, myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('fV','units','m/s^2', myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('fV','description',
@@ -400,17 +400,13 @@ C     Define variables from FFIELDS.h
       CALL MNC_CW_ADD_VNAME('Qnet', 'Cen_xy_Hn__-__t', 3,4, myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('Qnet','units','W/m^2', myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('Qnet','description',
-     &     'Net upward surface heat flux (including shortwave)', 
+     &     'Net upward surface heat flux (including shortwave)',
      &     myThid)
 
       CALL MNC_CW_ADD_VNAME('Qsw', 'Cen_xy_Hn__-__t', 3,4, myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('Qsw','units','W/m^2', myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('Qsw','description',
      &     'Net upward shortwave radiation', myThid)
-
-      CALL MNC_CW_ADD_VNAME('dQdt', 'Cen_xy_Hn__-__t', 3,4, myThid)
-      CALL MNC_CW_ADD_VATTR_TEXT('dQdt','units',
-     &     'W/m^2/degrees', myThid)
 
       CALL MNC_CW_ADD_VNAME('EmPmR', 'Cen_xy_Hn__-__t', 3,4, myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('EmPmR','units','kg/m^2/s', myThid)

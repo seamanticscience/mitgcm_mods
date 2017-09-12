@@ -45,6 +45,7 @@ C  instead of the Skew-Flux form (=default)
 #undef GM_BOLUS_ADVEC
 
 C Allows to use the Boundary-Value-Problem method to evaluate GM Bolus transport
+C Has a switch GM_UseBVP in data.gmredi so wasnt using it anyway
 #undef GM_BOLUS_BVP
 
 #endif /* ALLOW_GMREDI */

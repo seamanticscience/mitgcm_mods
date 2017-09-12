@@ -1,9 +1,12 @@
-C $Header: /u/gcmpack/MITgcm/model/src/write_grid.F,v 1.35 2012/06/01 03:19:53 jmc Exp $
+C $Header: /u/gcmpack/MITgcm/model/src/write_grid.F,v 1.40 2016/08/22 22:06:01 jmc Exp $
 C $Name:  $
 
-#include "AD_CONFIG.h"
 #include "PACKAGES_CONFIG.h"
 #include "CPP_OPTIONS.h"
+#include "AD_CONFIG.h"
+#ifdef ALLOW_AUTODIFF
+# include "AUTODIFF_OPTIONS.h"
+#endif
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 CBOP
@@ -37,10 +40,6 @@ C     !USES:
 C     !INPUT/OUTPUT PARAMETERS:
 C     myThid -  Number of this instances
       INTEGER myThid
-C     myIter - Iteration number
-C     myTime - Current time of simulation ( s )
-      _RL     myTime
-      INTEGER myIter
 
 C     !LOCAL VARIABLES:
 C     tmpfld :: Temporary array used to compute & write Total Depth ;
@@ -106,6 +105,8 @@ C     Write horizontal grid arrays
         IF ( usingCurvilinearGrid .OR. rotateGrid ) THEN
           CALL WRITE_FLD_XY_RS( 'AngleCS',' ',angleCosC,-1,myThid)
           CALL WRITE_FLD_XY_RS( 'AngleSN',' ',angleSinC,-1,myThid)
+          CALL WRITE_FLD_XY_RS( 'U2zonDir',' ',u2zonDir,-1,myThid)
+          CALL WRITE_FLD_XY_RS( 'V2zonDir',' ',v2zonDir,-1,myThid)
         ENDIF
 C     Write 3D geometry arrays
         CALL WRITE_FLD_XY_RS( 'Depth',' ',tmpfld,-1,myThid)
@@ -137,7 +138,7 @@ c         CALL WRITE_FULLARRAY_RS('maskInS',maskInS,1,0,0,1,-1,myThid)
 C     Write vertical grid arrays
         CALL WRITE_GLVEC_RS( 'RC', ' ', rC,  Nr, -1, myThid )
         CALL WRITE_GLVEC_RS( 'RF', ' ', rF, 1+Nr,-1, myThid )
-        CALL WRITE_GLVEC_RS( 'DRC',' ', drC, Nr, -1, myThid )
+        CALL WRITE_GLVEC_RS( 'DRC',' ', drC,1+Nr,-1, myThid )
         CALL WRITE_GLVEC_RS( 'DRF',' ', drF, Nr, -1, myThid )
         IF ( selectSigmaCoord.NE.0 ) THEN
          CALL WRITE_GLVEC_RS( 'AHybSigF',' ',aHybSigmF,1+Nr,-1,myThid )
@@ -149,8 +150,13 @@ C     Write vertical grid arrays
          CALL WRITE_GLVEC_RS('DAHybSigC',' ',dAHybSigC,1+Nr,-1,myThid )
          CALL WRITE_GLVEC_RS('DBHybSigC',' ',dBHybSigC,1+Nr,-1,myThid )
         ENDIF
-C--  comment out the "if": also usefull for the Ocean (to get the full Presure)
-c       IF (buoyancyRelation .EQ. 'ATMOSPHERIC') THEN
+
+      ENDIF
+
+C--  Comment out the "if": also useful for the Ocean (to get the full
+C    Pressure) and write also these MDS file when writegrid_mdsio=F
+C    (since missing from MNC grid-file)
+c      IF (buoyancyRelation .EQ. 'ATMOSPHERIC') THEN
         DO k=1,Nr+1
           tmpVar(k) = phiRef(2*k-1)
         ENDDO
@@ -159,9 +165,7 @@ c       IF (buoyancyRelation .EQ. 'ATMOSPHERIC') THEN
           tmpVar(k) = phiRef(2*k)
         ENDDO
         CALL WRITE_GLVEC_RS( 'PHrefC',' ',tmpVar, Nr, -1, myThid )
-c       ENDIF
-
-      ENDIF
+c      ENDIF
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
