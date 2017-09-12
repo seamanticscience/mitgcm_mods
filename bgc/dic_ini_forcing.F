@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_ini_forcing.F,v 1.22 2011/04/17 21:08:40 jmc Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_ini_forcing.F,v 1.24 2014/11/04 17:16:33 jmc Exp $
 C $Name:  $
 
 #include "DIC_OPTIONS.h"
@@ -21,7 +21,6 @@ C !USES: ===============================================================
 #include "GRID.h"
 #include "DIC_VARS.h"
 #include "DIC_LOAD.h"
-#include "DIC_ATMOS.h"
 
 C !INPUT PARAMETERS: ===================================================
 C  myThid               :: thread number
@@ -54,7 +53,7 @@ C First call requires that we initialize everything to zero for safety
       CALL LEF_ZERO( par0,myThid )
       CALL LEF_ZERO( par1,myThid )
 #endif
-# ifdef ALLOW_FE
+#ifdef ALLOW_FE
       CALL LEF_ZERO( feinput0,myThid )
       CALL LEF_ZERO( feinput1,myThid )
       
@@ -63,7 +62,10 @@ C JML include iron source due to hydrothermal input into bottom layer
       CALL LEF_ZERO( htvinput0,myThid )
       CALL LEF_ZERO( htvinput1,myThid )
 #endif
-# endif
+#endif
+#ifdef LIGHT_CHL
+      CALL LEF_ZERO( chlinput,myThid )
+#endif
 
 #ifdef READ_PAR
 #ifdef USE_QSW
@@ -78,8 +80,8 @@ C JML include iron source due to hydrothermal input into bottom layer
 c set reasonable values to those that need at least something
        DO bj = myByLo(myThid), myByHi(myThid)
         DO bi = myBxLo(myThid), myBxHi(myThid)
-         DO j=1-Oly,sNy+Oly
-          DO i=1-Olx,sNx+Olx
+         DO j=1-OLy,sNy+OLy
+          DO i=1-OLx,sNx+OLx
              WIND(i,j,bi,bj)   = 5. _d 0*maskC(i,j,1,bi,bj)
              AtmosP(i,j,bi,bj) = 1. _d 0*maskC(i,j,1,bi,bj)
              SILICA(i,j,bi,bj) = 7.6838 _d -3*maskC(i,j,1,bi,bj)
@@ -87,6 +89,10 @@ c set reasonable values to those that need at least something
              FluxCO2(i,j,bi,bj)= 0. _d 0
 #ifdef READ_PAR
              PAR(i,j,bi,bj)    = 100. _d 0*maskC(i,j,1,bi,bj)
+#endif
+#ifdef LIGHT_CHL
+C If the chlorophyll climatology is not provided, use this default value.
+             CHL(i,j,bi,bj)    = 1. _d -2*maskC(i,j,1,bi,bj)
 #endif
 #ifdef ALLOW_FE
              InputFe(i,j,bi,bj)= 1. _d -11*maskC(i,j,1,bi,bj)
@@ -99,8 +105,6 @@ C JML include iron source due to hydrothermal input into bottom layer
          ENDDO
         ENDDO
        ENDDO
-
-       total_atmos_carbon = 0. _d 0
 
 #endif /* ALLOW_DIC */
       RETURN

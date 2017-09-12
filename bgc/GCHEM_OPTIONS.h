@@ -13,7 +13,7 @@ C    !ROUTINE: GCHEM_OPTIONS.h
 C    !INTERFACE:
 
 C    !DESCRIPTION:
-c options for biogeochemistry package
+C options for biogeochemistry package
 CEOP
 
 #define GCHEM_SEPARATE_FORCING
@@ -23,7 +23,6 @@ C    but here you can set the entire mixed layer.
 #undef GCHEM_PREFORMED_MLD
 C or just regularly at the surface
 #define GCHEM_PREFORMED
-
 
 #endif /* ALLOW_GCHEM */
 #endif /* GCHEM_OPTIONS_H */

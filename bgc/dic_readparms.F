@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_readparms.F,v 1.10 2010/04/11 20:54:49 jmc Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_readparms.F,v 1.16 2017/08/09 15:23:38 mlosch Exp $
 C $Name:  $
 
 #include "DIC_OPTIONS.h"
@@ -23,6 +23,8 @@ C     === Global variables ===
 #include "EEPARAMS.h"
 #include "PARAMS.h"
 #include "DIC_VARS.h"
+#include "PTRACERS_SIZE.h"
+#include "PTRACERS_PARAMS.h"
 
 C     !INPUT/OUTPUT PARAMETERS:
 C     === Routine arguments ===
@@ -91,7 +93,7 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
       NAMELIST /BIOTIC_PARMS/
      & DOPfraction, KDOPRemin, KRemin, zcrit, zca,
      & O2crit, R_OP, R_CP, R_NP, R_FeP, R_SIP,
-     & parfrac, k0, lit0, KPO4, KFE, 
+     & parfrac, k0, lit0, KPO4, KFE, kchl,
      & KScav, KScav_yr, KScav_surf, KScav_poc_yr, KScav_poc,
      & R_pop2poc, R_dust2fe, poc_wsp,  dust_wsp,
      & scav_exp, scav_ratio, KScav_dust_yr, 
@@ -108,7 +110,8 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
 
       NAMELIST /DIC_FORCING/
      &          DIC_windFile, DIC_atmospFile, DIC_iceFile,
-     &          DIC_ironFile, DIC_silicaFile, DIC_hydroventFile,
+     &          DIC_ironFile, DIC_silicaFile, DIC_parFile,
+     &          DIC_chlaFile, DIC_hydroventFile,
      &          DIC_forcingPeriod, DIC_forcingCycle,
      &          dic_int1, dic_int2, dic_int3, dic_int4, dic_pCO2
 
@@ -118,7 +121,6 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
        permil      = 1. _d 0 / 1024.5 _d 0
        Pa2Atm      = 1.01325 _d 5
-
 #ifdef DIC_BIOTIC
        DOPfraction = 0.67 _d 0
        KDOPRemin   = 1. _d 0/(6. _d 0*30. _d 0*86400. _d 0)
@@ -133,6 +135,7 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        zca         = 3500. _d 0
        parfrac     = 0.4 _d 0
        k0          = 0.02 _d 0
+       kchl        = 0.02 _d 0
        lit0        = 30. _d 0
        KPO4        = 5. _d -4
        KFE         = 1.2 _d -7
@@ -207,6 +210,8 @@ C lambda_ref is calculated in dic_init_fixed
        DIC_iceFile   = ' '
        DIC_ironFile  = ' '
        DIC_silicaFile= ' '
+       DIC_parFile   = ' '
+       DIC_chlaFile  = ' '
 C JML include iron source due to hydrothermal input into bottom layer            
        DIC_hydroventFile=' '       
        dic_int1    = 0
@@ -214,8 +219,6 @@ C JML include iron source due to hydrothermal input into bottom layer
        dic_int3    = 0
        dic_int4    = 0
        dic_pCO2    = 278. _d -6
-C Reference for saturated carbon diagnostic CSATINIT
-
 c default periodic forcing to same as for physics
        DIC_forcingPeriod = externForcingPeriod
        DIC_forcingCycle  = externForcingCycle
@@ -246,7 +249,11 @@ C-    forcing filenames and parameters
      I                    SQUEEZE_RIGHT, myThid )
 
 C--   Close the open data file
+#ifdef SINGLE_DISK_IO
       CLOSE(iUnit)
+#else
+      CLOSE(iUnit,STATUS='DELETE')
+#endif /* SINGLE_DISK_IO */
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 C-    derive other parameters:
@@ -307,7 +314,9 @@ C- namelist BIOTIC_PARMS
        CALL WRITE_0D_RL( parfrac, INDEX_NONE,'parfrac =',
      &  ' /* Fraction of Qsw that is PAR */')
        CALL WRITE_0D_RL( k0, INDEX_NONE,'k0 =',
-     &  ' /* Light attentuation coefficient (1/m) */')
+     &  ' /* Light attentuation coefficient, water (1/m) */')
+       CALL WRITE_0D_RL( kchl, INDEX_NONE,'kchl =',
+     &  ' /* Light attentuation coefficient, chlorophyll (m2/mg) */')
        CALL WRITE_0D_RL( lit0, INDEX_NONE,'lit0 =',
      &  ' /* Half saturation light constant (W/m2) */')
        CALL WRITE_0D_RL( KPO4, INDEX_NONE,'KPO4 =',
@@ -384,6 +393,10 @@ C- namelist DIC_FORCING
      & '  /* File name of aeolian iron flux */')
        CALL WRITE_0D_C( DIC_silicaFile, -1,INDEX_NONE,'DIC_silicaFile=',
      & '  /* File name of surface silica */')
+       CALL WRITE_0D_C( DIC_parFile, -1,INDEX_NONE,'DIC_parFile=',
+     & '  /* File name of photosynthetically available radiation */')
+       CALL WRITE_0D_C( DIC_chlaFile, -1,INDEX_NONE,'DIC_chlaFile=',
+     & '  /* File name of chlorophyll climatology */')
        CALL WRITE_0D_RL( DIC_forcingPeriod,
      &   INDEX_NONE,'DIC_forcingPeriod =',
      &  ' /* Periodic forcing parameter specific for DIC (s) */')
@@ -409,6 +422,25 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
         CALL PRINT_ERROR( msgBuf, myThid )
         STOP 'ABNORMAL END: S/R DIC_READPARMS: dic_pCO2 error'
       ENDIF
+#ifdef ALLOW_OLD_VIRTUALFLUX
+      IF ( PTRACERS_EvPrRn(1).NE.UNSET_RL .OR.
+     &     PTRACERS_EvPrRn(2).NE.UNSET_RL ) THEN
+        WRITE(msgBuf,'(2A)') 'DIC_READPARMS: ',
+     &    'when ALLOW_OLD_VIRTUALFLUX is defined (in DIC_OPTIONS.h)'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        IF ( PTRACERS_EvPrRn(1).NE.UNSET_RL ) THEN
+         WRITE(msgBuf,'(2A)') 'DIC_READPARMS: ',
+     &   ' cannot set PTRACERS_EvPrRn(1) (in data.ptracers)'
+         CALL PRINT_ERROR( msgBuf, myThid )
+        ENDIF
+        IF ( PTRACERS_EvPrRn(2).NE.UNSET_RL ) THEN
+         WRITE(msgBuf,'(2A)') 'DIC_READPARMS: ',
+     &   ' cannot set PTRACERS_EvPrRn(2) (in data.ptracers)'
+         CALL PRINT_ERROR( msgBuf, myThid )
+        ENDIF
+        STOP 'ABNORMAL END: S/R DIC_READPARMS'
+      ENDIF
+#endif /* ALLOW_OLD_VIRTUALFLUX */
 
       _END_MASTER(myThid)
 

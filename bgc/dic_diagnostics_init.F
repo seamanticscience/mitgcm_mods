@@ -24,7 +24,6 @@ CEOP
 
 C     !LOCAL VARIABLES:
       INTEGER       diagNum
-      INTEGER       diagMate
       CHARACTER*8   diagName
       CHARACTER*16  diagCode
       CHARACTER*16  diagUnits
@@ -34,16 +33,16 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 C     Define diagnostics Names :
 
       diagName  = 'DICBIOA '
-      diagTitle = 'Biological Productivity'
-      diagUnits = 'mol/m3/s      '
-      diagCode  = 'SM P    MR    '
+      diagTitle = 'Biological Productivity (mol/m3/s)'
+      diagUnits = 'mol/m3/sec      '
+      diagCode  = 'SMRP    MR      '
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
 
       diagName  = 'DICCARB '
-      diagTitle = 'Carbonate sink due to bio production and remin'
-      diagUnits = 'mol eq/m3/s   '
-      diagCode  = 'SM      MR      '
+      diagTitle = 'Carbonate chg-biol prod and remin (mol eq/m3/s)'
+      diagUnits = 'mol eq/m3/sec   '
+      diagCode  = 'SMRP    MR      '
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
      

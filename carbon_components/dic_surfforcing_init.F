@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_surfforcing_init.F,v 1.33 2011/10/07 21:36:39 dfer Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_surfforcing_init.F,v 1.37 2015/01/11 20:02:41 jmc Exp $
 C $Name:  $
 
 #include "DIC_OPTIONS.h"
@@ -35,7 +35,7 @@ C  myThid               :: thread number
 #ifdef ALLOW_DIC
 
 C !LOCAL VARIABLES: ====================================================
-       INTEGER i,j,k,kLev,pco2_init_iter
+       INTEGER i,j,kLev,pco2_init_iter
        INTEGER intimeP, intime0, intime1
        _RL aWght, bWght, co3dummy
 C Number of iterations for pCO2 solvers...
@@ -47,7 +47,7 @@ C local variables for carbon chem
       _RL surfsi(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL surftemp(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL surfsalt(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
-      _RL surfdic(1-OLx:sNx+OLx,1-OLy:sNy+OLy) 
+      _RL surfdic(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       INTEGER iprt,jprt
       LOGICAL pH_isLoaded
 CEOP
@@ -56,53 +56,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       kLev=1
 
-      CALL DIC_ATMOS(0, startTime, nIter0, myThid )
-      
-#ifdef DIC_CARBON_COMPONENTS
-        IF ( dic_pCO2_ref .EQ. UNSET_RL ) THEN
-C capture initial pCO2 or set from specified reference
-         DO bj = myByLo(myThid), myByHi(myThid)
-          DO bi = myBxLo(myThid), myBxHi(myThid)
-           DO j=1-Oly,sNy+Oly
-            DO i=1-Olx,sNx+Olx
-              dic_pCO2_init(i,j,bi,bj)=AtmospCO2(i,j,bi,bj)
-            ENDDO
-           ENDDO
-          ENDDO
-         ENDDO
-        ELSE
-         DO bj = myByLo(myThid), myByHi(myThid)
-          DO bi = myBxLo(myThid), myBxHi(myThid)
-           DO j=1-Oly,sNy+Oly
-            DO i=1-Olx,sNx+Olx
-              dic_pCO2_init(i,j,bi,bj)=dic_pCO2_ref
-            ENDDO
-           ENDDO
-          ENDDO
-         ENDDO         
-        ENDIF
-#endif /* DIC_CARBON_COMPONENTS */
-
-#ifdef ALLOW_C13
-C Fill total_atmos_c13, atmos_13pco2
-		IF ( nIter0.GT.PTRACERS_Iter0 .OR.
-	 &       (nIter0.EQ.PTRACERS_Iter0 .AND. pickupSuff.NE.' ')
-	 &      ) THEN
-            CALL DIC_READ_13C_PICKUP( nIter0, myThid )
-        ELSE
-C Initialize from dic_p13co2 supplied in data.dic
-         DO bj = myByLo(myThid), myByHi(myThid)
-          DO bi = myBxLo(myThid), myBxHi(myThid)
-           DO j=1-Oly,sNy+Oly
-            DO i=1-Olx,sNx+Olx
-              total_atmos_c13(i,j,bi,bj)=dic_p13co2*1.77 _d 20
-              atmos_13pco2   (i,j,bi,bj)=dic_p13co2
-            ENDDO
-           ENDDO
-          ENDDO
-         ENDDO
-        ENDIF
-#endif /* ALLOW_C13 */
+      CALL DIC_INI_ATMOS( startTime, nIter0, myThid )
 
 ccccccccccccccccccccccccccccccccccccccccc
       IF ( periodicExternalForcing ) THEN
@@ -115,7 +69,7 @@ C--   Now calculate whether it is time to update the forcing arrays
        CALL GET_PERIODIC_INTERVAL(
      O                   intimeP, intime0, intime1, bWght, aWght,
      I                   externForcingCycle, externForcingPeriod,
-     I                   deltaTclock, startTime, myThid )
+     I                   deltaTClock, startTime, myThid )
 
        _BARRIER
        _BEGIN_MASTER(myThid)
@@ -124,7 +78,6 @@ C--   Now calculate whether it is time to update the forcing arrays
      &   ' : Reading new data, i0,i1=', intime0, intime1
        _END_MASTER(myThid)
 
-
        IF ( DIC_silicaFile .NE. ' '  ) THEN
          CALL READ_REC_XY_RS( DIC_silicaFile,silica0,intime0,
      &        nIter0,myThid )
@@ -132,11 +85,12 @@ C--   Now calculate whether it is time to update the forcing arrays
      &        nIter0,myThid )
        ENDIF
 
-#ifdef ALLOW_OFFLINE
-       IF ( useOffLine ) THEN
-         CALL OFFLINE_FIELDS_LOAD( startTime, nIter0, myThid )
-       ENDIF
-#endif
+c#ifdef ALLOW_OFFLINE
+C--    This call has been moved to S/R OFFLINE_INIT_VARIA
+c      IF ( useOffLine ) THEN
+c        CALL OFFLINE_FIELDS_LOAD( startTime, nIter0, myThid )
+c      ENDIF
+c#endif
 
        _EXCH_XY_RS(silica0, myThid )
        _EXCH_XY_RS(silica1, myThid )
@@ -144,8 +98,8 @@ C--   Now calculate whether it is time to update the forcing arrays
        IF ( DIC_silicaFile .NE. ' '  ) THEN
         DO bj = myByLo(myThid), myByHi(myThid)
          DO bi = myBxLo(myThid), myBxHi(myThid)
-          DO j=1-Oly,sNy+Oly
-           DO i=1-Olx,sNx+Olx
+          DO j=1-OLy,sNy+OLy
+           DO i=1-OLx,sNx+OLx
              SILICA(i,j,bi,bj)= bWght*silica0(i,j,bi,bj)
      &                        + aWght*silica1(i,j,bi,bj)
            ENDDO
@@ -167,7 +121,7 @@ C =================================================================
       DO bj=myByLo(myThid),myByHi(myThid)
        DO bi=myBxLo(myThid),myBxHi(myThid)
          DO j=1-OLy,sNy+OLy
-          DO i=1-Olx,sNx+OLx
+          DO i=1-OLx,sNx+OLx
             pH(i,j,bi,bj) = 8. _d 0
           ENDDO
          ENDDO
@@ -218,15 +172,15 @@ C determine inorganic carbon chem coefficients
 #ifdef DIC_BIOTIC
 #ifdef DIC_BOUNDS
              surfalk(i,j) = max(0.4 _d 0,
-     &                          min(10. _d 0,PTRACER(i,j,klev,bi,bj,2)))
+     &                          min(10. _d 0,PTRACER(i,j,kLev,bi,bj,2)))
      &                          * maskC(i,j,kLev,bi,bj)
              surfphos(i,j)  = max(1.0 _d -11,
-     &                          min(1._d -1, PTRACER(i,j,klev,bi,bj,3)))
+     &                          min(1. _d -1,PTRACER(i,j,kLev,bi,bj,3)))
      &                          * maskC(i,j,kLev,bi,bj)
 #else
-             surfalk(i,j) = PTRACER(i,j,klev,bi,bj,2)
+             surfalk(i,j) = PTRACER(i,j,kLev,bi,bj,2)
      &                          * maskC(i,j,kLev,bi,bj)
-             surfphos(i,j)= PTRACER(i,j,klev,bi,bj,3)
+             surfphos(i,j)= PTRACER(i,j,kLev,bi,bj,3)
      &                          * maskC(i,j,kLev,bi,bj)
 #endif
 #else
@@ -250,7 +204,7 @@ C FOR 2d NON-INTERACTIVE Si
             surfsalt(i,j) = max(4. _d 0,
      &                          min(50. _d 0, salt(i,j,kLev,bi,bj)))
             surfdic(i,j)  = max(0.4 _d 0,
-     &                         min(10. _d 0, PTRACER(i,j,klev,bi,bj,1)))
+     &                         min(10. _d 0, PTRACER(i,j,kLev,bi,bj,1)))
 #else
             surftemp(i,j) = theta(i,j,kLev,bi,bj)
             surfsalt(i,j) = salt(i,j,kLev,bi,bj)
@@ -275,7 +229,7 @@ C$TAF LOOP = parallel
           DO j=jMin,jMax
 C$TAF LOOP = parallel
            DO i=iMin,iMax
-            IF ( maskC(i,j,kLev,bi,bj) .GT. 0. _d 0) THEN
+            IF ( maskC(i,j,kLev,bi,bj) .NE. 0. _d 0) THEN
 C$TAF init dic_surf = static, 10
              DO pco2_init_iter=1,10
 C$TAF STORE pH(i,j,bi,bj)                              = dic_surf
@@ -301,7 +255,7 @@ C$TAF STORE surfalk(i,j), surfphos(i,j), surfsi(i,j)   = dic_surf
 C          iprt = MIN(20,sNx)
 C          jprt = MIN(20,sNy)
 C          WRITE(standardMessageUnit,*) 'QQ first guess pH',
-C     &        pH(iprt,jprt,bi,bj)
+C     &        pH(iprt,jprt,bi,bj),
 C     &        theta(iprt,jprt,1,bi,bj), salt(iprt,jprt,1,bi,bj),
 C     &        surfdic(iprt,jprt), surfphos(iprt,jprt),
 C     &        surfsi(iprt,jprt),surfalk(iprt,jprt)

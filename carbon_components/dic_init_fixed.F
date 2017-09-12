@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_init_fixed.F,v 1.12 2010/05/14 21:52:33 jahn Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_init_fixed.F,v 1.13 2016/01/11 21:46:55 jmc Exp $
 C $Name:  $
 
 #include "DIC_OPTIONS.h"
@@ -65,10 +65,9 @@ C coefficients for determining saturation O2
 
 C     Set other constant/flag
 
-#ifndef USE_ATMOSCO2
-c                   dic_int2=number entries to read
-c                   dic_int3=start timestep,
-c                   dic_int4=timestep between file entries)
+C                   dic_int2=number entries to read
+C                   dic_int3=start timestep,
+C                   dic_int4=timestep between file entries)
       IF ( dic_int1.EQ.2.OR.dic_int1.eq.4) then
         CALL MDSFINDUNIT( iUnit, mythid )
         OPEN(UNIT=iUnit,FILE='co2atmos.dat',STATUS='old')
@@ -78,8 +77,6 @@ c                   dic_int4=timestep between file entries)
         ENDDO
         CLOSE(iUnit)
       ENDIF
-
-#endif /* ndef USE_ATMOSCO2 */
 
 #ifdef DIC_CARBON_COMPONENTS
         IF ( DIC_silicaFile .NE. ' '  ) THEN
@@ -105,6 +102,25 @@ c                   dic_int4=timestep between file entries)
 #endif /* ifdef DIC_CARBON_COMPONENTS */
 
 #ifdef DIC_BIOTIC
+
+#ifdef ALLOW_FE
+#ifdef ALLOW_VARIABLE_LIGANDS
+C Given the ratio of steady state bio production divided by the steady state
+C  ligand concentration (i.e. real world estimates for gamma and lambda) then
+C  find the reference timescale of ligand degredation, lambda_ref.
+        IF (gamma_lig.NE.0. _d 0.AND.
+     &     lambda_over_gamma.NE.0. _d 0) THEN
+           lambda_ref=lambda_over_gamma*gamma_lig
+        ELSE
+           WRITE(msgBuf,'(A)')
+     &      'DIC_INIT_FIXED: gamma_lig and gamma_over_lambda are zero'
+           CALL PRINT_ERROR( msgBuf, myThid )
+           STOP 'ABNORMAL END: S/R DIC_INIT_FIXED: 
+     &       variable ligand error' 
+        ENDIF
+#endif /* ALLOW_VARIABLE_LIGANDS */
+#endif /* ALLOW_FE */
+
 #ifdef ALLOW_AUTODIFF
 cph nlev=Nr used in TAF store directive
       nlev=Nr

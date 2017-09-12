@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/DIC_VARS.h,v 1.8 2011/04/19 21:34:32 stephd Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/dic/DIC_VARS.h,v 1.10 2014/11/04 17:15:52 jmc Exp $
 C $Name:  $
 
 #include "DIC_OPTIONS.h"
@@ -22,12 +22,12 @@ C     *==========================================================*
       _RL  FluxCO2(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  wind(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  FIce(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
-      _RL  Kwexch_Pre(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  Silica(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
-      
+      _RL  Kwexch_Pre(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+
        COMMON /CARBON_CHEM/
      &                     ak0,ak1,ak2,akw,akb,aks,akf,
-     &                     ak1p,ak2p,ak3p,aksi, fugf, 
+     &                     ak1p,ak2p,ak3p,aksi, fugf,
      &                     ff,ft,st,bt, Ksp_TP_Calc
       _RL  ak0(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  ak1(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
@@ -90,6 +90,8 @@ C  DIC_atmospFile  :: file name of atmospheric pressure
 C  DIC_iceFile     :: file name of seaice fraction
 C  DIC_ironFile    :: file name of aeolian iron flux
 C  DIC_silicaFile  :: file name of surface silica
+C  DIC_parFile     :: file name of photosynthetically available radiation (PAR)
+C  DIC_chlaFile    :: file name of chlorophyll climatology
 C  DIC_forcingPeriod :: periodic forcing parameter specific for dic (seconds)
 C  DIC_forcingCycle  :: periodic forcing parameter specific for dic (seconds)
 C  dic_pCO2          :: Atmospheric pCO2 to be rad in data.dic
@@ -98,10 +100,10 @@ C JML include iron source due to hydrothermal input into bottom layer
 
       COMMON /DIC_FILENAMES/
      &        DIC_windFile, DIC_atmospFile, DIC_iceFile,
-     &        DIC_ironFile, DIC_hydroventFile, DIC_silicaFile,
+     &        DIC_ironFile, DIC_silicaFile, DIC_parFile,
+     &        DIC_chlaFile, DIC_hydroventFile,
      &        DIC_forcingPeriod, DIC_forcingCycle,
-     &        dic_int1, dic_int2, dic_int3, dic_int4, 
-     &        dic_pCO2
+     &        dic_pCO2, dic_int1, dic_int2, dic_int3, dic_int4
 
       CHARACTER*(MAX_LEN_FNAM) DIC_windFile
       CHARACTER*(MAX_LEN_FNAM) DIC_atmospFile
@@ -109,6 +111,8 @@ C JML include iron source due to hydrothermal input into bottom layer
       CHARACTER*(MAX_LEN_FNAM) DIC_ironFile
       CHARACTER*(MAX_LEN_FNAM) DIC_hydroventFile
       CHARACTER*(MAX_LEN_FNAM) DIC_silicaFile
+      CHARACTER*(MAX_LEN_FNAM) DIC_parFile
+      CHARACTER*(MAX_LEN_FNAM) DIC_chlaFile
       _RL     DIC_forcingPeriod
       _RL     DIC_forcingCycle
       _RL dic_pCO2
@@ -127,7 +131,7 @@ C       and prognostic Ligands
      &     BIOave, CARave, SURave, SUROave, pCO2ave, pHave,
      &     fluxCO2ave, omegaCave, pfluxave, epfluxave, cfluxave,
      &     DIC_timeAve,
-     &     alpha, rain_ratio, InputFe, omegaC,
+     &     par, alpha, rain_ratio, InputFe, omegaC, CHL,
      &     Kpo4, DOPfraction, zcrit, KRemin, O2crit,
      &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP, R_SIP,
      &     alpfe, ligand_stab, ligand_tot, KFE, freefemax, 
@@ -137,9 +141,9 @@ C       and prognostic Ligands
      &     KScav_dust, KScav_background, KScav_background_yr,
      &     fesedflux_pcm, FeIntSec, fe_sed_depth_max,
      &     HydroInputHe3, solfe, R_FeHe3, fe_vent_depth_min,
-     &     par, parfrac, k0, lit0,
+     &     par, parfrac, k0, kchl, lit0,
      &     alphaUniform_yr, alphaUniform, rainRatioUniform,
-     &     alphamax, alphamin, 
+     &     alphamax, alphamin,
      &     calpha, crain_ratio, cInputFe, calpfe, feload, cfeload,
      &     nlev, QSW_underice
 
@@ -162,6 +166,7 @@ C     For averages
 C     values for biogeochemistry
 C JML Added some extras for particle dependent Fe scavenging rates,
 C       prognostic Ligands, and hajoon's sediment source
+C   CHL           :: chlorophyll climatology [mg/m3]
 C   fesedflux_pcm :: ratio of sediment iron to sinking organic matter
 C   FeIntSec      :: Sediment Fe flux, intersect value in:
 C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
@@ -171,6 +176,7 @@ C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
       _RL InputFe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL HydroInputHe3(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL omegaC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
+      _RL CHL(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL Kpo4
       _RL DOPfraction
       _RL zcrit
@@ -211,7 +217,9 @@ C Scavenging values
       _RL fe_vent_depth_min
       _RL fe_sed_depth_max
 C     values for light limited bio activity
-      _RL k0, parfrac, lit0
+C   k0      :: Light attentuation coefficient for water [1/m]
+C   kchl    :: Light attentuation coefficient fct of chlorophyll [m2/mg]
+      _RL k0, kchl, parfrac, lit0
       _RL alphaUniform_yr
       _RL alphaUniform
       _RL rainRatioUniform

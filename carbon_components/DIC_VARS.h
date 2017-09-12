@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/DIC_VARS.h,v 1.8 2011/04/19 21:34:32 stephd Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/dic/DIC_VARS.h,v 1.10 2014/11/04 17:15:52 jmc Exp $
 C $Name:  $
 
 #include "DIC_OPTIONS.h"
@@ -64,7 +64,7 @@ C Fugacity Factor added by Val Bennington Nov. 2010
 
        COMMON /CARBON_CHEM/
      &                     ak0,ak1,ak2,akw,akb,aks,akf,
-     &                     ak1p,ak2p,ak3p,aksi, fugf, 
+     &                     ak1p,ak2p,ak3p,aksi, fugf,
      &                     ff,ft,st,bt, Ksp_TP_Calc
       _RL  ak0(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL  ak1(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
@@ -127,6 +127,8 @@ C  DIC_atmospFile  :: file name of atmospheric pressure
 C  DIC_iceFile     :: file name of seaice fraction
 C  DIC_ironFile    :: file name of aeolian iron flux
 C  DIC_silicaFile  :: file name of surface silica
+C  DIC_parFile     :: file name of photosynthetically available radiation (PAR)
+C  DIC_chlaFile    :: file name of chlorophyll climatology
 C  DIC_forcingPeriod :: periodic forcing parameter specific for dic (seconds)
 C  DIC_forcingCycle  :: periodic forcing parameter specific for dic (seconds)
 C  dic_pCO2          :: Atmospheric pCO2 to be rad in data.dic
@@ -135,7 +137,8 @@ C JML include iron source due to hydrothermal input into bottom layer
 
       COMMON /DIC_FILENAMES/
      &        DIC_windFile, DIC_atmospFile, DIC_iceFile,
-     &        DIC_ironFile, DIC_hydroventFile, DIC_silicaFile,
+     &        DIC_ironFile, DIC_silicaFile, DIC_parFile,
+     &        DIC_chlaFile, DIC_hydroventFile,
      &        DIC_forcingPeriod, DIC_forcingCycle,
      &        dic_int1, dic_int2, dic_int3, dic_int4, 
      &        dic_pCO2, dic_pCO2_ref
@@ -146,6 +149,8 @@ C JML include iron source due to hydrothermal input into bottom layer
       CHARACTER*(MAX_LEN_FNAM) DIC_ironFile
       CHARACTER*(MAX_LEN_FNAM) DIC_hydroventFile
       CHARACTER*(MAX_LEN_FNAM) DIC_silicaFile
+      CHARACTER*(MAX_LEN_FNAM) DIC_parFile
+      CHARACTER*(MAX_LEN_FNAM) DIC_chlaFile
       _RL     DIC_forcingPeriod
       _RL     DIC_forcingCycle
       _RL dic_pCO2
@@ -174,15 +179,18 @@ C       and prognostic Ligands
      &     BIOave, CARave, SURave, SUROave, pCO2ave, pHave,
      &     fluxCO2ave, omegaCave, pfluxave, epfluxave, cfluxave,
      &     DIC_timeAve,
-     &     alpha, rain_ratio, InputFe, omegaC,
-     &     Kpo4, DOPfraction, zcrit, KRemin,
-     &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP, R_pop2poc, R_SIP,
-     &     O2crit, alpfe, KScav, ligand_stab, ligand_tot, KFE,
-     &     freefemax, scav_wsp, scav_inter, scav_exp, scav_surf_min,
-     &     scav_ratio, fesedflux_pcm, FeIntSec, fe_sed_depth_max,
+     &     par, alpha, rain_ratio, InputFe, omegaC, CHL,
+     &     Kpo4, DOPfraction, zcrit, KRemin, O2crit,
+     &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP, R_SIP,
+     &     alpfe, ligand_stab, ligand_tot, KFE, freefemax, 
+     &     KScav, KScav_yr, KScav_surf, KScav_poc_yr, KScav_poc,
+     &     R_pop2poc, R_dust2fe, poc_wsp,  dust_wsp,
+     &     scav_exp, scav_ratio, KScav_dust_yr, 
+     &     KScav_dust, KScav_background, KScav_background_yr,
+     &     fesedflux_pcm, FeIntSec, fe_sed_depth_max,
      &     HydroInputHe3, solfe, R_FeHe3, fe_vent_depth_min,
-     &     par, parfrac, k0, lit0,
-     &     alphaUniform, rainRatioUniform,
+     &     par, parfrac, k0, kchl, lit0,
+     &     alphaUniform_yr, alphaUniform, rainRatioUniform,
      &     alphamax, alphamin,
      &     calpha, crain_ratio, cInputFe, calpfe, feload, cfeload,
      &     nlev, QSW_underice
@@ -206,6 +214,7 @@ C     For averages
 C     values for biogeochemistry
 C JML Added some extras for particle dependent Fe scavenging rates,
 C       prognostic Ligands, and hajoon's sediment source
+C   CHL           :: chlorophyll climatology [mg/m3]
 C   fesedflux_pcm :: ratio of sediment iron to sinking organic matter
 C   FeIntSec      :: Sediment Fe flux, intersect value in:
 C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
@@ -215,6 +224,7 @@ C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
       _RL InputFe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL HydroInputHe3(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL omegaC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
+      _RL CHL(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL Kpo4
       _RL DOPfraction
       _RL zcrit
@@ -225,20 +235,29 @@ C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
       _RL R_cp
       _RL R_NP
       _RL R_FeP
-      _RL R_pop2poc
       _RL R_SIP
       _RL O2crit
       _RL alpfe
-      _RL KScav
       _RL ligand_stab
       _RL ligand_tot
       _RL KFe
       _RL freefemax
-      _RL scav_wsp
-      _RL scav_inter
-      _RL scav_ratio
+C Scavenging values
+      _RL KScav_yr
+      _RL KScav
+      _RL KScav_surf
+      _RL KScav_poc_yr
+      _RL KScav_poc
+      _RL R_pop2poc
+      _RL R_dust2fe
+      _RL poc_wsp
+      _RL dust_wsp
       _RL scav_exp
-      _RL scav_surf_min
+      _RL scav_ratio
+      _RL KScav_dust_yr
+      _RL KScav_dust
+      _RL KScav_background_yr
+      _RL KScav_background
       _RL fesedflux_pcm
       _RL FeIntSec
       _RL R_FeHe3
@@ -246,7 +265,10 @@ C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
       _RL fe_vent_depth_min
       _RL fe_sed_depth_max
 C     values for light limited bio activity
-      _RL k0, parfrac, lit0
+C   k0      :: Light attentuation coefficient for water [1/m]
+C   kchl    :: Light attentuation coefficient fct of chlorophyll [m2/mg]
+      _RL k0, kchl, parfrac, lit0
+      _RL alphaUniform_yr
       _RL alphaUniform
       _RL rainRatioUniform
       _RL alphamax, alphamin
@@ -261,11 +283,14 @@ C     values for light limited bio activity
 
 #ifdef ALLOW_VARIABLE_LIGANDS
       COMMON /PROGNOSTIC_LIGANDS/
-     &     gamma_lig, lambda_lig_ref, bio_tot_lig
+     &     gamma_lig, lambda_over_gamma, lambda_ref,
+     &     lig_q10, lig_tref
      
       _RL gamma_lig
-      _RL lambda_lig_ref
-      _RL bio_tot_lig
+      _RL lambda_over_gamma
+      _RL lambda_ref
+      _RL lig_q10
+      _RL lig_tref
 #endif
       
 #endif /* DIC_BIOTIC */

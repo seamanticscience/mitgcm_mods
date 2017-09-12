@@ -5,7 +5,7 @@ C $Name:  $
 
 C--  File carbon_chem.F:
 C--   Contents
-C--   o CALC_PCO2_APPROX
+C--   o CALC_CSAT
 C--   o CARBON_COEFFS
 C--   o CARBON_COEFFS_PRESSURE_DEP
 
@@ -14,7 +14,7 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 C !ROUTINE: CALC_CSAT_APPROX
 
 C !INTERFACE: ==========================================================
-       SUBROUTINE CALC_CSAT_APPROX(
+       SUBROUTINE CALC_CSAT(
      I                       t,s,pco2eq,pt,sit,ta,
      I                       k1local,k2local,
      I                       k1plocal,k2plocal,k3plocal,
@@ -27,7 +27,7 @@ C !INTERFACE: ==========================================================
 
 C !DESCRIPTION:
 C     *==========================================================*
-C     | SUBROUTINE CALC_CSAT_APPROX                              |
+C     | SUBROUTINE CALC_CSAT                            |
 C     *==========================================================*
 C      CALCULATE Csat, EQUILIBRIUM DIC FOR GIVEN pCO2, T, Alk etc
 C !USES: ========================================================*
@@ -176,7 +176,7 @@ C       (C. Sabine and R. Key), passes input arguments in umol/kg
 C       (i.e., on a per mass basis)
 C     - I have changed things slightly so that input arguments are in mol/m^3,
 C     - Thus, all input concentrations (diclocal, ta, pt, and st) should be
-C       given in mol/m^3  output arguments "co2star" and "dco2star"
+C       given in mol/m^3; output arguments "co2star" and "dco2star"
 C       are likewise be in mol/m^3.
 C
 C Apr 2011: fix vapour bug (following Bennington)
@@ -466,7 +466,7 @@ C       (C. Sabine and R. Key), passes input arguments in umol/kg
 C       (i.e., on a per mass basis)
 C     - I have changed things slightly so that input arguments are in mol/m^3,
 C     - Thus, all input concentrations (diclocal, ta, pt, and st) should be
-C       given in mol/m^3  output arguments "co2star" and "dco2star"
+C       given in mol/m^3; output arguments "co2star" and "dco2star"
 C       are likewise be in mol/m^3.
 C
 C Apr 2011: fix vapour bug (following Bennington)

@@ -30,7 +30,7 @@ C !INTERFACE: ==========================================================
 
 C !DESCRIPTION:
 C  surface ocean inorganic carbon chemistry to OCMIP2
-C  regulations modified from OCMIP2 code 
+C  regulations modified from OCMIP2 code;
 C  Mick Follows, MIT, Oct 1999.
 
 C Apr 2011: fix vapour bug (following Bennington)
@@ -85,7 +85,7 @@ C       arguments in umol/kg (i.e., on a per mass basis)
 C     - I have changed things slightly so that input arguments are in
 C       mol/m^3,
 C     - Thus, all input concentrations (diclocal, ta, pt, and st) should be
-C       given in mol/m^3  output arguments "co2star" and "dco2star"
+C       given in mol/m^3; output arguments "co2star" and "dco2star"
 C       are likewise be in mol/m^3.
 C ---------------------------------------------------------------------
 
@@ -406,6 +406,7 @@ C     == Local variables ==
         _RL  siooh3g
         _RL  fco2
 
+
 c ---------------------------------------------------------------------
 C Change units from the input of mol/m^3 -> mol/kg:
 c (1 mol/m^3)  x (1 m^3/1024.5 kg)
@@ -491,9 +492,8 @@ c Reconvert from mol/kg -> mol/m^3
         co2aqlocal=co2s/permil
         RETURN
         END
-        
-C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
+C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 CBOP
 C !ROUTINE: CARBON_COEFFS
 
@@ -526,7 +526,7 @@ C       (C. Sabine and R. Key), passes input arguments in umol/kg
 C       (i.e., on a per mass basis)
 C     - I have changed things slightly so that input arguments are in mol/m^3,
 C     - Thus, all input concentrations (diclocal, ta, pt, and st) should be
-C       given in mol/m^3  output arguments "co2star" and "dco2star"
+C       given in mol/m^3; output arguments "co2star" and "dco2star"
 C       are likewise be in mol/m^3.
 C
 C Apr 2011: fix vapour bug (following Bennington)
@@ -621,7 +621,7 @@ C Weiss (1974) Marine Chemistry
            fugf(i,j,bi,bj) = exp( (B+2. _d 0*delta) * P1atm / RT)
 C------------------------------------------------------------------------
 C f = k0(1-pH2O)*correction term for non-ideality
-C Weiss & Price (1980, Mar. Chem., 8, 347-359  Eq 13 with table 6 values)
+C Weiss & Price (1980, Mar. Chem., 8, 347-359; Eq 13 with table 6 values)
            ff(i,j,bi,bj) = exp(-162.8301 _d 0 + 218.2968 _d 0/tk100  +
      &          90.9241 _d 0*log(tk100) - 1.47696 _d 0*tk1002 +
      &          s * (.025695 _d 0 - .025225 _d 0*tk100 +
@@ -771,10 +771,8 @@ C       (C. Sabine and R. Key), passes input arguments in umol/kg
 C       (i.e., on a per mass basis)
 C     - I have changed things slightly so that input arguments are in mol/m^3,
 C     - Thus, all input concentrations (diclocal, ta, pt, and st) should be
-C       given in mol/m^3  output arguments "co2star" and "dco2star"
+C       given in mol/m^3; output arguments "co2star" and "dco2star"
 C       are likewise be in mol/m^3.
-C
-C Apr 2011: fix vapour bug (following Bennington)
 C
 C NOW INCLUDES:
 C PRESSURE DEPENDENCE of K1, K2, solubility product of calcite
@@ -882,7 +880,6 @@ cmick....................................................
           if (hFacC(i,j,Klevel,bi,bj).gt.0. _d 0) then
            t = ttemp(i,j)
            s = stemp(i,j)
-           
 C terms used more than once
            tk = 273.15 _d 0 + t
            tk100 = tk/100. _d 0

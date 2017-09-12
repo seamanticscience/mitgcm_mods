@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_write_pickup.F,v 1.7 2011/08/25 22:19:17 jmc Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_write_pickup.F,v 1.14 2016/01/11 21:46:55 jmc Exp $
 C $Name:  $
 
 #include "DIC_OPTIONS.h"
@@ -41,11 +41,9 @@ C     !LOCAL VARIABLES:
 C     == Local variables ==
       CHARACTER*(MAX_LEN_FNAM) fn
       INTEGER prec
-#ifndef USE_ATMOSCO2
       INTEGER ioUnit
       _RL tmpFld(2)
       _RS dummyRS(1)
-#endif
 #ifdef DIC_BIOTIC
       LOGICAL glf
       _RL     timList(1)
@@ -69,12 +67,16 @@ C     == Local variables ==
 c     IF ( DIC_pickup_write_mdsio ) THEN
         prec = precFloat64
 
-#ifndef USE_ATMOSCO2
         IF ( dic_int1.EQ.3 ) THEN
           WRITE(fn,'(A,A)') 'pickup_dic_co2atm.',suff
           ioUnit = 0
+#ifdef ALLOW_OPENAD
+          tmpFld(1) = total_atmos_carbon%v
+          tmpFld(2) = atpco2%v
+#else /* ALLOW_OPENAD */
           tmpFld(1) = total_atmos_carbon
           tmpFld(2) = atpco2
+#endif /* ALLOW_OPENAD */
 #ifdef ALLOW_MDSIO
           CALL MDS_WRITEVEC_LOC(
      I                         fn, prec, ioUnit,
@@ -97,7 +99,6 @@ c     IF ( DIC_pickup_write_mdsio ) THEN
         ENDIF
 #endif /* ALLOW_C13   */
         ENDIF
-#endif /* ndef USE_ATMOSCO2 */
 
 #ifdef DIC_BIOTIC
         WRITE(fn,'(A,A)') 'pickup_dic.',suff
@@ -140,10 +141,11 @@ C     files
         CALL MDS_WR_METAFILES( fn, prec, glf, .FALSE.,
      &                         0, 0, j, ' ',
      &                         nWrFlds, wrFldList,
-     &                         1, timList,
+     &                         1, timList, oneRL,
      &                         nj, myIter, myThid )
 #endif /* ALLOW_MDSIO */
 C--------------------------
+
 #endif /* DIC_BIOTIC  */
 
 #ifdef DIC_CARBON_COMPONENTS
@@ -193,11 +195,10 @@ C     files
         CALL MDS_WR_METAFILES( fn, prec, glf, .FALSE.,
      &                         0, 0, Nr, ' ',
      &                         pHnWrFlds, pHwrFldList,
-     &                         1, timList, 
+     &                         1, timList, oneRL,
      &                         j, myIter, myThid )
 C--------------------------
 #endif /* DIC_CARBON_COMPONENTS */
-
 
 c     ENDIF /* DIC_pickup_write_mdsio */
 

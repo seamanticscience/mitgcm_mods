@@ -1,4 +1,4 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_fields_load.F,v 1.32 2012/03/06 15:37:24 jmc Exp $
+C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_fields_load.F,v 1.36 2016/01/16 21:57:12 jmc Exp $
 C $Name:  $
 
 #include "DIC_OPTIONS.h"
@@ -8,7 +8,7 @@ C !ROUTINE: DIC_FIELDS_LOAD
 
 C !INTERFACE: ==========================================================
       SUBROUTINE DIC_FIELDS_LOAD (
-     I           myIter,myTime,myThid)
+     I           myIter, myTime, myThid )
 
 C !DESCRIPTION:
 C  Read in fields needed for CO2,O2 fluxterms, silica for pH calculation
@@ -21,18 +21,11 @@ C !USES: ===============================================================
 #include "GRID.h"
 #include "DIC_VARS.h"
 #include "DIC_LOAD.h"
-#ifdef ALLOW_THSICE
-# include "THSICE_VARS.h"
-#endif
-#ifdef ALLOW_SEAICE
-# include "SEAICE_SIZE.h"
-# include "SEAICE.h"
-#endif
 
 C !INPUT PARAMETERS: ===================================================
-C  myThid               :: thread number
 C  myIter               :: current timestep
 C  myTime               :: current time
+C  myThid               :: thread number
       INTEGER myIter
       _RL myTime
       INTEGER myThid
@@ -48,13 +41,13 @@ c !LOCAL VARIABLES: ===================================================
 #endif
 CEOP
 
-      IF (  DIC_forcingCycle.gt.0. _d 0 ) THEN
+      IF (  DIC_forcingCycle.GT.0. _d 0 ) THEN
 
 C--   Now calculate whether it is time to update the forcing arrays
        CALL GET_PERIODIC_INTERVAL(
      O                   intimeP, intime0, intime1, bWght, aWght,
      I                   DIC_forcingCycle, DIC_forcingPeriod,
-     I                   deltaTclock, myTime, myThid )
+     I                   deltaTClock, myTime, myThid )
 
        bi = myBxLo(myThid)
        bj = myByLo(myThid)
@@ -69,18 +62,18 @@ C--   Now calculate whether it is time to update the forcing arrays
        ENDIF
 #endif /* ALLOW_DEBUG */
 
-#ifdef ALLOW_AUTODIFF_TAMC
+#ifdef ALLOW_AUTODIFF
 C-    assuming that we call S/R DIC_FIELDS_LOAD at each time-step and
 C     with increasing time, this will catch when we need to load new records;
 C     But with Adjoint run, this is not always the case => might end-up using
 C     the wrong time-records
        IF ( intime0.NE.intimeP .OR. myIter.EQ.nIter0 ) THEN
-#else /* ALLOW_AUTODIFF_TAMC */
+#else /* ALLOW_AUTODIFF */
 C-    Make no assumption on sequence of calls to DIC_FIELDS_LOAD ;
 C     This is the correct formulation (works in Adjoint run).
 C     Unfortunatly, produces many recomputations <== not used until it is fixed
        IF ( intime1.NE.DIC_ldRec(bi,bj) ) THEN
-#endif /* ALLOW_AUTODIFF_TAMC */
+#endif /* ALLOW_AUTODIFF */
 
 C--   If the above condition is met then we need to read in
 C     data for the period ahead and the period behind myTime.
@@ -120,10 +113,17 @@ C     data for the period ahead and the period behind myTime.
      &       myIter,myThid )
         ENDIF
 #ifdef READ_PAR
-        IF ( Filename1 .NE. ' '  ) THEN
-         CALL READ_REC_XY_RS( Filename1,par0,intime0,
+        IF ( DIC_parFile .NE. ' '  ) THEN
+         CALL READ_REC_XY_RS( DIC_parFile,par0,intime0,
      &       myIter,myThid )
-         CALL READ_REC_XY_RS( Filename1,par1,intime1,
+         CALL READ_REC_XY_RS( DIC_parFile,par1,intime1,
+     &       myIter,myThid )
+        ENDIF
+#endif
+#ifdef LIGHT_CHL
+C--   Load chlorophyll climatology data, unit for chlorophyll : mg/m3
+        IF ( DIC_chlaFile .NE. ' '  ) THEN
+         CALL READ_REC_XY_RS( DIC_chlaFile,chlinput,1,
      &       myIter,myThid )
         ENDIF
 #endif
@@ -158,6 +158,9 @@ C--   fill-in overlap after loading temp arrays:
 #ifdef READ_PAR
         _EXCH_XY_RS(par0, myThid )
         _EXCH_XY_RS(par1, myThid )
+#endif
+#ifdef LIGHT_CHL
+        _EXCH_XY_RS(chlinput, myThid )
 #endif
 #ifdef ALLOW_FE
         _EXCH_XY_RS(feinput0, myThid )
@@ -214,14 +217,14 @@ c          pisvel(i,j,bi,bj)  =0.337*wind(i,j,bi,bj)**2/3.6d5    !QQQQ
          IF ( DIC_iceFile .NE. ' '  ) THEN
            DO j=1-OLy,sNy+OLy
             DO i=1-OLx,sNx+OLx
-             FIce(i,j,bi,bj) = bWght*ice0(i,j,bi,bj)
+             fIce(i,j,bi,bj) = bWght*ice0(i,j,bi,bj)
      &                       + aWght*ice1(i,j,bi,bj)
             ENDDO
            ENDDO
          ENDIF
 
 #ifdef READ_PAR
-         IF ( Filename1 .NE. ' '  ) THEN
+         IF ( DIC_parFile .NE. ' '  ) THEN
            DO j=1-OLy,sNy+OLy
             DO i=1-OLx,sNx+OLx
              PAR(i,j,bi,bj) = bWght*par0(i,j,bi,bj)
@@ -234,6 +237,15 @@ c          pisvel(i,j,bi,bj)  =0.337*wind(i,j,bi,bj)**2/3.6d5    !QQQQ
      &       ' a file if you want to use READ_PAR'
             CALL PRINT_ERROR( msgBuf, myThid )
             STOP 'ABNORMAL END: S/R DIC_FIELDS_LOAD'
+         ENDIF
+#endif
+#ifdef LIGHT_CHL
+         IF ( DIC_chlaFile .NE. ' '  ) THEN
+           DO j=1-OLy,sNy+OLy
+            DO i=1-OLx,sNx+OLx
+             CHL(i,j,bi,bj) = chlinput(i,j,bi,bj)
+            ENDDO
+           ENDDO
          ENDIF
 #endif
 #ifdef ALLOW_FE
@@ -266,29 +278,6 @@ C JML include iron source due to hydrothermal input into bottom layer
 
 C endif for DIC_forcingCycle
       ENDIF
-
-      DO bj = myByLo(myThid), myByHi(myThid)
-       DO bi = myBxLo(myThid), myBxHi(myThid)
-#ifdef ALLOW_SEAICE
-         IF ( useSEAICE ) THEN
-           DO j=1-OLy,sNy+OLy
-            DO i=1-OLx,sNx+OLx
-             FIce(i,j,bi,bj) = AREA(i,j,bi,bj)
-            ENDDO
-           ENDDO
-         ENDIF
-#endif
-#ifdef ALLOW_THSICE
-         IF ( useThSIce ) THEN
-           DO j=1-OLy,sNy+OLy
-            DO i=1-OLx,sNx+OLx
-             FIce(i,j,bi,bj) = iceMask(i,j,bi,bj)
-            ENDDO
-           ENDDO
-         ENDIF
-#endif
-       ENDDO
-      ENDDO
 
 #endif /* ALLOW_DIC */
       RETURN
