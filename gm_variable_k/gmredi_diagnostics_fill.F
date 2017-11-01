@@ -51,7 +51,7 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
       IF ( useDiagnostics ) THEN
 
 #ifdef GM_VISBECK_VARIABLE_K
-        IF ( GM_useHMM2011 .or. GM_useFM2006N2 ) THEN
+        IF ( GM_useHMM2011 .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d gm parameterisations
             CALL DIAGNOSTICS_FILL(GM_diffK_3d,'GM_VisbK'
      &                    ,0,Nr,1,bi,bj,myThid)

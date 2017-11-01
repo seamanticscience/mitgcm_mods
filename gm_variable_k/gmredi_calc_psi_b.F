@@ -161,7 +161,7 @@ C-  Compute the 2 stream-function Components ( GM bolus vel.)
      &     +eddyPsiX(i,j,k,bi,bj)*maskW(i,j,k,bi,bj)
 #endif
 #ifdef GM_VISBECK_VARIABLE_K
-     IF ( GM_useHMM2011 .or. GM_useFM2006N2 ) THEN
+     IF ( GM_useHMM2011 .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d richardson number parameterisation
 C     as in Hoffman and Morales Maqueda (2011) GRL, 10.1029/2010GL045972
          GM_PsiX(i,j,k,bi,bj) = GM_PsiX(i,j,k,bi,bj) +
@@ -196,7 +196,7 @@ C     as in Hoffman and Morales Maqueda (2011) GRL, 10.1029/2010GL045972
      &     +eddyPsiY(i,j,k,bi,bj)*maskS(i,j,k,bi,bj)
 #endif
 #ifdef GM_VISBECK_VARIABLE_K
-     IF ( GM_useHMM2011 .or. GM_useFM2006N2 ) THEN
+     IF ( GM_useHMM2011 .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d kgm parameterisations
          GM_PsiY(i,j,k,bi,bj) = GM_PsiY(i,j,k,bi,bj) +
      &       SlopeY(i,j)*taperY(i,j)*(

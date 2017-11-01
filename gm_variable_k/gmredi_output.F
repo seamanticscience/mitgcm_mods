@@ -122,7 +122,7 @@ C      Normalize by integrated time
          CALL TIMEAVE_NORMALIZE( GM_Kwz_T, GM_timeAve,
      &                           Nr, bi, bj, myThid )
 #ifdef GM_VISBECK_VARIABLE_K
-      IF (GM_Visbeck_alpha.NE.0. .or. GM_useFM2006N2 ) THEN
+      IF (GM_Visbeck_alpha.NE.0. .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d kgm parameterisations
            CALL TIMEAVE_NORMALIZE( Visbeck_K_T, GM_timeAve,
      &                           Nr , bi, bj, myThid )
@@ -149,7 +149,7 @@ C JML Add additional option for 3d kgm parameterisations
          CALL WRITE_FLD_XYZ_RL('GM_Kwy-T.',suff,GM_Kwy_T,myIter,myThid)
          CALL WRITE_FLD_XYZ_RL('GM_Kwz-T.',suff,GM_Kwz_T,myIter,myThid)
 #ifdef GM_VISBECK_VARIABLE_K
-      IF (GM_Visbeck_alpha.NE.0. .or. GM_useFM2006N2 ) THEN
+      IF (GM_Visbeck_alpha.NE.0. .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d kgm parameterisations
            CALL WRITE_FLD_XYZ_RL('Visbeck_K-T.',suff,Visbeck_K_T,
      &                             myIter,myThid)
@@ -180,7 +180,7 @@ C JML Add additional option for 3d kgm parameterisations
          CALL MNC_CW_RL_W(pf,'gm_tave',0,0,'Kwy',GM_Kwy_T,myThid)
          CALL MNC_CW_RL_W(pf,'gm_tave',0,0,'Kwz',GM_Kwz_T,myThid)
 #ifdef GM_VISBECK_VARIABLE_K
-      IF (GM_Visbeck_alpha.NE.0. .or. GM_useFM2006N2 ) THEN
+      IF (GM_Visbeck_alpha.NE.0. .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d kgm parameterisations
            CALL MNC_CW_RL_W(pf,'gm_tave',0,0,'VisbK',
      &          Visbeck_K_T, myThid)
@@ -204,7 +204,7 @@ C      Reset averages to zero
          CALL TIMEAVE_RESET( GM_Kwy_T, Nr, bi, bj, myThid )
          CALL TIMEAVE_RESET( GM_Kwz_T, Nr, bi, bj, myThid )
 #ifdef GM_VISBECK_VARIABLE_K
-      IF (GM_Visbeck_alpha.NE.0. .or. GM_useFM2006N2 ) THEN
+      IF (GM_Visbeck_alpha.NE.0. .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d kgm parameterisations
            CALL TIMEAVE_RESET( Visbeck_K_T, Nr, bi, bj, myThid )
        ENDIF

@@ -124,11 +124,11 @@ C- print out some kee parameters :
             CALL WRITE_0D_L( GM_useHMM2011, INDEX_NONE,
      &        'GM_useHMM2011 =',
      &        ' /* Using Hofmann and Maqueda 2011 GM_K */')
-          ELSE IF ( GM_useFM2006N2 ) THEN
-            CALL WRITE_0D_L( GM_useFM2006N2, INDEX_NONE,
-     &        'GM_useFM2006N2 =',
+          ELSE IF ( GM_useFMH2005 ) THEN
+            CALL WRITE_0D_L( GM_useFMH2005, INDEX_NONE,
+     &        'GM_useFMH2005 =',
      &        ' /* Using the Ferreira & Marshall N2 vertical GM_K */')
-          ELSE IF ( .not. ( GM_useHMM2011 .or. GM_useFM2006N2 )
+          ELSE IF ( .not. ( GM_useHMM2011 .or. GM_useFMH2005 )
      &              .and. GM_Visbeck_alpha.NE.0.) THEN
             CALL WRITE_0D_L( '.TRUE.', INDEX_NONE,
      &        'GM_useVMHS97 =',
