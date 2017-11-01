@@ -322,7 +322,7 @@ C        (same stencil and same weights as for dSigmaH calculation)
      &                 + maskC(i,j+1,ks,bi,bj)
      &                 )
      
-           IF ( GM_useFM2006N2 ) THEN
+           IF ( GM_useFMH2005 ) THEN
 C  N^2 vertical dependence on the constant diffusivity
 C calculate reference stratification at 2nd level for N2ref
                 dSigmaRref = ( dSigmaDrref(i,j)*4. _d 0
@@ -424,7 +424,7 @@ c        dSigmaDr(i,j)=sigmaR(i,j,k)
 C JML Add additional option for 3d richardson number parameterisation
 C     as in Hoffman and Morales Maqueda (2011) GRL, 10.1029/2010GL045972
 C     or the vertical variation in GMK as in Ferreira and Marshall (2006)
-      IF ( .NOT. ( GM_useHMM2011 .OR. GM_useFM2006N2 ) ) THEN
+      IF ( .NOT. ( GM_useHMM2011 .OR. GM_useFMH2005 ) ) THEN
        IF ( GM_Visbeck_alpha.GT.0. .AND.
      &      -rC(k-1).LT.GM_Visbeck_depth ) THEN
 
@@ -530,7 +530,7 @@ C        (same stencil and same weights as for dSigmaH calculation)
      &                 + maskC(i,j+1,k,bi,bj)
      &                 )
      
-           IF ( GM_useFM2006N2 ) THEN
+           IF ( GM_useFMH2005 ) THEN
 C  N^2 vertical dependence on the constant diffusivity
 C calculate reference stratification at 2nd level for N2ref
                 dSigmaRref = ( dSigmaDrref(i,j)*4. _d 0
@@ -694,7 +694,7 @@ C-- end 1rst loop on vertical level index k
 CADJ STORE GM_diffK_3d(:,:,bi,bj) = comlev1_bibj, key=igmkey, byte=isbyte
 #endif
 C-     Limit range that KapGM can take
-          IF ( GM_useHMM2011 .OR. GM_useFM2006N2 ) THEN
+          IF ( GM_useHMM2011 .OR. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d GMK parameterisations
              DO k=1,Nr
                DO j=1-Oly+1,sNy+Oly-1
@@ -760,7 +760,7 @@ CADJ STORE Kwz(:,:,k,bi,bj) = comlev1_bibj_k, key=kkey, byte=isbyte
      &           + GM_skewflx*bolus_K*GM_bolFac2d(i,j,bi,bj)
 #endif
 #ifdef GM_VISBECK_VARIABLE_K
-      IF ( GM_useHMM2011 .OR. GM_useFM2006N2 ) THEN
+      IF ( GM_useHMM2011 .OR. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d GMK parameterisations
          Kgm_tmp=Kgm_tmp + GM_diffK_3d(i,j,k,bi,bj)*(1. _d 0 + GM_skewflx)
       ELSE
@@ -775,7 +775,7 @@ C JML Add additional option for 3d GMK parameterisations
          Kgm_tmp = isopycK*GM_isoFac2d(i,j,bi,bj)
 #endif
 #ifdef GM_VISBECK_VARIABLE_K
-      IF ( GM_useHMM2011 .OR. GM_useFM2006N2 ) THEN
+      IF ( GM_useHMM2011 .OR. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d GMK parameterisations
          Kgm_tmp=Kgm_tmp + GM_diffK_3d(i,j,k,bi,bj)
       ELSE
@@ -925,7 +925,7 @@ c      IF ( GM_nonUnitDiag ) THEN
 #endif
      &     )*taperFct(i,j)
 #ifdef GM_VISBECK_VARIABLE_K
-      IF ( GM_useHMM2011 .OR. GM_useFM2006N2 ) THEN
+      IF ( GM_useHMM2011 .OR. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d GMK parameterisations
             Kux(i,j,k,bi,bj) = Kux(i,j,k,bi,bj) + (
      &        op5*(GM_diffK_3d(i,j,k,bi,bj)+GM_diffK_3d(i-1,j,k,bi,bj))
@@ -975,7 +975,7 @@ CADJ STORE taperFct(:,:)     = comlev1_bibj_k, key=kkey, byte=isbyte
 #endif
      &     )*SlopeX(i,j)*taperFct(i,j)
 #ifdef GM_VISBECK_VARIABLE_K
-      IF ( GM_useHMM2011 .OR. GM_useFM2006N2 ) THEN
+      IF ( GM_useHMM2011 .OR. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d GMK parameterisations
             Kuz(i,j,k,bi,bj) = Kuz(i,j,k,bi,bj) + (
      &        op5*(GM_diffK_3d(i,j,k,bi,bj)+GM_diffK_3d(i-1,j,k,bi,bj))*GM_advect
@@ -1005,7 +1005,7 @@ C         store in tmp1k Kuz_Redi
 #endif
      &                 )*SlopeX(i,j)*taperFct(i,j)
 #ifdef GM_VISBECK_VARIABLE_K
-      IF ( GM_useHMM2011 .OR. GM_useFM2006N2 ) THEN
+      IF ( GM_useHMM2011 .OR. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d GMK parameterisations
             tmp1k(i,j) = tmp1k(i,j) + (
      &        op5*(GM_diffK_3d(i,j,k,bi,bj)+GM_diffK_3d(i-1,j,k,bi,bj))
@@ -1145,7 +1145,7 @@ c      IF ( GM_nonUnitDiag ) THEN
 #endif
      &     )*taperFct(i,j)
 #ifdef GM_VISBECK_VARIABLE_K
-      IF ( GM_useHMM2011 .OR. GM_useFM2006N2 ) THEN
+      IF ( GM_useHMM2011 .OR. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d GMK parameterisations
             Kvy(i,j,k,bi,bj) = Kvy(i,j,k,bi,bj) + (
      &        op5*(GM_diffK_3d(i,j,k,bi,bj)+GM_diffK_3d(i,j-1,k,bi,bj))
@@ -1196,7 +1196,7 @@ CADJ STORE taperFct(:,:)     = comlev1_bibj_k, key=kkey, byte=isbyte
 #endif
      &     )*SlopeY(i,j)*taperFct(i,j)
 #ifdef GM_VISBECK_VARIABLE_K
-      IF ( GM_useHMM2011 .OR. GM_useFM2006N2 ) THEN
+      IF ( GM_useHMM2011 .OR. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d GMK parameterisations
             Kvz(i,j,k,bi,bj) = Kvz(i,j,k,bi,bj) + (
      &        op5*(GM_diffK_3d(i,j,k,bi,bj)+GM_diffK_3d(i,j-1,k,bi,bj))*GM_advect
@@ -1226,7 +1226,7 @@ C         store in tmp1k Kvz_Redi
 #endif
      &        )*SlopeY(i,j)*taperFct(i,j)
 #ifdef GM_VISBECK_VARIABLE_K
-      IF ( GM_useHMM2011 .OR. GM_useFM2006N2 ) THEN
+      IF ( GM_useHMM2011 .OR. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d GMK parameterisations
             tmp1k(i,j) = tmp1k(i,j) + (
      &        op5*(GM_diffK_3d(i,j,k,bi,bj)+GM_diffK_3d(i,j-1,k,bi,bj))
@@ -1280,7 +1280,7 @@ C--   Time-average
          CALL TIMEAVE_CUMULATE( GM_Kwz_T, Kwz, Nr,
      &                          deltaTclock, bi, bj, myThid )
 #ifdef GM_VISBECK_VARIABLE_K
-       IF ( GM_Visbeck_alpha.NE.0. .or. GM_useFM2006N2 ) THEN
+       IF ( GM_Visbeck_alpha.NE.0. .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d richardson number parameterisations
          CALL TIMEAVE_CUMULATE( Visbeck_K_T, GM_diffK_3d, Nr,
      &                          deltaTclock, bi, bj, myThid )

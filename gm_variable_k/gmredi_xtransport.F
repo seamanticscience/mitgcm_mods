@@ -117,7 +117,7 @@ C--   Area integrated zonal flux
          Kgm_tmp=GM_isopycK
 #endif
 #ifdef GM_VISBECK_VARIABLE_K
-     IF ( GM_useHMM2011 .or. GM_useFM2006N2 ) THEN
+     IF ( GM_useHMM2011 .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d kgm parameterisations
          Kgm_tmp=Kgm_tmp+
      &      op5*(GM_diffK_3d(i,j,k,bi,bj)+GM_diffK_3d(i-1,j,k,bi,bj))

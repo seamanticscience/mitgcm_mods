@@ -20,7 +20,7 @@ C     GM_ExtraDiag     :: select extra diagnostics
 C     GM_InMomAsStress :: apply GM as a stress in momentum Eq.
 C     GM_useHMM2011    :: JML Add additional option for 3d richardson number 
 C      parameterisation as in Hoffman and Morales Maqueda (2011) GRL, 10.1029/2010GL045972
-C     GM_useFM2006N2   :: JML Add additional option for 3d N2 variations in vertical mixing 
+C     GM_useFMH2005   :: JML Add additional option for 3d N2 variations in vertical mixing 
 C      parameterisation as in Ferreira & Marshall (2006) OM, 10.1016/j.ocemod.2005.12.001
 C     GM_MNC           ::
 C     GM_MDSIO         ::
@@ -33,14 +33,14 @@ C     GM_MDSIO         ::
       LOGICAL GM_MNC
       LOGICAL GM_MDSIO
       LOGICAL GM_useHMM2011
-      LOGICAL GM_useFM2006N2
+      LOGICAL GM_useFMH2005
       
       COMMON /GM_PARAMS_L/
      &                   GM_AdvForm, GM_AdvSeparate,
      &                   GM_useBVP,  GM_useSubMeso,
      &                   GM_ExtraDiag, GM_MNC, GM_MDSIO,
      &                   GM_InMomAsStress,
-     &                   GM_useHMM2011, GM_useFM2006N2
+     &                   GM_useHMM2011, GM_useFMH2005
 
 C--   GM/Redi Integer-type parameters
 C     GM_BVP_modeNumber :: vertical mode number used for speed "c" in BVP transport

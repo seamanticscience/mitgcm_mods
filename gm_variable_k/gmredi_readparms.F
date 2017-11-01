@@ -56,7 +56,7 @@ C     GM_slopeSqCutoff :: slope^2 cut-off value
      &          GM_Small_Number, GM_slopeSqCutoff,
      &          GM_Visbeck_alpha, GM_Visbeck_length,
      &          GM_Visbeck_depth,
-     &          GM_useHMM2011, GM_useFM2006N2,
+     &          GM_useHMM2011, GM_useFMH2005,
      &          GM_Visbeck_minDepth, GM_Visbeck_maxSlope,
      &          GM_Visbeck_minVal_K, GM_Visbeck_maxVal_K,
      &          GM_facTrL2dz, GM_facTrL2ML, GM_maxTransLay,
@@ -96,7 +96,7 @@ c     GM_taveFreq         = -1.
 
 C--   Default values Visbeck
       GM_useHMM2011       =  .FALSE.
-      GM_useFM2006N2      =  .FALSE.
+      GM_useFMH2005      =  .FALSE.
       GM_Visbeck_alpha    =    0. _d 0
       GM_Visbeck_length   =  200. _d 3
       GM_Visbeck_depth    = 1000. _d 0
