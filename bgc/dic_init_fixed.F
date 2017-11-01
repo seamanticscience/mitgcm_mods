@@ -64,7 +64,10 @@ C coefficients for determining saturation O2
 
 C     Set other constant/flag
 
-      IF ( dic_int1.EQ.2 ) THEN
+C                   dic_int2=number entries to read
+C                   dic_int3=start timestep,
+C                   dic_int4=timestep between file entries)
+      IF ( dic_int1.EQ.2.OR.dic_int1.eq.4) then
         CALL MDSFINDUNIT( iUnit, mythid )
         OPEN(UNIT=iUnit,FILE='co2atmos.dat',STATUS='old')
         DO k=1,dic_int2
