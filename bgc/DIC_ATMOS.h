@@ -10,7 +10,7 @@ C $Name:  $
      &              total_ocean_carbon_start,
      &              atpco2,total_atmos_moles
 
-       _RL co2atmos(1000)
+       _RL co2atmos(1002)
        _RL total_atmos_carbon
        _RL total_ocean_carbon
        _RL total_atmos_carbon_year
