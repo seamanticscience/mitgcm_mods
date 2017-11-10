@@ -1,8 +1,9 @@
 # mitgcm_mods
-Modifications to the core MITgcm code that I have written
+Modifications to the core MITgcm code written by Jonathan Lauderdale
 
-This code is for checkpoint66j of MITgcm, which I am testing as an upgrade to the first release (Checkpoint63m) which is for an older version of MITgcm (Checkpoint63m).
+This code is for checkpoint66j of MITgcm.
 
+It supercedes the first release of modifications (Checkpoint63m) which is for an older version of MITgcm of the same name found here:
 <a href="https://zenodo.org/badge/latestdoi/87344333"><img src="https://zenodo.org/badge/87344333.svg" alt="DOI"></a>
 
 Some code in the bgc folder adds preformed tracer functionality to MITgcm (GCHEM_OPTIONS.h, gchem_forcing_sep.F and gchem_preformed_tracers.F and increase PTRACERS_num in PTRACERS_SIZE.h)
