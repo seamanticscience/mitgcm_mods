@@ -1,7 +1,7 @@
 # mitgcm_mods
 Modifications to the core MITgcm code that I have written
 
-This code for the first release (Checkpoint63m) is for an older version of MITgcm (Checkpoint63m) and compatible modifications for later versions will be released as and when.
+This code is for checkpoint66j of MITgcm, which I am testing as an upgrade to the first release (Checkpoint63m) which is for an older version of MITgcm (Checkpoint63m).
 
 <a href="https://zenodo.org/badge/latestdoi/87344333"><img src="https://zenodo.org/badge/87344333.svg" alt="DOI"></a>
 
