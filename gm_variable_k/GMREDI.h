@@ -56,7 +56,7 @@ C     GM_K3D_smooth    :: Expand PV closure in terms of baroclinic modes (=.FALS
      &                   GM_InMomAsStress,
      &                   GM_useK3D, GM_K3D_smooth, GM_K3D_use_constK,
      &                   GM_K3D_beta_eq_0, GM_K3D_ThickSheet,
-     &                   GM_K3D_surfK, GM_K3D_constRedi
+     &                   GM_K3D_surfK, GM_K3D_constRedi,
      &                   GM_useHMM2011, GM_useFMH2005
 
 C--   GM/Redi Integer-type parameters

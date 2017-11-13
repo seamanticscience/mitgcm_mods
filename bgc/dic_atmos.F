@@ -140,12 +140,25 @@ C for 278ppmv we need total_atmos_carbon=4.9206e+16
        CALL GLOBAL_SUM_TILE_RL( tile_flux,   total_flux,   myThid )
        CALL GLOBAL_SUM_TILE_RL( tile_carbon, total_carbon, myThid )
 
+#ifdef ALLOW_AUTODIFF
+C--NOTE: we DO need to make this section Master-Thread only to prevent multiple
+C   update (by each thread) of shared variable "total_atmos_carbon"
+C- However, TAF does not recognize MITgcm multi-threading and shared variable
+C   status and see a conditional (if myThid=1) reset of "atpco2" that results
+C   in major recomputations.
+#else
+       _BEGIN_MASTER(myThid)
+#endif
+C store previous content:
+         total_ocean_carbon_old = total_ocean_carbon
+         total_atmos_carbon_old = total_atmos_carbon
+         
 C Section inserted by JML to add external emisions in mol C
 c read from a file of emission rates in mol C/s (note:
 c                   dic_int2=number entries to read
 c                   dic_int3=start timestep,
 c                   dic_int4=timestep between file entries)
-      if (dic_int1.eq.4) then
+       if (dic_int1.eq.4) then
           if (co2atmos(ntim).ne.0. _d 0.or.co2atmos(ntim+1).ne.0. _d 0) then
 c             linearly interpolate between file entries otherwise emissions remain 0
               ntim=int((myIter-dic_int3)/dic_int4)+1
@@ -164,34 +177,9 @@ c              print*,'weights',ntim, aWght, bWght, emissions
           else
               emissions = 0. _d 0
           endif
-      endif
+       endif
 
-#ifdef ALLOW_AUTODIFF
-C--NOTE: we DO need to make this section Master-Thread only to prevent multiple
-C   update (by each thread) of shared variable "total_atmos_carbon"
-C- However, TAF does not recognize MITgcm multi-threading and shared variable
-C   status and see a conditional (if myThid=1) reset of "atpco2" that results
-C   in major recomputations.
-#else
-       _BEGIN_MASTER(myThid)
-#endif
-C store initial content:
-         total_ocean_carbon_start=total_carbon
-         total_atmos_carbon_start=total_atmos_carbon
-         total_ocean_carbon_old = total_carbon
-         total_atmos_carbon_old = total_atmos_carbon
-         _END_MASTER(myThid)
-       ELSE
-         _BEGIN_MASTER(myThid)
-#ifdef ALLOW_AUTODIFF_TAMC
-         atpco2 = dic_pCO2
-#endif
-C store previous content:
-         total_ocean_carbon_old = total_ocean_carbon
-         total_atmos_carbon_old = total_atmos_carbon
-C C JML calculate new atmos pCO2 and add emissions contribution to 
-C total_atmos_carbon (mol C) after previous timestep's flux.
-       
+C calculate new atmos pCO2            
        total_atmos_carbon = total_atmos_carbon - total_flux
          
         if (dic_int1.eq.4) then
@@ -205,18 +193,14 @@ C total_atmos_carbon (mol C) after previous timestep's flux.
           WRITE(ioUnit,*) 'QQ atmos C, total, pCo2',
      &                     total_atmos_carbon, atpco2
        ENDIF
-       
        total_carbon=total_atmos_carbon + total_ocean_carbon
        total_carbon_old=total_atmos_carbon_old +total_ocean_carbon_old
        carbon_diff=total_carbon-total_carbon_old
-       
        IF (debugMode) THEN
           WRITE(ioUnit,*) 'QQ total C, current, old, diff',
      &                     total_carbon, total_carbon_old, carbon_diff
        ENDIF
-       
        carbon_diff=total_ocean_carbon-total_ocean_carbon_old
-       
        IF (debugMode) THEN
           WRITE(ioUnit,*) 'QQ ocean C, current, old, diff',
      &         total_ocean_carbon, total_ocean_carbon_old, carbon_diff
@@ -259,7 +243,7 @@ C if end of forcing cycle, find total change in ocean carbon
       ENDIF
 
 #ifndef ALLOW_AUTODIFF
-      IF ( dic_int1.EQ.2 .OR. dic_int1.EQ.3 ) THEN
+      IF ( dic_int1.EQ.2 .OR. dic_int1.GT.3 ) THEN
 #endif
 C--    Set AtmospCO2 for next iteration:
        DO bj=myByLo(myThid),myByHi(myThid)

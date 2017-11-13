@@ -131,7 +131,7 @@ C       and prognostic Ligands
      &     BIOave, CARave, SURave, SUROave, pCO2ave, pHave,
      &     fluxCO2ave, omegaCave, pfluxave, epfluxave, cfluxave,
      &     DIC_timeAve,
-     &     par, alpha, rain_ratio, InputFe, omegaC, CHL,
+     &     alpha, rain_ratio, InputFe, omegaC, CHL,
      &     Kpo4, DOPfraction, zcrit, KRemin, O2crit,
      &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP, R_SIP,
      &     alpfe, ligand_stab, ligand_tot, KFE, freefemax, 
