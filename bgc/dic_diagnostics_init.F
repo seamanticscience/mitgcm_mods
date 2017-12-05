@@ -210,6 +210,7 @@ C     Define diagnostics Names :
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
 
+#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))        
 C JML include iron source due to sediment input into bottom layer            
       diagName  = 'DICSEDFE'
       diagTitle = 'Input of sedimentary Fe (mol/m3/s)'
@@ -217,7 +218,9 @@ C JML include iron source due to sediment input into bottom layer
       diagCode  = 'SM P    L1      '
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+#endif
 
+#ifdef HYDROTHERMAL_FE
 C JML include iron source due to hydrothermal input into bottom layer                 
       diagName  = 'DICHTVFE'
       diagTitle = 'Input of Hydrothermal Vent Fe (mol/m3/s)'
@@ -225,7 +228,8 @@ C JML include iron source due to hydrothermal input into bottom layer
       diagCode  = 'SM P    L1      '
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
-     
+#endif
+
       diagName  = 'DICGFE  '
       diagTitle = 'Tendency of FE concentration'
       diagUnits = 'mol FE/m3/s      '

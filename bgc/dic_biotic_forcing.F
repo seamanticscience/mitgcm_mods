@@ -595,8 +595,12 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 #ifdef ALLOW_FE
         CALL DIAGNOSTICS_FILL(SURFE     ,'DICFEFLX',0,1 ,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(GFE       ,'DICGFE  ',0,Nr,2,bi,bj,myThid)
+#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))        
         CALL DIAGNOSTICS_FILL(SEDFE     ,'DICSEDFE',0,1 ,2,bi,bj,myThid)
+#endif
+#ifdef HYDROTHERMAL_FE
         CALL DIAGNOSTICS_FILL(HYDROFE   ,'DICHTVFE',0,1 ,2,bi,bj,myThid)
+#endif
 #ifdef ALLOW_VARIABLE_LIGANDS
         CALL DIAGNOSTICS_FILL(GLIG      ,'DICGLIG ',0,Nr,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(lambda_lig,'LIGLAMDA',0,Nr,2,bi,bj,myThid)
