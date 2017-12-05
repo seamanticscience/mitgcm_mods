@@ -72,8 +72,8 @@ C   KPO4        :: half saturation phosphate constant (mol/m3)
 C   KFE         :: half saturation fe constant (mol/m3)
 CC Iron chemisty values
 C   alpfe       :: solubility of aeolian fe
-C   fesedflux_pcm :: ratio of sediment iron to sinking organic matter
-C   FeIntSec    :: y-axis crossing for Fe_flux = fesedflux_pcm*pflux + FeIntSec
+C   sedfe_factor :: ratio of sediment iron to sinking organic matter
+C   sedfe_offset    :: y-axis crossing for Fe_flux = sedfe_factor*pflux + sedfe_offset
 C   freefemax   :: max solubility of free iron (mol/m3)
 CC Control variables
 C   KScav       :: iron scavenging rate (s-1)
@@ -99,7 +99,7 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
      & scav_exp, scav_ratio, KScav_dust_yr, 
      & KScav_dust, KScav_background, KScav_background_yr,
      & alpfe, freefemax, ligand_stab, ligand_tot, 
-     & fesedflux_pcm, FeIntSec, solfe, R_FeHe3,
+     & sedfe_factor, sedfe_offset, solfe, R_FeHe3,
      & fe_vent_depth_min, fe_sed_depth_max,
 #ifdef ALLOW_VARIABLE_LIGANDS     
      & gamma_lig, lambda_over_gamma, lambda_ref,
@@ -197,11 +197,11 @@ C These values for hydrothermal input of iron from Tagliabue et al (2014)
 C sedimentary iron source 
        fe_sed_depth_max = 6000. _d 0
 C    For Elrod et al (2004) use:
-       fesedflux_pcm = 6.8 _d -4       
-       FeIntSec      = -0.5 _d -6 / 86400. _d 0
+       sedfe_factor = 6.8 _d -4       
+       sedfe_offset      = -0.5 _d -6 / 86400. _d 0
 C    For Dale et al (2015) use:
-C       fesedflux_pcm = 170. _d 0 / (86400. _d 0 * 1. _d 6)      
-C       FeIntSec      = 0
+C       sedfe_factor = 170. _d 0 / (86400. _d 0 * 1. _d 6)      
+C       sedfe_offset      = 0
 #endif
        
 C Ligand parameters for the iron cycle       
@@ -399,9 +399,9 @@ C JML Hydrothermal iron input parameters
 
 #if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))
 C JML Sediment iron input parameters
-            CALL WRITE_0D_RL(fesedflux_pcm, INDEX_NONE,'fesedflux_pcm =',
+            CALL WRITE_0D_RL(sedfe_factor, INDEX_NONE,'sedfe_factor =',
      &  ' /* Gradient of sediment iron-poc relationship */')   
-            CALL WRITE_0D_RL(FeIntSec, INDEX_NONE,'FeIntSec =',
+            CALL WRITE_0D_RL(sedfe_offset, INDEX_NONE,'sedfe_offset =',
      &  ' /* Intercept of sediment iron-poc relationship */')   
             CALL WRITE_0D_RL(fe_sed_depth_max, INDEX_NONE,'fe_sed_depth_max =',
      &  ' /*  Maximum depth that sediment iron is input */')   

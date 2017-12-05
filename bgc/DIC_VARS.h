@@ -139,7 +139,7 @@ C       and prognostic Ligands
      &     R_pop2poc, R_dust2fe, poc_wsp,  dust_wsp,
      &     scav_exp, scav_ratio, KScav_dust_yr, 
      &     KScav_dust, KScav_background, KScav_background_yr,
-     &     fesedflux_pcm, FeIntSec, fe_sed_depth_max,
+     &     sedfe_factor, sedfe_offset, fe_sed_depth_max,
      &     HydroInputHe3, solfe, R_FeHe3, fe_vent_depth_min,
      &     par, parfrac, k0, kchl, lit0,
      &     alphaUniform_yr, alphaUniform, rainRatioUniform,
@@ -167,9 +167,9 @@ C     values for biogeochemistry
 C JML Added some extras for particle dependent Fe scavenging rates,
 C       prognostic Ligands, and hajoon's sediment source
 C   CHL           :: chlorophyll climatology [mg/m3]
-C   fesedflux_pcm :: ratio of sediment iron to sinking organic matter
-C   FeIntSec      :: Sediment Fe flux, intersect value in:
-C                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
+C   sedfe_factor :: ratio of sediment iron to sinking organic matter
+C   sedfe_offset      :: Sediment Fe flux, intersect value in:
+C                    Fe_flux = sedfe_factor*pflux + sedfe_offset
       _RL par(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL alpha(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL rain_ratio(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
@@ -210,8 +210,8 @@ C Scavenging values
       _RL KScav_dust
       _RL KScav_background_yr
       _RL KScav_background
-      _RL fesedflux_pcm
-      _RL FeIntSec
+      _RL sedfe_factor
+      _RL sedfe_offset
       _RL R_FeHe3
       _RL solfe
       _RL fe_vent_depth_min

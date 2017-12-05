@@ -419,21 +419,21 @@ C Surface Sources and sinks
 #if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))
        IF ( -rC(kBottom).LE.fe_sed_depth_max ) THEN         
 C include sediment iron source using the flux of po4 into bottom layer            
-C JML pflux*dz*RCP is mol C.m-2.s-1, fesedflux_pcm converts to mol Fe.m-2.s-1   
+C JML pflux*dz*RCP is mol C.m-2.s-1, sedfe_factor converts to mol Fe.m-2.s-1   
                sed_poc=MAX(0. _d 0,pflux(i,j,kBottom))
      &                          *R_CP*drF(kBottom)
 
 #ifdef SEDIMENT_FE_ELROD
 C Elrod et al (2004) formulation 
                SEDFE(i,j)  = MAX( 
-     &              0. _d 0, fesedflux_pcm * sed_poc + FeIntSec
+     &              0. _d 0, sedfe_factor * sed_poc + sedfe_offset
      &            )*recip_drF(kBottom)*recip_hFacC(i,j,kBottom,bi,bj)
 #endif /* SEDIMENT_FE_ELROD */
 #ifdef SEDIMENT_FE_DALE
 C Dale et al (2015) formulation. 
-C Here fesedflux_pcm is gamma = 170 umol Fe m-2 d-1 (170/(86400*1e6) mol Fe m-2 s-1)
+C Here sedfe_factor is gamma = 170 umol Fe m-2 d-1 (170/(86400*1e6) mol Fe m-2 s-1)
 C      sed_poc is mmol m-2 d-1 and O2 is umol l-1
-               SEDFE(i,j)=fesedflux_pcm
+               SEDFE(i,j)=sedfe_factor
      &            * tanh( sed_poc*1000*86400 
      &                  / PTR_O2(i,j,kBottom)*1000 )
      &            *recip_drF(kBottom)*recip_hFacC(i,j,kBottom,bi,bj)
