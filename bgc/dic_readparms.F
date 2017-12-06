@@ -349,7 +349,7 @@ C- namelist BIOTIC_PARMS
      &  ' /* Half saturation light constant (W/m2) */')
        CALL WRITE_0D_RL( KPO4, INDEX_NONE,'KPO4 =',
      &  ' /* Half saturation phosphate constant (mol/m3) */')
- #ifdef ALLOW_FE     
+#ifdef ALLOW_FE     
        CALL WRITE_0D_RL( KFE, INDEX_NONE,'KFE =',
      &  ' /* Half saturation fe constant (mol/m3) */')
        CALL WRITE_0D_RL( alpfe, INDEX_NONE,'alpfe =',
