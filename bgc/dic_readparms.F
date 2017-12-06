@@ -153,7 +153,7 @@ C      (as high as 6e-3 molP/m3/yr in Parekh etal 2005, GBC eqn3)
        alphaUniform_yr  = 2. _d -3
        alphaUniform     = UNSET_RL
        
- #ifdef ALLOW_FE
+#ifdef ALLOW_FE
 C JML Added var for particle/dust dependent Fe scavenging
 C      KScav is the uniform value when scavenging is constant rate
        KScav_yr       = 0.19 _d 0
@@ -281,7 +281,7 @@ C taken into account
           alphaUniform   = alphaUniform_yr/(360. _d 0 * 86400. _d 0)
        ENDIF
       
- #ifdef ALLOW_FE
+#ifdef ALLOW_FE
        IF ( KScav .EQ. UNSET_RL ) THEN
           KScav          = KScav_yr/(360. _d 0*86400. _d 0)
        ENDIF
@@ -396,7 +396,7 @@ C JML Sediment iron input parameters
      &  ' /* Intercept of sediment iron-poc relationship */')   
             CALL WRITE_0D_RL(fe_sed_depth_max, INDEX_NONE,'fe_sed_depth_max =',
      &  ' /*  Maximum depth that sediment iron is input */')   
-#endif /* SEDIMENT_FE_ELROD || SEDIMENT_FE_DALE */
+#endif /* SEDIMENT_FE */
 
 C JML Fe Scavenging parameters
        CALL WRITE_0D_RL( KScav_yr, INDEX_NONE,'KScav_yr =',
