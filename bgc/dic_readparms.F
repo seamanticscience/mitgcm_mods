@@ -394,7 +394,8 @@ C JML Sediment iron input parameters
      &  ' /* Gradient of sediment iron-poc relationship */')   
             CALL WRITE_0D_RL(sedfe_offset, INDEX_NONE,'sedfe_offset =',
      &  ' /* Intercept of sediment iron-poc relationship */')   
-            CALL WRITE_0D_RL(fe_sed_depth_max, INDEX_NONE,'fe_sed_depth_max =',
+            CALL WRITE_0D_RL(fe_sed_depth_max, INDEX_NONE,
+     &  'fe_sed_depth_max =',
      &  ' /*  Maximum depth that sediment iron is input */')   
 #endif /* SEDIMENT_FE */
 
