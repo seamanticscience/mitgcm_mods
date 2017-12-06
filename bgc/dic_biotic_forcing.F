@@ -499,8 +499,10 @@ C update
      &      PTR_FE(i,j,k)+GFE(i,j,k)*PTRACERS_dTLev(k)
      
 #ifdef ALLOW_VARIABLE_LIGANDS
-           PTR_LIG(i,j,k)=
+C JML make sure ligand remains positive
+           PTR_LIG(i,j,k)=MAX(0. _d 0,
      &      PTR_LIG(i,j,k)+GLIG(i,j,k)*PTRACERS_dTLev(k)
+     &      )
 #endif
 #endif
           ENDDO
