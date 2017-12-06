@@ -303,7 +303,7 @@ C Make sure this is always negative
            lig_decr(i,j,k) = MIN(-lambda_lig(i,j,k)
      &                        *PTR_LIG(i,j,k)*maskC(i,j,k,bi,bj)
 C                             may also decrease as DOP is consumed  
-C     &                        -gamma_lig*R_CP*RDOP(i,j,k)
+     &                        -gamma_lig*R_CP*RDOP(i,j,k)
      &                        ,0. _d 0)
                 
 C Now do ligand tendency
@@ -325,7 +325,8 @@ C          Scavenging rate per second
                ENDIF
            ENDIF
            
-C          Modify the scavenging rate with other mechanisms (bkgrnd, dust) 
+C          Modify the scavenging rate (constant or poc dependent)
+C               with other mechanisms (bkgrnd, dust) 
            KScav=KScav
      &             +KScav_background
      &             +KScav_dust*(
@@ -421,8 +422,10 @@ C update
      &      PTR_FE(i,j,k)+GFE(i,j,k)*PTRACERS_dTLev(k)
      
 #ifdef ALLOW_VARIABLE_LIGANDS
-           PTR_LIG(i,j,k)=
+C JML make sure ligand remains positive
+           PTR_LIG(i,j,k)=MAX(0. _d 0,
      &      PTR_LIG(i,j,k)+GLIG(i,j,k)*PTRACERS_dTLev(k)
+     &      )
 #endif
 #endif
           ENDDO
@@ -513,8 +516,12 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 #ifdef ALLOW_FE
         CALL DIAGNOSTICS_FILL(SURFE     ,'DICFEFLX',0,1 ,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(GFE       ,'DICGFE  ',0,Nr,2,bi,bj,myThid)
+#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))        
         CALL DIAGNOSTICS_FILL(SEDFE     ,'DICSEDFE',0,1 ,2,bi,bj,myThid)
+#endif
+#ifdef HYDROTHERMAL_FE
         CALL DIAGNOSTICS_FILL(HYDROFE   ,'DICHTVFE',0,1 ,2,bi,bj,myThid)
+#endif
 #ifdef ALLOW_VARIABLE_LIGANDS
         CALL DIAGNOSTICS_FILL(GLIG      ,'DICGLIG ',0,Nr,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(lambda_lig,'LIGLAMDA',0,Nr,2,bi,bj,myThid)
