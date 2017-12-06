@@ -285,26 +285,26 @@ C taken into account
        IF ( useThSIce ) QSW_underice = .TRUE.
 #endif /* USE_QSW_UNDERICE */
 
-      IF ( alphaUniform .EQ. UNSET_RL ) THEN
-         alphaUniform   = alphaUniform_yr/(360. _d 0 * 86400. _d 0)
-      ENDIF
+       IF ( alphaUniform .EQ. UNSET_RL ) THEN
+          alphaUniform   = alphaUniform_yr/(360. _d 0 * 86400. _d 0)
+       ENDIF
       
  #ifdef ALLOW_FE
-      IF ( KScav .EQ. UNSET_RL ) THEN
-         KScav          = KScav_yr/(360. _d 0*86400. _d 0)
-      ENDIF
-      IF ( KScav_surf .EQ. UNSET_RL ) THEN
-         KScav_surf     = KScav
-      ENDIF
-      IF ( KScav_poc .EQ. UNSET_RL ) THEN
-         KScav_poc      = KScav_poc_yr/(360. _d 0*86400. _d 0)
-      ENDIF
-      IF ( KScav_dust .EQ. UNSET_RL ) THEN
-         KScav_dust     = KScav_dust_yr/(360. _d 0*86400. _d 0)
-      ENDIF
-      IF ( KScav_background .EQ. UNSET_RL ) THEN
-         KScav_background= KScav_background_yr/(360. _d 0*86400. _d 0)
-      ENDIF
+       IF ( KScav .EQ. UNSET_RL ) THEN
+          KScav          = KScav_yr/(360. _d 0*86400. _d 0)
+       ENDIF
+       IF ( KScav_surf .EQ. UNSET_RL ) THEN
+          KScav_surf     = KScav
+       ENDIF
+       IF ( KScav_poc .EQ. UNSET_RL ) THEN
+          KScav_poc      = KScav_poc_yr/(360. _d 0*86400. _d 0)
+       ENDIF
+       IF ( KScav_dust .EQ. UNSET_RL ) THEN
+          KScav_dust     = KScav_dust_yr/(360. _d 0*86400. _d 0)
+       ENDIF
+       IF ( KScav_background .EQ. UNSET_RL ) THEN
+          KScav_background= KScav_background_yr/(360. _d 0*86400. _d 0)
+       ENDIF
 #endif /* ALLOW_FE */
 #endif /* DIC_BIOTIC */
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
@@ -358,7 +358,7 @@ C- namelist BIOTIC_PARMS
      &  ' /* Half saturation light constant (W/m2) */')
        CALL WRITE_0D_RL( KPO4, INDEX_NONE,'KPO4 =',
      &  ' /* Half saturation phosphate constant (mol/m3) */')
- #ifdef ALLOW_FE     
+#ifdef ALLOW_FE     
        CALL WRITE_0D_RL( KFE, INDEX_NONE,'KFE =',
      &  ' /* Half saturation fe constant (mol/m3) */')
        CALL WRITE_0D_RL( alpfe, INDEX_NONE,'alpfe =',
