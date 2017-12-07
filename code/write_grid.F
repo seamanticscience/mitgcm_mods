@@ -180,7 +180,7 @@ C       Write the GRID.h variables to a file
         CALL MNC_CW_SET_CITER(bfname, 2, -1, -1, -1, myThid)
         CALL MNC_CW_SET_UDIM(bfname, 1, myThid)
 C JML FOLLOWING COMMAND INSERTED SO 'GLUEMNC' AND 'XPLODEMNC' WORK....NEEDS AN 'ITER' VARIABLE
-        CALL MNC_CW_RS_W('D',bfname,0,0,'iter',myiter,myThid)
+        CALL MNC_CW_RS_W('D',bfname,0,0,'iter',nIter0,myThid)
         CALL MNC_CW_RS_W('D',bfname,0,0,'RC',rC,myThid)
         CALL MNC_CW_RS_W('D',bfname,0,0,'RF',rF,myThid)
         CALL MNC_CW_RS_W('D',bfname,0,0,'RU',rF(2),myThid)
