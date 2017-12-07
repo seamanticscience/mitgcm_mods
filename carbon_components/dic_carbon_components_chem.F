@@ -11,7 +11,7 @@ C--   o CARBON_COEFFS_PRESSURE_DEP
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 #ifdef DIC_CARBON_COMPONENTS
-C !ROUTINE: CALC_CSAT_APPROX
+C !ROUTINE: CALC_CSAT
 
 C !INTERFACE: ==========================================================
        SUBROUTINE CALC_CSAT(
@@ -89,7 +89,7 @@ c ---------------------------------------------------------------------
 c set first guess and brackets for [H+] solvers
 c first guess (for newton-raphson)
 C             WRITE(standardMessageUnit,*) 
-C     &      'CALC_CSAT_APPROX: ph guess'
+C     &      'CALC_CSAT: ph guess'
         phguess = phlocal
 C     - new approx method
 C     - make estimate of htotal (hydrogen ion conc) using

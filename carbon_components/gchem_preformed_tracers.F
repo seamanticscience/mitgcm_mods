@@ -308,7 +308,7 @@ C          DO bi=myBxLo(myThid),myBxHi(myThid)
             DO i=iMin,iMax
               DO k=1,kmld(i,j,bi,bj)
                IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
-                CALL CALC_CSAT_APPROX(
+                CALL CALC_CSAT(
      I           theta(i,j,k,bi,bj),salt(i,j,k,bi,bj),
      I           AtmospCO2(i,j,bi,bj),pTracer(i,j,k,bi,bj,iPO4),
      I           SILICA(i,j,k,bi,bj),pTracer(i,j,k,bi,bj,iALK),
@@ -349,7 +349,7 @@ C          DO bi=myBxLo(myThid),myBxHi(myThid)
             DO i=iMin,iMax
              DO k=1,kmld(i,j,bi,bj)
                IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
-                CALL CALC_CSAT_APPROX(
+                CALL CALC_CSAT(
      I           theta(i,j,k,bi,bj),salt(i,j,k,bi,bj),
      I           AtmospCO2(i,j,bi,bj),pTracer(i,j,k,bi,bj,iPO4),
      I           SILICA(i,j,k,bi,bj),pTracer(i,j,k,bi,bj,iALK),
