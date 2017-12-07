@@ -72,8 +72,8 @@ C   KPO4        :: half saturation phosphate constant (mol/m3)
 C   KFE         :: half saturation fe constant (mol/m3)
 CC Iron chemisty values
 C   alpfe       :: solubility of aeolian fe
-C   fesedflux_pcm :: ratio of sediment iron to sinking organic matter
-C   FeIntSec    :: y-axis crossing for Fe_flux = fesedflux_pcm*pflux + FeIntSec
+C   sedfe_factor :: ratio of sediment iron to sinking organic matter
+C   sedfe_offset    :: y-axis crossing for Fe_flux = sedfe_factor*pflux + sedfe_offset
 C   freefemax   :: max solubility of free iron (mol/m3)
 CC Control variables
 C   KScav       :: iron scavenging rate (s-1)
@@ -96,7 +96,7 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
      & parfrac, k0, lit0, KPO4, KFE, scav_exp,
      & alpfe, freefemax, scav_wsp, scav_inter, scav_ratio,
      & KScav, scav_surf_min, ligand_stab, ligand_tot, 
-     & fesedflux_pcm, FeIntSec, solfe, R_FeHe3,
+     & sedfe_factor, sedfe_offset, solfe, R_FeHe3,
      & fe_vent_depth_min, fe_sed_depth_max,
 #ifdef ALLOW_VARIABLE_LIGANDS     
      & gamma_lig, bio_tot_lig,
@@ -169,11 +169,11 @@ C These values for hydrothermal input of iron from Tagliabue et al (2014)
 C Hajoon's sedimentary iron source (JML different coeffs tho)
        fe_sed_depth_max = 6000. _d 0
 C    For Elrod et al (2004) use:
-       fesedflux_pcm = 6.8 _d -4       
-       FeIntSec      = -0.5 _d -6 / 86400. _d 0
+       sedfe_factor = 6.8 _d -4       
+       sedfe_offset      = -0.5 _d -6 / 86400. _d 0
 C    For Dale et al (2015) use:
-C       fesedflux_pcm = 170. _d 0 / (86400. _d 0 * 1. _d 6)      
-C       FeIntSec      = 0
+C       sedfe_factor = 170. _d 0 / (86400. _d 0 * 1. _d 6)      
+C       sedfe_offset      = 0
 #endif
 
 #ifdef ALLOW_C13
@@ -307,10 +307,10 @@ C- namelist BIOTIC_PARMS
        CALL WRITE_0D_RL( alpfe, INDEX_NONE,'alpfe =',
      &  ' /* Solubility of aeolian fe */')
 #ifdef SEDIMENT_FE_ELROD     
-       CALL WRITE_0D_RL( fesedflux_pcm, INDEX_NONE,'fesedflux_pcm =',
-     &  ' /* Sediment Fe flux = fesedflux_pcm*pflux+FeIntSec */')
-       CALL WRITE_0D_RL( FeIntSec, INDEX_NONE,'FeIntSec =',
-     &  ' /* Sediment Fe flux = fesedflux_pcm * pflux + FeIntSec */')
+       CALL WRITE_0D_RL( sedfe_factor, INDEX_NONE,'sedfe_factor =',
+     &  ' /* Sediment Fe flux = sedfe_factor*pflux+sedfe_offset */')
+       CALL WRITE_0D_RL( sedfe_offset, INDEX_NONE,'sedfe_offset =',
+     &  ' /* Sediment Fe flux = sedfe_factor * pflux + sedfe_offset */')
 #endif
        CALL WRITE_0D_RL( freefemax, INDEX_NONE,'freefemax =',
      &  ' /* Max solubility of free iron (mol/m3) */')
