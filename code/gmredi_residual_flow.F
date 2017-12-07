@@ -124,7 +124,7 @@ C     anelastic: scaled by rhoFacC (~ mass transport)
            IF (k.EQ.1) THEN
 C-      Surface interface :
               maskUp(i,j) = 0. _d 0
-              wTrans(i,j) = 0. _d 0
+              wTrans(i,j,k) = 0. _d 0
            ELSE
               maskUp(i,j)  = maskC(i,j,k-1,bi,bj)*maskC(i,j,k,bi,bj)
               wTrans(i,j,k)= wFld(i,j,k)*rA(i,j,bi,bj)*maskUp(i,j)
