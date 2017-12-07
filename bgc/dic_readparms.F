@@ -437,7 +437,7 @@ C JML write out particle depended scavenging parameters
        CALL WRITE_0D_RL( ligand_tot, INDEX_NONE,'ligand_tot =',
      &  ' /* Total free ligand  (mol/m3) */')
 #endif /* ALLOW_FE */
-       CALL WRITE_0D_RL( alphaUniform_yr, INDEX_NONE,'alphaUniform_yr =',
+       CALL WRITE_0D_RL( alphaUniform_yr,INDEX_NONE,'alphaUniform_yr =',
      &  ' /* Timescale for biological activity (1/yr) */')     
        CALL WRITE_0D_RL( alphaUniform, INDEX_NONE,'alphaUniform =',
      &  ' /* Timescale for biological activity (1/s)*/')
