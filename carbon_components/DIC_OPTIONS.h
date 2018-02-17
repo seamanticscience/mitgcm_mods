@@ -33,7 +33,7 @@ C atmospheric model
 #undef USE_PLOAD
 
 C use surface salinity forcing (scaled by mean surf value) for DIC & ALK forcing
-#define ALLOW_OLD_VIRTUALFLUX
+#undef ALLOW_OLD_VIRTUALFLUX
 
 C put back bugs related to Water-Vapour in carbonate chemistry & air-sea fluxes
 #undef WATERVAP_BUG
