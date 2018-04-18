@@ -159,9 +159,9 @@ c                   dic_int2=number entries to read
 c                   dic_int3=start timestep,
 c                   dic_int4=timestep between file entries)
        if (dic_int1.eq.4) then
-          if (co2atmos(ntim).ne.0. _d 0.or.co2atmos(ntim+1).ne.0. _d 0) then
+          ntim=int((myIter-dic_int3)/dic_int4)+1
+          if (co2atmos(ntim).ne.0. _d 0.and.co2atmos(ntim+1).ne.0. _d 0) then
 c             linearly interpolate between file entries otherwise emissions remain 0
-              ntim=int((myIter-dic_int3)/dic_int4)+1
               aWght = FLOAT(myIter-dic_int3)
               bWght = FLOAT(dic_int4)
               aWght = 0.5 _d 0 + aWght/bWght - FLOAT(ntim-1)
@@ -243,7 +243,7 @@ C if end of forcing cycle, find total change in ocean carbon
       ENDIF
 
 #ifndef ALLOW_AUTODIFF
-      IF ( dic_int1.EQ.2 .OR. dic_int1.GE.3 ) THEN
+      IF ( dic_int1.GE.2 ) THEN
 #endif
 C--    Set AtmospCO2 for next iteration:
        DO bj=myByLo(myThid),myByHi(myThid)
