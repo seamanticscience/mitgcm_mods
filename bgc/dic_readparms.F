@@ -106,7 +106,7 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
      & lig_q10, lig_tref,
 #endif
      & alphaUniform_yr, alphaUniform, rainRatioUniform 
-#endif
+#endif  /* DIC_BIOTIC */
 
       NAMELIST /DIC_FORCING/
      &          DIC_windFile, DIC_atmospFile, DIC_iceFile,
@@ -155,7 +155,7 @@ C      (as high as 6e-3 molP/m3/yr in Parekh etal 2005, GBC eqn3)
        alphaUniform     = UNSET_RL
        rainRatioUniform = 7. _d -2
 
- #ifdef ALLOW_FE
+#ifdef ALLOW_FE
 C JML Added var for particle/dust dependent Fe scavenging
 C      KScav is the uniform value when scavenging is constant rate
        KScav_yr       = 0.19 _d 0
@@ -289,7 +289,7 @@ C taken into account
           alphaUniform   = alphaUniform_yr/(360. _d 0 * 86400. _d 0)
        ENDIF
       
- #ifdef ALLOW_FE
+#ifdef ALLOW_FE
        IF ( KScav .EQ. UNSET_RL ) THEN
           KScav          = KScav_yr/(360. _d 0*86400. _d 0)
        ENDIF
