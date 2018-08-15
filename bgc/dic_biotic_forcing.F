@@ -282,17 +282,7 @@ C     and release of iron binding sites during remineralization.
            lig_incr(i,j,k)  = (pflux(i,j,k)+BIOac(i,j,k)*DOPfraction)
      &                             *R_CP*gamma_lig
 
-C Now calculate timescale for degredation 
-C  Initially, the first order way is kind of cheating as it fixes lambda to go exactly
-C towards the ligand concentration that we want 
-C           lambda_lig(i,j,k)= lig_incr(i,j,k)/ligand_tot
-C 
-C Calculate depth-dependent degradation timescale
-C     constrained by gamma_over_lambda, global productivity/surface area  
-C     and nominal ligand concentration
-C           lambda_lig(i,j,k)= gamma_lig/(-rC(k)*goverl_lig)
-C
-C So try to create a more dynamic consumption timescales using Q10
+C Dynamic consumption timescales using Q10
 C  lambda_ref calculated in dic_init_fixed from lambda_over_gamma
 C  and the value of gamma_lig
            lambda_lig(i,j,k) = lambda_ref*

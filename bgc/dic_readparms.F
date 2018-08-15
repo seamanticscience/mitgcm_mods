@@ -205,8 +205,10 @@ C       sedfe_offset      = 0
 C Ligand parameters for the iron cycle       
        ligand_stab = 1. _d 8
        ligand_tot  = 1. _d -6
+       
 #ifdef ALLOW_VARIABLE_LIGANDS 
-C JML Added vars for prognostic Ligands       
+C JML Added vars for prognostic Ligands 
+       ligand_tot        = 0. _d 0     
        gamma_lig         = 0. _d 0
        lambda_over_gamma = 0. _d 0
 C lambda_ref is calculated in dic_init_fixed
