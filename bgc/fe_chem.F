@@ -67,10 +67,15 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 #ifndef ALLOW_VARIABLE_LIGANDS
 C  Fill in ligand array with constant conc
           ligand_conc(i,j,k)=ligand_tot
-#endif
+#elif (defined(VARIABLE_LIGAND_BACKGROUND))
+C  Add uniform background to ligand array
+          ligand_conc(i,j,k)=ligand_conc(i,j,k)
+     &                      +ligand_tot
+#endif /* ALLOW_VARIABLE_LIGANDS */
+         ENDDO
         ENDDO
        ENDDO
-      ENDDO
+
 
 C ligand balance in surface layer
 C in surface layer
@@ -121,6 +126,17 @@ C   Ligand,FeL,Fe calculation
         ENDDO
        ENDDO
 
+#if (defined(ALLOW_VARIABLE_LIGANDS) && defined(VARIABLE_LIGAND_BACKGROUND))
+C  Remove uniform background from ligand array
+       DO k=1,Nr
+        DO j=jMin,jMax
+         DO i=iMin,iMax
+          ligand_conc(i,j,k)=ligand_conc(i,j,k)
+     &                      -ligand_tot
+         ENDDO
+        ENDDO
+       ENDDO
+#endif /* ALLOW_VARIABLE_LIGANDS */
 #endif /* ALLOW_FE */
       RETURN
       END
