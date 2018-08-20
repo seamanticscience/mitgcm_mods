@@ -40,6 +40,9 @@ C define to put back bugs related to Water-Vapour in carbonate chemistry & air-s
 C dissolution only below saturation horizon following method by Karsten Friis
 #undef CAR_DISS
 
+C Carbon dissociation coefficients on the same pH scale
+#undef CARBONCHEM_TOTALPHSCALE
+
 #endif /* ALLOW_DIC */
 #endif /* DIC_OPTIONS_H */
 
