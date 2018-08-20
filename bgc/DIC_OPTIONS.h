@@ -39,6 +39,9 @@ C put back bugs related to Water-Vapour in carbonate chemistry & air-sea fluxes
 C dissolution only below saturation horizon following method by Karsten Friis
 #undef CAR_DISS
 
+C Make sure carbon dissociation constants are on the same pH scale
+#undef CARBONCHEM_TOTALPHSCALE
+
 C Include self-shading effect by phytoplankton
 #undef LIGHT_CHL
 
