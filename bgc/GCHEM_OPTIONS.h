@@ -22,7 +22,7 @@ C Preformed tracers typically set to surface level values
 C    but here you can set the entire mixed layer.
 #undef GCHEM_PREFORMED_MLD
 C or just regularly at the surface
-#define GCHEM_PREFORMED
+#undef GCHEM_PREFORMED
 
 #endif /* ALLOW_GCHEM */
 #endif /* GCHEM_OPTIONS_H */
