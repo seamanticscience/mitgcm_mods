@@ -43,6 +43,8 @@ C !INPUT PARAMETERS: ===================================================
 C  myThid               :: thread number
       _RL myTime
       INTEGER myIter, myThid
+      INTEGER dic_offset
+      INTEGER bi,bj
 CEOP
 
 #ifdef ALLOW_GCHEM
@@ -52,8 +54,8 @@ C!LOCAL VARIABLES: ====================================================
 C  i,j                  :: loop indices
 C  bi,bj                :: tile indices
 C  k                    :: vertical level
-      INTEGER iMin,iMax,jMin,jMax,i,j,k,bi,bj
-      INTEGER nTrac,dic_offset
+      INTEGER iMin,iMax,jMin,jMax,i,j,k
+      INTEGER nTrac
       INTEGER iDIC,iALK,iPO4,iDOP,iDO2,iDFE
       INTEGER iAPRE,iPPRE,iPCO2
       INTEGER kmld(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
