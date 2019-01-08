@@ -1,8 +1,8 @@
 # mitgcm_mods
-Modifications to the core MITgcm code that I have written for various projects.
 
-This code (referenced by the DOI below) is for an older version of MITgcm (Checkpoint63m) - compatible modifications for later versions will be released as and when via new code branches.
+Modifications to the core MITgcm code written by Jonathan Lauderdale for various projects.
 
+This code is for checkpoint67f of MITgcm and it supercedes the the previous versions for checkpoint63m and checkpoint66j, which are older versions of MITgcm:
 <a href="https://zenodo.org/badge/latestdoi/87344333"><img src="https://zenodo.org/badge/87344333.svg" alt="DOI"></a>
 
 Some code in the bgc folder adds preformed tracer functionality to MITgcm (GCHEM_OPTIONS.h, gchem_forcing_sep.F and gchem_preformed_tracers.F and increase PTRACERS_num in PTRACERS_SIZE.h)
@@ -15,9 +15,9 @@ One might use this code (partially or in its entirety) by:
 
 `cd MITgcm`
 
-`git checkout -b my_model checkpoint63m`
+`git checkout -b my_model checkpoint67f`
 
-OR download from http://mitgcm.org/download/other_checkpoints/MITgcm_c63m.tar.gz, extract, and `cd MITgcm_c63m` into the model directory.
+OR download from http://mitgcm.org/download/other_checkpoints/MITgcm_c67f.tar.gz, extract, and `cd MITgcm_c67f` into the model directory.
 
 2.) Cloning the mitgcm_mods repository.
 
@@ -25,7 +25,7 @@ OR download from http://mitgcm.org/download/other_checkpoints/MITgcm_c63m.tar.gz
 
 `cd mitgcm_mods`
 
-`git checkout -b my_mods checkpoint63m`
+`git checkout -b my_mods master`
 
 3.) Running the genmake2 script like so (for the 3 degree global model with biogeochem and kpp run on a single processor):
 

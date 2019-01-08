@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_init_fixed.F,v 1.12 2010/05/14 21:52:33 jahn Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
@@ -64,9 +61,10 @@ C coefficients for determining saturation O2
 
 C     Set other constant/flag
 
-#ifndef USE_ATMOSCO2
-
-      IF ( dic_int1.EQ.2 ) THEN
+C                   dic_int2=number entries to read
+C                   dic_int3=start timestep,
+C                   dic_int4=timestep between file entries)
+      IF ( dic_int1.EQ.2.OR.dic_int1.eq.4) then
         CALL MDSFINDUNIT( iUnit, mythid )
         OPEN(UNIT=iUnit,FILE='co2atmos.dat',STATUS='old')
         DO k=1,dic_int2
@@ -75,8 +73,6 @@ C     Set other constant/flag
         ENDDO
         CLOSE(iUnit)
       ENDIF
-
-#endif /* ndef USE_ATMOSCO2 */
 
 #ifdef DIC_BIOTIC
 

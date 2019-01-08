@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/DIC_OPTIONS.h,v 1.10 2011/12/24 01:04:46 jmc Exp $
-C $Name:  $
-
 #ifndef DIC_OPTIONS_H
 #define DIC_OPTIONS_H
 #include "PACKAGES_CONFIG.h"
@@ -21,27 +18,29 @@ C Prognostic Iron Binding Ligands
 
 #define ALLOW_O2
 #undef READ_PAR
-C could also set PTRACERS_EvPrRn(n)=0., 
-C may need PTRACERS_ref(1,n)=??? in data.ptracers
 #define AD_SAFE
 #define DIC_NO_NEG
 #undef ALLOW_DIC_COST
-C these all need to be defined for coupling to
-C atmospheric model
+C these all need to be defined for coupling to atmospheric model
 #undef USE_QSW
-#undef USE_ATMOSCO2
+#undef USE_QSW_UNDERICE
 #undef USE_PLOAD
 
+C use surface salinity forcing (scaled by mean surf value) for DIC & ALK forcing
+C could also set PTRACERS_EvPrRn(n)=0., may need PTRACERS_ref in data.ptracers
 #define ALLOW_OLD_VIRTUALFLUX
 
-C define to put back bugs related to Water-Vapour in carbonate chemistry & air-sea fluxes
+C put back bugs related to Water-Vapour in carbonate chemistry & air-sea fluxes
 #undef WATERVAP_BUG
 
 C dissolution only below saturation horizon following method by Karsten Friis
 #undef CAR_DISS
 
-C Carbon dissociation coefficients on the same pH scale
-#undef CARBONCHEM_TOTALPHSCALE
+C Make sure carbon dissociation constants are on the same pH scale
+#define CARBONCHEM_TOTALPHSCALE
+
+C Include self-shading effect by phytoplankton
+#undef LIGHT_CHL
 
 #endif /* ALLOW_DIC */
 #endif /* DIC_OPTIONS_H */

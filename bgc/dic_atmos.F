@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_atmos.F,v 1.16 2010/04/11 21:04:39 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 #include "PTRACERS_OPTIONS.h"
 
@@ -8,7 +5,7 @@ CBOP
 C !ROUTINE: DIC_ATMOS
 
 C !INTERFACE: ==========================================================
-      SUBROUTINE DIC_ATMOS( istate, myTime, myIter, myThid )
+      SUBROUTINE DIC_ATMOS( myTime, myIter, myThid )
 
 C !DESCRIPTION:
 C  Calculate the atmospheric pCO2
@@ -31,21 +28,13 @@ C !USES: ===============================================================
 #include "DIC_ATMOS.h"
 
 C !INPUT PARAMETERS: ===================================================
-C  istate               :: 0=initial call, 1=subsequent calls
-C  myTime               :: current time
-C  myIter               :: current iteration number
-C  myThid               :: my Thread Id number
-      INTEGER istate
+C  myTime             :: current time
+C  myIter             :: current iteration number
+C  myThid             :: my Thread Id number
       _RL myTime
       INTEGER myIter, myThid
 
 #ifdef ALLOW_DIC
-
-#ifdef USE_ATMOSCO2
-C if coupled to atmsopheric model, use the
-C CO2 value passed from the coupler
-
-#else /* USE_ATMOSCO2 */
 
 C !FUNCTIONS:       ====================================================
       LOGICAL  DIFFERENT_MULTIPLE
@@ -53,7 +42,7 @@ C !FUNCTIONS:       ====================================================
 
 C !LOCAL VARIABLES: ====================================================
 C   total_atmos_moles :: atmosphere total gas content (should be parameter)
-C      _RL total_atmos_moles
+      _RL total_atmos_moles
       INTEGER bi, bj, i,j,k
       INTEGER ntim
 
@@ -72,7 +61,7 @@ C for carbon budget ouput
 C variables for reading CO2 input files
       _RL tmp, emissions
       _RL aWght, bWght
-
+      _RL atm_pCO2
 C diagnostic
       _RL AtmosCarbon(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       LOGICAL timeCO2budget
@@ -82,25 +71,11 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
       ioUnit = standardMessageUnit
 
-C user specified value (or default = 278 ppm)- set only once
-      IF ( (dic_int1.EQ.0 .OR. dic_int1.EQ.1) .AND. istate.EQ.0 ) THEN
-        DO bj=myByLo(myThid),myByHi(myThid)
-         DO bi=myBxLo(myThid),myBxHi(myThid)
-          DO j=1-OLy,sNy+OLy
-           DO i=1-OLx,sNx+OLx
-             AtmospCO2(i,j,bi,bj)=dic_pCO2
-           ENDDO
-          ENDDO
-         ENDDO
-        ENDDO
-      ENDIF
-
-C read from a file (note:
-C                   dic_int2=number entries to read
-C                   dic_int3=start timestep,
-C                   dic_int4=timestep between file entries)
-      IF (dic_int1.EQ.2) THEN
-C linearly interpolate between file entries
+      IF ( dic_int1.EQ.2 ) THEN
+C read from a file and linearly interpolate between file entries
+C     (note:  dic_int2=number entries to read
+C             dic_int3=start timestep,
+C             dic_int4=timestep between file entries)
         ntim=int((myIter-dic_int3)/dic_int4)+1
         aWght = FLOAT(myIter-dic_int3)
         bWght = FLOAT(dic_int4)
@@ -110,43 +85,39 @@ C linearly interpolate between file entries
           aWght=aWght-1. _d 0
         ENDIF
         bWght = 1. _d 0 - aWght
-        tmp=co2atmos(ntim)*bWght+co2atmos(ntim+1)*aWght
-        WRITE(ioUnit,*) 'weights',ntim, aWght, co2atmos(ntim+1), 
-     &                                  bWght, co2atmos(ntim), tmp
+        atm_pCO2 = co2atmos(ntim)*bWght + co2atmos(ntim+1)*aWght
+        WRITE(ioUnit,*) 'weights',ntim, aWght, bWght, atm_pCO2
 
         DO bj=myByLo(myThid),myByHi(myThid)
          DO bi=myBxLo(myThid),myBxHi(myThid)
            DO j=1-OLy,sNy+OLy
              DO i=1-OLx,sNx+OLx
-               AtmospCO2(i,j,bi,bj)=tmp
+               AtmospCO2(i,j,bi,bj)=atm_pCO2
              ENDDO
            ENDDO
          ENDDO
         ENDDO
-      ENDIF
-
+      
 C interactive atmosphere
-      IF (dic_int1.GE.3) THEN
+      ELSEIF (dic_int1.GE.3) THEN
 
 C Mass dry atmosphere = (5.1352+/-0.0003)d18 kg (Trenberth & Smith,
 C Journal of Climate 2005)
 C and Mean molecular mass air = 28.97 g/mol (NASA earth fact sheet)
-       total_atmos_moles= 1.77 _d 20
+       total_atmos_moles = 1.77 _d 20
 C for 278ppmv we need total_atmos_carbon=4.9206e+16
 
        DO bj=myByLo(myThid),myByHi(myThid)
         DO bi=myBxLo(myThid),myBxHi(myThid)
          tile_flux(bi,bj)   = 0.
          tile_carbon(bi,bj) = 0.
-         IF (istate.GT.0) THEN
-          DO j=1,sNy
+         DO j=1,sNy
            DO i=1,sNx
              tile_flux(bi,bj) = tile_flux(bi,bj)
-     &                        + FluxCO2(i,j,bi,bj)*rA(i,j,bi,bj)
+     &                        + fluxCO2(i,j,bi,bj)*rA(i,j,bi,bj)
      &                         *maskC(i,j,1,bi,bj)*dTtracerLev(1)
            ENDDO
-          ENDDO
-         ENDIF
+         ENDDO
          DO k=1,Nr
           DO j=1,sNy
            DO i=1,sNx
@@ -166,15 +137,28 @@ C for 278ppmv we need total_atmos_carbon=4.9206e+16
        CALL GLOBAL_SUM_TILE_RL( tile_flux,   total_flux,   myThid )
        CALL GLOBAL_SUM_TILE_RL( tile_carbon, total_carbon, myThid )
 
+#ifdef ALLOW_AUTODIFF
+C--NOTE: we DO need to make this section Master-Thread only to prevent multiple
+C   update (by each thread) of shared variable "total_atmos_carbon"
+C- However, TAF does not recognize MITgcm multi-threading and shared variable
+C   status and see a conditional (if myThid=1) reset of "atpco2" that results
+C   in major recomputations.
+#else
+       _BEGIN_MASTER(myThid)
+#endif
+C store previous content:
+         total_ocean_carbon_old = total_ocean_carbon
+         total_atmos_carbon_old = total_atmos_carbon
+         
 C Section inserted by JML to add external emisions in mol C
 c read from a file of emission rates in mol C/s (note:
 c                   dic_int2=number entries to read
 c                   dic_int3=start timestep,
 c                   dic_int4=timestep between file entries)
-      if (dic_int1.eq.4) then
-          if (co2atmos(ntim).ne.0. _d 0.or.co2atmos(ntim+1).ne.0. _d 0) then
+       if (dic_int1.eq.4) then
+          ntim=int((myIter-dic_int3)/dic_int4)+1
+          if (co2atmos(ntim).ne.0. _d 0.and.co2atmos(ntim+1).ne.0. _d 0) then
 c             linearly interpolate between file entries otherwise emissions remain 0
-              ntim=int((myIter-dic_int3)/dic_int4)+1
               aWght = FLOAT(myIter-dic_int3)
               bWght = FLOAT(dic_int4)
               aWght = 0.5 _d 0 + aWght/bWght - FLOAT(ntim-1)
@@ -190,48 +174,15 @@ c              print*,'weights',ntim, aWght, bWght, emissions
           else
               emissions = 0. _d 0
           endif
-      endif
+       endif
 
-       IF (istate.EQ.0) THEN
-C use dic_pCO2 as initial atmospheric pCO2 (not restart case):
-         _BEGIN_MASTER(myThid)
-         atpco2 = dic_pCO2
-         total_atmos_carbon = total_atmos_moles*dic_pCO2
+C calculate new atmos pCO2            
+       total_atmos_carbon = total_atmos_carbon - total_flux
          
-         _END_MASTER(myThid)
-         IF ( nIter0.GT.PTRACERS_Iter0 .OR.
-     &       (nIter0.EQ.PTRACERS_Iter0 .AND. pickupSuff.NE.' ')
-     &      ) THEN
-C restart case: read previous atmospheric CO2 content & pCO2 from pickup file
-           CALL DIC_READ_CO2_PICKUP( nIter0, myThid )
-         ENDIF
-         _BEGIN_MASTER(myThid)
-C store initial content:
-         total_ocean_carbon_start=total_carbon
-         total_atmos_carbon_start=total_atmos_carbon
-         total_ocean_carbon_old = total_carbon
-         total_atmos_carbon_old = total_atmos_carbon
-         _END_MASTER(myThid)
-       ELSE
-         _BEGIN_MASTER(myThid)
-#ifdef ALLOW_AUTODIFF_TAMC
-         atpco2 = dic_pCO2
-#endif
-C store previous content:
-         total_ocean_carbon_old = total_ocean_carbon
-         total_atmos_carbon_old = total_atmos_carbon
-C C JML calculate new atmos pCO2 and add emissions contribution to 
-C total_atmos_carbon (mol C) after previous timestep's flux.
-       
-         total_atmos_carbon = total_atmos_carbon - total_flux
-         
-          if (dic_int1.eq.4) then
-             total_atmos_carbon=total_atmos_carbon + emissions
-          endif
-       
-         _END_MASTER(myThid)
-       ENDIF
-       _BEGIN_MASTER(myThid)
+        if (dic_int1.eq.4) then
+           total_atmos_carbon=total_atmos_carbon + emissions
+        endif
+        
        total_ocean_carbon = total_carbon
        atpco2 = total_atmos_carbon/total_atmos_moles
        
@@ -239,18 +190,14 @@ C total_atmos_carbon (mol C) after previous timestep's flux.
           WRITE(ioUnit,*) 'QQ atmos C, total, pCo2',
      &                     total_atmos_carbon, atpco2
        ENDIF
-       
        total_carbon=total_atmos_carbon + total_ocean_carbon
-       total_carbon_old=total_atmos_carbon_old + total_ocean_carbon_old
+       total_carbon_old=total_atmos_carbon_old +total_ocean_carbon_old
        carbon_diff=total_carbon-total_carbon_old
-       
        IF (debugMode) THEN
           WRITE(ioUnit,*) 'QQ total C, current, old, diff',
      &                     total_carbon, total_carbon_old, carbon_diff
        ENDIF
-       
        carbon_diff=total_ocean_carbon-total_ocean_carbon_old
-       
        IF (debugMode) THEN
           WRITE(ioUnit,*) 'QQ ocean C, current, old, diff',
      &         total_ocean_carbon, total_ocean_carbon_old, carbon_diff
@@ -259,13 +206,9 @@ C total_atmos_carbon (mol C) after previous timestep's flux.
        ENDIF
 
 C if end of forcing cycle, find total change in ocean carbon
-       IF (istate.EQ.0) THEN
-        total_ocean_carbon_year = total_ocean_carbon
-        total_atmos_carbon_year = total_atmos_carbon
-       ELSE
-        timeCO2budget =
-     &      DIFFERENT_MULTIPLE(externForcingCycle,myTime,deltaTClock)
-        IF ( timeCO2budget ) THEN
+       timeCO2budget =
+     &    DIFFERENT_MULTIPLE(externForcingCycle,myTime,deltaTClock)
+       IF ( timeCO2budget ) THEN
           year_diff_ocean = total_ocean_carbon-total_ocean_carbon_year
           year_diff_atmos = total_atmos_carbon-total_atmos_carbon_year
           year_total = (total_ocean_carbon+total_atmos_carbon) -
@@ -284,24 +227,34 @@ C if end of forcing cycle, find total change in ocean carbon
 
           total_ocean_carbon_year = total_ocean_carbon
           total_atmos_carbon_year = total_atmos_carbon
-        ENDIF
        ENDIF
 
+#ifndef ALLOW_AUTODIFF
        _END_MASTER(myThid)
        _BARRIER
+#endif
 
+       atm_pCO2 = atpco2
+      ELSE
+       atm_pCO2 = dic_pCO2
+      ENDIF
+
+#ifndef ALLOW_AUTODIFF
+      IF ( dic_int1.GE.2 ) THEN
+#endif
 C--    Set AtmospCO2 for next iteration:
        DO bj=myByLo(myThid),myByHi(myThid)
         DO bi=myBxLo(myThid),myBxHi(myThid)
          DO j=1-OLy,sNy+OLy
           DO i=1-OLx,sNx+OLx
-            AtmospCO2(i,j,bi,bj) = atpco2
+            AtmospCO2(i,j,bi,bj) = atm_pCO2
           ENDDO
          ENDDO
         ENDDO
        ENDDO
-
+#ifndef ALLOW_AUTODIFF
       ENDIF
+#endif
 
 #ifdef ALLOW_DIAGNOSTICS
 C JML Add CO2 diagnostic to recover time averaged value,
@@ -327,8 +280,6 @@ C Atmos carbon content not defined unless using interactive atmosphere
         CALL DIAGNOSTICS_FILL(AtmospCO2  ,'DICATCO2',0,1,0,bi,bj,myThid)
       ENDIF
 #endif
-
-#endif /* ndef USE_ATMOSCO2 */
 
 #endif /* ALLOW_DIC */
 

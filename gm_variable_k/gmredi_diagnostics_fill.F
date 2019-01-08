@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/gmredi/gmredi_diagnostics_fill.F,v 1.3 2008/05/30 02:50:16 gforget Exp $
-C $Name:  $
-
 #include "GMREDI_OPTIONS.h"
 
 CStartOfInterface
@@ -40,10 +37,6 @@ C     == Local variables ==
       _RL tmpfld3dloc (1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
 #endif
 
-#ifdef GM_VISBECK_VARIABLE_K
-      INTEGER i,j,k
-      _RL tmpfld2dloc (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
-#endif
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
 
@@ -53,17 +46,20 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 #ifdef GM_VISBECK_VARIABLE_K
         IF ( GM_useHMM2011 .or. GM_useFMH2005 ) THEN
 C JML Add additional option for 3d gm parameterisations
-            CALL DIAGNOSTICS_FILL(GM_diffK_3d,'GM_VisbK'
-     &                    ,0,Nr,1,bi,bj,myThid)
+            CALL DIAGNOSTICS_FILL(GM_diffK_3d,'GM_VisbK',
+     &                    0,Nr,1,bi,bj,myThid)
          ELSE
            IF ( GM_Visbeck_alpha.NE.0. ) THEN
-            DO j = 1, sny
-             DO i = 1, snx
-               tmpfld2dloc(i,j,bi,bj) = GM_diffK_3d(i,j,1,bi,bj)
+            DO k = 1, Nr
+             DO j = 1, sny
+              DO i = 1, snx
+               tmpfld3dloc(i,j,k,bi,bj) = GM_diffK_3d(i,j,1,bi,bj)
+              ENDDO
              ENDDO
-            ENDDO
-            CALL DIAGNOSTICS_FILL(tmpfld2dloc,'GM_VisbK'
-     &                   ,0,1,1,bi,bj,myThid)
+            ENDDO 
+            
+            CALL DIAGNOSTICS_FILL(tmpfld3dloc,'GM_VisbK',
+     &                    0,Nr,1,bi,bj,myThid)
            ENDIF
         ENDIF
 #endif
@@ -116,6 +112,11 @@ c
      &   0,Nr,1,bi,bj,myThid)
        ENDIF
 #endif /* ALLOW_EDDYPSI */
+#ifdef GM_K3D
+       IF (GM_useK3D) THEN
+         CALL DIAGNOSTICS_FILL(K3D, 'GM_K3D  ',0,Nr,0,1,1,myThid)
+       ENDIF
+#endif
 
       ENDIF
 #endif /* ALLOW_DIAGNOSTICS */

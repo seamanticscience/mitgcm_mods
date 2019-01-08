@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_surfforcing.F,v 1.29 2011/10/07 21:36:39 dfer Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 #include "PTRACERS_OPTIONS.h"
 
@@ -9,7 +6,7 @@ C !ROUTINE: DIC_SURFFORCING
 
 C !INTERFACE: ==========================================================
       SUBROUTINE DIC_SURFFORCING( PTR_CO2 , PTR_ALK, PTR_PO4, GDC,
-     I           bi,bj,imin,imax,jmin,jmax,
+     I           bi,bj,iMin,iMax,jMin,jMax,
      I           myIter,myTime,myThid)
 
 C !DESCRIPTION:
@@ -25,7 +22,7 @@ C !USES: ===============================================================
 #include "GRID.h"
 #include "FFIELDS.h"
 #include "DIC_VARS.h"
-#include "DIC_ATMOS.h"
+
 C !INPUT PARAMETERS: ===================================================
 C  myThid               :: thread number
 C  myIter               :: current timestep
@@ -84,19 +81,20 @@ c           AtmospCO2(i,j,bi,bj)=278.0 _d -6
 c        ENDDO
 c       ENDDO
 c#endif
+
 C =================================================================
 C determine inorganic carbon chem coefficients
-        DO j=jmin,jmax
-         DO i=imin,imax
+        DO j=jMin,jMax
+         DO i=iMin,iMax
 
 #ifdef DIC_BIOTIC
 cQQQQ check ptracer numbers
 #ifdef DIC_BOUNDS
-             surfalk(i,j) = max(0.4 _d 0, 
+             surfalk(i,j) = max(0.4 _d 0,
      &                          min(10. _d 0,PTR_ALK(i,j,klev)))
      &                          * maskC(i,j,kLev,bi,bj)
-             surfphos(i,j)  = max(1.0 _d -11, 
-     &                          min(1._d -1, PTR_PO4(i,j,klev)))
+             surfphos(i,j)  = max(1.0 _d -11,
+     &                          min(1. _d -1,PTR_PO4(i,j,klev)))
      &                          * maskC(i,j,kLev,bi,bj)
 #else
              surfalk(i,j) = PTR_ALK(i,j,klev)
@@ -109,16 +107,14 @@ cQQQQ check ptracer numbers
      &                          * maskC(i,j,kLev,bi,bj)
              surfphos(i,j)  = 5.1225 _d -4 * maskC(i,j,kLev,bi,bj)
 #endif
-
-             surfsi(i,j)   = SILICA(i,j,bi,bj)
-     &                          * maskC(i,j,kLev,bi,bj)
-
+C FOR NON-INTERACTIVE Si
+             surfsi(i,j)   = SILICA(i,j,bi,bj) * maskC(i,j,kLev,bi,bj)
 #ifdef DIC_BOUNDS
-            surftemp(i,j) = max(-4. _d 0, 
+            surftemp(i,j) = max(-4. _d 0,
      &                          min(50. _d 0, theta(i,j,kLev,bi,bj)))
-            surfsalt(i,j) = max(4. _d 0, 
+            surfsalt(i,j) = max(4. _d 0,
      &                          min(50. _d 0, salt(i,j,kLev,bi,bj)))
-            surfdic(i,j)  = max(0.4 _d 0, 
+            surfdic(i,j)  = max(0.4 _d 0,
      &                          min(10. _d 0, PTR_CO2(i,j,kLev)))
 #else
             surftemp(i,j) = theta(i,j,kLev,bi,bj)
@@ -133,8 +129,8 @@ cQQQQ check ptracer numbers
      I                       bi,bj,iMin,iMax,jMin,jMax,myThid)
 C====================================================================
 
-       DO j=jmin,jmax
-        DO i=imin,imax
+       DO j=jMin,jMax
+        DO i=iMin,iMax
 C Compute AtmosP and Kwexch_Pre which are re-used for flux of O2
 
 #ifdef USE_PLOAD
@@ -157,9 +153,9 @@ C Schmidt number is accounted for later
 
 c pCO2 solver...
 C$TAF LOOP = parallel
-       DO j=jmin,jmax
+       DO j=jMin,jMax
 C$TAF LOOP = parallel
-        DO i=imin,imax
+        DO i=iMin,iMax
 
           IF ( maskC(i,j,kLev,bi,bj).NE.0. _d 0 ) THEN
             CALL CALC_PCO2_APPROX(
@@ -182,8 +178,8 @@ C$TAF LOOP = parallel
         ENDDO
        ENDDO
 
-       DO j=jmin,jmax
-        DO i=imin,imax
+       DO j=jMin,jMax
+        DO i=iMin,iMax
 
           IF ( maskC(i,j,kLev,bi,bj).NE.0. _d 0 ) THEN
 C calculate SCHMIDT NO. for CO2
@@ -275,8 +271,8 @@ c
          ENDDO
 
 C update tendency
-         DO j=jmin,jmax
-          DO i=imin,imax
+         DO j=jMin,jMax
+          DO i=iMin,iMax
            GDC(i,j)= recip_drF(kLev)*recip_hFacC(i,j,kLev,bi,bj)
      &              *(FluxCO2(i,j,bi,bj)
 #ifdef ALLOW_OLD_VIRTUALFLUX

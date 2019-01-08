@@ -1,8 +1,6 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_diagnostics_init.F,v 1.1 2010/05/14 21:52:33 jahn Exp $
-C $Name:  $
-
 #include "GCHEM_OPTIONS.h"
 #include "DIC_OPTIONS.h"
+
 C !INTERFACE: ==========================================================
       SUBROUTINE DIC_DIAGNOSTICS_INIT(myThid )
 
@@ -24,7 +22,6 @@ CEOP
 
 C     !LOCAL VARIABLES:
       INTEGER       diagNum
-      INTEGER       diagMate
       CHARACTER*8   diagName
       CHARACTER*16  diagCode
       CHARACTER*16  diagUnits
@@ -34,16 +31,16 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 C     Define diagnostics Names :
 
       diagName  = 'DICBIOA '
-      diagTitle = 'Biological Productivity'
-      diagUnits = 'mol/m3/s      '
-      diagCode  = 'SM P    MR    '
+      diagTitle = 'Biological Productivity (mol/m3/s)'
+      diagUnits = 'mol/m3/sec      '
+      diagCode  = 'SMRP    MR      '
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
 
       diagName  = 'DICCARB '
-      diagTitle = 'Carbonate sink due to bio production and remin'
-      diagUnits = 'mol eq/m3/s   '
-      diagCode  = 'SM      MR      '
+      diagTitle = 'Carbonate chg-biol prod and remin (mol eq/m3/s)'
+      diagUnits = 'mol eq/m3/sec   '
+      diagCode  = 'SMRP    MR      '
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
      
@@ -211,6 +208,7 @@ C     Define diagnostics Names :
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
 
+#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))        
 C JML include iron source due to sediment input into bottom layer            
       diagName  = 'DICSEDFE'
       diagTitle = 'Input of sedimentary Fe (mol/m3/s)'
@@ -218,7 +216,9 @@ C JML include iron source due to sediment input into bottom layer
       diagCode  = 'SM P    L1      '
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
+#endif
 
+#ifdef HYDROTHERMAL_FE
 C JML include iron source due to hydrothermal input into bottom layer                 
       diagName  = 'DICHTVFE'
       diagTitle = 'Input of Hydrothermal Vent Fe (mol/m3/s)'
@@ -226,7 +226,8 @@ C JML include iron source due to hydrothermal input into bottom layer
       diagCode  = 'SM P    L1      '
       CALL DIAGNOSTICS_ADDTOLIST( diagNum,
      I       diagName, diagCode, diagUnits, diagTitle, 0, myThid )
-     
+#endif
+
       diagName  = 'DICGFE  '
       diagTitle = 'Tendency of FE concentration'
       diagUnits = 'mol FE/m3/s      '

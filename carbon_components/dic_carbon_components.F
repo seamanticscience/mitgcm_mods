@@ -131,7 +131,7 @@ C Csat referenced to current atmospheric pCO2
          DO i=iMin,iMax
           IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then
 
-            CALL CALC_CSAT_APPROX(
+            CALL CALC_CSAT(
      I          theta(i,j,k,bi,bj),salt(i,j,k,bi,bj),
      I          AtmospCO2(i,j,bi,bj),PTR_PPRE(i,j,k),
      I          SIPRE(i,j,k),PTR_APRE(i,j,k),
@@ -167,7 +167,7 @@ C Csat referenced to starting atmospheric pCO2
          DO i=iMin,iMax       
           IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then      
 
-            CALL CALC_CSAT_APPROX(
+            CALL CALC_CSAT(
      I          theta(i,j,k,bi,bj),salt(i,j,k,bi,bj),
      I          ATM_CO2_INIT(i,j) ,PTR_PPRE(i,j,k),
      I          SIPRE(i,j,k),PTR_APRE(i,j,k),
@@ -208,7 +208,7 @@ C                CSAT_INSIT(i,j,k)=CSAT_INIT(i,j,k)
 C            ELSE
             tmp=ATM_CO2_INSIT(i,j,k)*1. _d -6
 
-            CALL CALC_CSAT_APPROX(
+            CALL CALC_CSAT(
      I          theta(i,j,k,bi,bj),salt(i,j,k,bi,bj),
      I          tmp,PTR_PPRE(i,j,k),
      I          SIPRE(i,j,k),PTR_APRE(i,j,k),

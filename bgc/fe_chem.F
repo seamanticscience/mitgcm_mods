@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/fe_chem.F,v 1.16 2010/04/13 03:06:14 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 
 CBOP
@@ -8,11 +5,12 @@ C     !ROUTINE: Fe_CHEM
 C     !INTERFACE:
       SUBROUTINE Fe_CHEM(
      I           bi,bj, iMin,iMax,jMin,jMax,
-     I           fe, 
+     I           fe,
 #ifdef ALLOW_VARIABLE_LIGANDS
      I           ligand_conc,
 #endif
-     I           freefe, myIter, myThid )
+     O           freefe,
+     I           myIter, myThid )
 
 C     !DESCRIPTION: \bv
 C     *==========================================================*
@@ -58,15 +56,19 @@ C
 C  ADAPTED FROM PAYAL
 C
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
+      DO k=1,Nr
+       DO j=1-OLy,sNy+OLy
+        DO i=1-OLx,sNx+OLx
+          freefe(i,j,k) = 0. _d 0
 #ifndef ALLOW_VARIABLE_LIGANDS
 C  Fill in ligand array with constant conc
-       DO k=1,Nr
-        DO j=jMin,jMax
-         DO i=iMin,iMax
           ligand_conc(i,j,k)=ligand_tot
-         ENDDO
+#endif
         ENDDO
        ENDDO
+      ENDDO
+      
 #elif (defined(VARIABLE_LIGAND_BACKGROUND))
 C  Add uniform background to ligand array
        DO k=1,Nr
@@ -86,6 +88,7 @@ C in surface layer
         DO j=jMin,jMax
          DO i=iMin,iMax
           IF ( maskC(i,j,k,bi,bj).GT.0. ) THEN
+
 #ifdef DIC_NO_NEG
               tmpfe =MAX( 0. _d 0 , fe(i,j,k) )
 #else

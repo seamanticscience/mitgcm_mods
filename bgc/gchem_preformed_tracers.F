@@ -1,12 +1,12 @@
-C $Header: /u/gcmpack/MITgcm/pkg/gchem/gchem_forcing_sep.F,v 1.30 2011/12/22 19:05:27 jmc Exp $
-C $Name:  $
-
-#include "GCHEM_OPTIONS.h"
+# include "GCHEM_OPTIONS.h"
 #ifdef ALLOW_DIC
-#include "DIC_OPTIONS.h"
+# include "DIC_OPTIONS.h"
+#endif
+#ifdef ALLOW_BLING
+# include "BLING_OPTIONS.h"
 #endif
 #ifdef ALLOW_DARWIN
-#include "DARWIN_OPTIONS.h"
+# include "DARWIN_OPTIONS.h"
 #endif
 
 
@@ -32,11 +32,14 @@ C !USES: ===============================================================
 #include "PTRACERS_PARAMS.h"
 #include "GCHEM.h"
 #ifdef ALLOW_DIC
-#include "DIC_VARS.h"
+# include "DIC_VARS.h"
 #endif /* ALLOW_DIC */
+#ifdef ALLOW_BLING
+# include "BLING_VARS.h"
+#endif /* ALLOW_BLING */
 #ifdef ALLOW_DARWIN
-#include "DARWIN_FLUX.h"
-#include "DARWIN_SIZE.h"
+# include "DARWIN_FLUX.h"
+# include "DARWIN_SIZE.h"
 #endif
 
 C !INPUT PARAMETERS: ===================================================

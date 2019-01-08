@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_readparms.F,v 1.10 2010/04/11 20:54:49 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 
 CBOP
@@ -23,6 +20,8 @@ C     === Global variables ===
 #include "EEPARAMS.h"
 #include "PARAMS.h"
 #include "DIC_VARS.h"
+#include "PTRACERS_SIZE.h"
+#include "PTRACERS_PARAMS.h"
 
 C     !INPUT/OUTPUT PARAMETERS:
 C     === Routine arguments ===
@@ -91,7 +90,7 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
       NAMELIST /BIOTIC_PARMS/
      & DOPfraction, KDOPRemin, KRemin, zcrit, zca,
      & O2crit, R_OP, R_CP, R_NP, R_FeP, R_SIP,
-     & parfrac, k0, lit0, KPO4, KFE, 
+     & parfrac, k0, lit0, KPO4, KFE, kchl,
      & KScav, KScav_yr, KScav_surf, KScav_poc_yr, KScav_poc,
      & R_pop2poc, R_dust2fe, poc_wsp,  dust_wsp,
      & scav_exp, scav_ratio, KScav_dust_yr, 
@@ -104,11 +103,12 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
      & lig_q10, lig_tref,
 #endif
      & alphaUniform_yr, alphaUniform, rainRatioUniform 
-#endif
+#endif  /* DIC_BIOTIC */
 
       NAMELIST /DIC_FORCING/
      &          DIC_windFile, DIC_atmospFile, DIC_iceFile,
-     &          DIC_ironFile, DIC_silicaFile, 
+     &          DIC_ironFile, DIC_silicaFile, DIC_parFile,
+     &          DIC_chlaFile, 
 #if ((defined ALLOW_FE) && (defined HYDROTHERMAL_FE))    
      &          DIC_hydroventFile,
 #endif
@@ -121,7 +121,6 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
        permil      = 1. _d 0 / 1024.5 _d 0
        Pa2Atm      = 1.01325 _d 5
-
 #ifdef DIC_BIOTIC
        DOPfraction = 0.67 _d 0
        KDOPRemin   = 1. _d 0/(6. _d 0*30. _d 0*86400. _d 0)
@@ -136,12 +135,12 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        zca         = 3500. _d 0
        parfrac     = 0.4 _d 0
        k0          = 0.02 _d 0
+       kchl        = 0.02 _d 0
        lit0        = 30. _d 0
        KPO4        = 5. _d -4
        KFE         = 1.2 _d -7
        alpfe       = 0.01 _d 0
        freefemax   = 3. _d -7
-       rainRatioUniform = 7. _d -2
 
 C JML general point:
 C      1/yr values are easier to put in the data.dic file. Set those
@@ -152,7 +151,9 @@ C      Alpha productivity rate default is 2e-3 molP/m3/yr
 C      (as high as 6e-3 molP/m3/yr in Parekh etal 2005, GBC eqn3)       
        alphaUniform_yr  = 2. _d -3
        alphaUniform     = UNSET_RL
-       
+
+       rainRatioUniform = 7. _d -2
+
 #ifdef ALLOW_FE
 C JML Added var for particle/dust dependent Fe scavenging
 C      KScav is the uniform value when scavenging is constant rate
@@ -197,6 +198,7 @@ C sedimentary iron source
 C    For Elrod et al (2004) use:
        sedfe_factor = 6.8 _d -4       
        sedfe_offset = -0.5 _d -6 / 86400. _d 0
+
 C    For Dale et al (2015) use:
 C       sedfe_factor = 170. _d 0 / (86400. _d 0 * 1. _d 6)      
 C       sedfe_offset      = 0
@@ -224,10 +226,12 @@ C lambda_ref is calculated in dic_init_fixed
        DIC_iceFile   = ' '
        DIC_ironFile  = ' '
        DIC_silicaFile= ' '
+       DIC_parFile   = ' '
+       DIC_chlaFile  = ' '
 #if ((defined ALLOW_FE) && (defined HYDROTHERMAL_FE))
 C JML include iron source due to hydrothermal input into bottom layer            
        DIC_hydroventFile=' '       
-#endif      
+#endif
        dic_int1    = 0
        dic_int2    = 0
        dic_int3    = 0
@@ -264,7 +268,11 @@ C-    forcing filenames and parameters
      I                    SQUEEZE_RIGHT, myThid )
 
 C--   Close the open data file
+#ifdef SINGLE_DISK_IO
       CLOSE(iUnit)
+#else
+      CLOSE(iUnit,STATUS='DELETE')
+#endif /* SINGLE_DISK_IO */
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 C-    derive other parameters:
@@ -278,7 +286,8 @@ C if using Qsw and seaice, then ice fraction is already
 C taken into account
        IF ( useSEAICE ) QSW_underice = .TRUE.
        IF ( useThSIce ) QSW_underice = .TRUE.
-#endif
+#endif /* USE_QSW_UNDERICE */
+
        IF ( alphaUniform .EQ. UNSET_RL ) THEN
           alphaUniform   = alphaUniform_yr/(360. _d 0 * 86400. _d 0)
        ENDIF
@@ -301,7 +310,6 @@ C taken into account
        ENDIF
 #endif /* ALLOW_FE */
 #endif /* DIC_BIOTIC */
-
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 C--   Print out parameter values :
 
@@ -346,7 +354,9 @@ C- namelist BIOTIC_PARMS
        CALL WRITE_0D_RL( parfrac, INDEX_NONE,'parfrac =',
      &  ' /* Fraction of Qsw that is PAR */')
        CALL WRITE_0D_RL( k0, INDEX_NONE,'k0 =',
-     &  ' /* Light attentuation coefficient (1/m) */')
+     &  ' /* Light attentuation coefficient, water (1/m) */')
+       CALL WRITE_0D_RL( kchl, INDEX_NONE,'kchl =',
+     &  ' /* Light attentuation coefficient, chlorophyll (m2/mg) */')
        CALL WRITE_0D_RL( lit0, INDEX_NONE,'lit0 =',
      &  ' /* Half saturation light constant (W/m2) */')
        CALL WRITE_0D_RL( KPO4, INDEX_NONE,'KPO4 =',
@@ -396,10 +406,9 @@ C JML Sediment iron input parameters
      &  ' /* Gradient of sediment iron-poc relationship */')   
             CALL WRITE_0D_RL(sedfe_offset, INDEX_NONE,'sedfe_offset =',
      &  ' /* Intercept of sediment iron-poc relationship */')   
-            CALL WRITE_0D_RL(fe_sed_depth_max, INDEX_NONE,
-     &  'fe_sed_depth_max =',
+            CALL WRITE_0D_RL(fe_sed_depth_max, INDEX_NONE,'fe_sed_depth_max =',
      &  ' /*  Maximum depth that sediment iron is input */')   
-#endif /* SEDIMENT_FE */
+#endif /* SEDIMENT_FE_ELROD || SEDIMENT_FE_DALE */
 
 C JML Fe Scavenging parameters
        CALL WRITE_0D_RL( KScav_yr, INDEX_NONE,'KScav_yr =',
@@ -430,15 +439,18 @@ C JML write out particle depended scavenging parameters
      &  ' /* Ligand-free iron stability constant (m3/mol) */')
        CALL WRITE_0D_RL( ligand_tot, INDEX_NONE,'ligand_tot =',
      &  ' /* Total free ligand  (mol/m3) */')
-#endif /* ALLOW_FE */       
+
+#endif /* ALLOW_FE */
+       CALL WRITE_0D_RL( alphaUniform_yr,INDEX_NONE,'alphaUniform_yr =',
+     &  ' /* Timescale for biological activity (1/yr) */')     
        CALL WRITE_0D_RL( alphaUniform, INDEX_NONE,'alphaUniform =',
-     &  ' /* Timescale for biological activity */')
+     &  ' /* Timescale for biological activity (1/s)*/')
        CALL WRITE_0D_RL(rainRatioUniform,INDEX_NONE,'rainRatioUniform=',
      &  ' /* Inorganic/organic carbon rain ratio */')
 
        CALL WRITE_0D_L( QSW_underice, INDEX_NONE, 'QSW_underice  =',
      &  '  /* Flag for Qsw under Sea-Ice (i.e. SI fract included) */')
-#endif
+#endif /* DIC_BIOTIC */
 
 C- namelist DIC_FORCING
        CALL WRITE_0D_C( DIC_windFile, -1, INDEX_NONE, 'DIC_windFile =',
@@ -458,6 +470,10 @@ C- namelist DIC_FORCING
 #endif /* ALLOW_FE */
        CALL WRITE_0D_C( DIC_silicaFile, -1,INDEX_NONE,'DIC_silicaFile=',
      & '  /* File name of surface silica */')
+       CALL WRITE_0D_C( DIC_parFile, -1,INDEX_NONE,'DIC_parFile=',
+     & '  /* File name of photosynthetically available radiation */')
+       CALL WRITE_0D_C( DIC_chlaFile, -1,INDEX_NONE,'DIC_chlaFile=',
+     & '  /* File name of chlorophyll climatology */')
        CALL WRITE_0D_RL( DIC_forcingPeriod,
      &   INDEX_NONE,'DIC_forcingPeriod =',
      &  ' /* Periodic forcing parameter specific for DIC (s) */')
@@ -483,6 +499,25 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
         CALL PRINT_ERROR( msgBuf, myThid )
         STOP 'ABNORMAL END: S/R DIC_READPARMS: dic_pCO2 error'
       ENDIF
+#ifdef ALLOW_OLD_VIRTUALFLUX
+      IF ( PTRACERS_EvPrRn(1).NE.UNSET_RL .OR.
+     &     PTRACERS_EvPrRn(2).NE.UNSET_RL ) THEN
+        WRITE(msgBuf,'(2A)') 'DIC_READPARMS: ',
+     &    'when ALLOW_OLD_VIRTUALFLUX is defined (in DIC_OPTIONS.h)'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        IF ( PTRACERS_EvPrRn(1).NE.UNSET_RL ) THEN
+         WRITE(msgBuf,'(2A)') 'DIC_READPARMS: ',
+     &   ' cannot set PTRACERS_EvPrRn(1) (in data.ptracers)'
+         CALL PRINT_ERROR( msgBuf, myThid )
+        ENDIF
+        IF ( PTRACERS_EvPrRn(2).NE.UNSET_RL ) THEN
+         WRITE(msgBuf,'(2A)') 'DIC_READPARMS: ',
+     &   ' cannot set PTRACERS_EvPrRn(2) (in data.ptracers)'
+         CALL PRINT_ERROR( msgBuf, myThid )
+        ENDIF
+        STOP 'ABNORMAL END: S/R DIC_READPARMS'
+      ENDIF
+#endif /* ALLOW_OLD_VIRTUALFLUX */
 
       _END_MASTER(myThid)
 

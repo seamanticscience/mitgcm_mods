@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/model/src/ini_parms.F,v 1.247 2012/04/03 22:38:53 jmc Exp $
-C $Name:  $
-
 #include "PACKAGES_CONFIG.h"
 #include "CPP_OPTIONS.h"
 #ifdef ALLOW_EXCH2
@@ -26,6 +23,8 @@ C     !USES:
 # include "W2_EXCH2_TOPOLOGY.h"
 #endif /* ALLOW_EXCH2 */
 #include "EOS.h"
+C- need GRID.h to save, in rF(1), half retired param Ro_SeaLevel value:
+#include "GRID.h"
 #include "SET_GRID.h"
 
 C     !INPUT/OUTPUT PARAMETERS:
@@ -80,12 +79,15 @@ C                     :: z, p or r are used.
 C                     :: coordsSet counts how many vertical coordinate systems have
 C                     :: been used to specify variables. coordsSet > 1 is an error.
 C     vertSetCount    :: to count number of vertical array elements which are set.
+C    specifiedDiffKrT :: internal flag, true when any diffK[r,z,p,Nr]T is specified
+C    specifiedDiffKrS :: internal flag, true when any diffK[r,z,p,Nr]S is specified
 
       LOGICAL zCoordInputData
       LOGICAL pCoordInputData
       LOGICAL rCoordInputData
       INTEGER coordsSet
       INTEGER vertSetCount
+      LOGICAL specifiedDiffKrT, specifiedDiffKrS
 
 C     Variables which have vertical coordinate system dependency.
 C     delZ    :: Vertical grid spacing ( m  ).
@@ -132,11 +134,14 @@ C                   from before checkpoint-35, Feb 08, 2001): disabled (Jan 2007
 C     debugMode    :: to print debug msg. now read from parameter file eedata
 C     allowInteriorFreezing :: Allow water at depth to freeze and rise to the surface
 C                              (replaced by pkg/frazil)
+C     useOldFreezing :: use the old version (before checkpoint52a_pre, 2003-11-12)
 C Namelist PARM03:
 C     tauThetaClimRelax3Dim :: replaced by pkg/rbcs (3.D Relaxation B.Cs)
 C     tauSaltClimRelax3Dim  :: replaced by pkg/rbcs (3.D Relaxation B.Cs)
 C     calendarDumps  :: moved to package "cal" (calendar)
 C Namelist PARM04:
+C     Ro_SeaLevel :: origin of the vertical R-coords axis ;
+C                 :: replaced by top_Pres or seaLev_Z setting
 C     groundAtK1 :: put the surface(k=1) at the ground (replaced by usingPCoords)
 C     rkFac      :: removed from namelist ; replaced by -rkSign
 C     thetaMin   :: unfortunate variable name ; replaced by xgOrigin
@@ -144,35 +149,39 @@ C     phiMin     :: unfortunate variable name ; replaced by ygOrigin
 C Namelist PARM05:
 C     shelfIceFile :: File containing the topography of the shelfice draught
 C                     (replaced by SHELFICEtopoFile in SHELFICE.h)
+C     dQdTfile     :: File containing thermal relaxation coefficient
 
       INTEGER nRetired
       LOGICAL useConstantF, useBetaPlaneF, useSphereF
       LOGICAL tempDiffusion, saltDiffusion
       INTEGER tracerAdvScheme
       _RL trac_EvPrRn
-      _RL zonal_filt_lat, gravitySign
+      _RL zonal_filt_lat
+c     _RL gravitySign
       _RL viscAstrain, viscAtension
       LOGICAL useAnisotropicViscAgridMax
       LOGICAL usePickupBeforeC35
       LOGICAL saveDebugMode
-      LOGICAL allowInteriorFreezing
+      LOGICAL allowInteriorFreezing, useOldFreezing
 C-
       _RL tauThetaClimRelax3Dim, tauSaltClimRelax3Dim
       LOGICAL calendarDumps
 C-
       LOGICAL groundAtK1
+      _RL Ro_SeaLevel
       _RL rkFac
       _RL thetaMin, phiMin
       CHARACTER*(MAX_LEN_FNAM) shelfIceFile
+      CHARACTER*(MAX_LEN_FNAM) dQdTfile
 
-C--   Continuous equation parameters (JML: added balanced surface relaxation)
+C--   Continuous equation parameters
       NAMELIST /PARM01/
      & gravitySign, nh_Am2,
-     & gravity, gBaro, rhonil, tAlpha, sBeta,
+     & gravity, gBaro, gravityFile, rhonil, tAlpha, sBeta,
      & selectCoriMap, f0, beta, fPrime, omega, rotationPeriod,
      & viscAh, viscAhW, viscAhMax,
      & viscAhGrid, viscAhGridMax, viscAhGridMin,
-     & viscC2leith, viscC4leith,
+     & viscC2leith, viscC4leith, smag3D_coeff, useSmag3D,
      & useFullLeith, useAnisotropicViscAgridMax, useStrainTensionVisc,
      & useAreaViscLength,
      & viscC2leithD, viscC4leithD, viscC2smag, viscC4smag,
@@ -183,16 +192,17 @@ C--   Continuous equation parameters (JML: added balanced surface relaxation)
      & cosPower, viscAstrain, viscAtension,
      & diffKhT, diffK4T, diffKhS, diffK4S,
      & tRef, sRef, tRefFile, sRefFile, rhoRefFile,
-     & eosType, integr_GeoPot, selectFindRoSurf,
-     & celsius2K, atm_Cp, atm_Rd, atm_Rq, atm_Po,
-     & no_slip_sides, sideDragFactor,
-     & no_slip_bottom, bottomDragLinear, bottomDragQuadratic,
-     & momViscosity,  momAdvection, momForcing, useCoriolis,
-     & useConstantF, useBetaPlaneF, useSphereF, use3dCoriolis,
-     & momPressureForcing, metricTerms, vectorInvariantMomentum,
-     & tempDiffusion, tempAdvection, tempForcing,
-     & saltDiffusion, saltAdvection, saltForcing,
-     & implicSurfPress, implicDiv2Dflow, implicitNHPress,
+     & eosType, selectP_inEOS_Zc, integr_GeoPot, selectFindRoSurf,
+     & HeatCapacity_Cp, celsius2K, atm_Cp, atm_Rd, atm_Rq, atm_Po,
+     & no_slip_sides, sideDragFactor, no_slip_bottom, bottomVisc_pCell,
+     & bottomDragLinear, bottomDragQuadratic, selectBotDragQuadr,
+     & momViscosity,  momAdvection, momForcing, momTidalForcing,
+     & useCoriolis, useConstantF, useBetaPlaneF, useSphereF,
+     & use3dCoriolis, momPressureForcing,
+     & metricTerms, vectorInvariantMomentum, addFrictionHeating,
+     & tempDiffusion, tempAdvection, tempForcing, temp_stayPositive,
+     & saltDiffusion, saltAdvection, saltForcing, salt_stayPositive,
+     & implicSurfPress, implicDiv2DFlow, implicitNHPress,
      & implicitFreeSurface, rigidLid, freeSurfFac,
      & hFacMin, hFacMinDz, hFacMinDp, hFacMinDr,
      & exactConserv, linFSConserveTr, uniformLin_PhiSurf,
@@ -200,19 +210,19 @@ C--   Continuous equation parameters (JML: added balanced surface relaxation)
      & nonHydrostatic, selectNHfreeSurf, quasiHydrostatic,
      & implicitIntGravWave, staggerTimeStep, doResetHFactors,
      & tempStepping, saltStepping, momStepping,
-     & implicitDiffusion, implicitViscosity,
+     & implicitDiffusion, implicitViscosity, selectImplicitDrag,
      & tempImplVertAdv, saltImplVertAdv, momImplVertAdv,
      & viscAz, diffKzT, diffKzS, viscAp, diffKpT, diffKpS,
      & viscAr, diffKrT, diffKrS, viscArNr, diffKrNrT, diffKrNrS,
+     & diffKr4T, diffKr4S, BL79LatVary,
      & diffKrBL79surf, diffKrBL79deep, diffKrBL79scl, diffKrBL79Ho,
-     & BL79LatVary,
      & diffKrBLEQsurf, diffKrBLEQdeep, diffKrBLEQscl, diffKrBLEQHo,
-     & rhoConst, rhoConstFresh, buoyancyRelation, HeatCapacity_Cp,
-     & writeBinaryPrec, readBinaryPrec, writeStatePrec,
-     & globalFiles, useSingleCpuIO,
+     & rhoConst, thetaConst, rhoConstFresh, buoyancyRelation,
+     & readBinaryPrec, writeBinaryPrec, writeStatePrec, globalFiles,
+     & useSingleCpuIO, useSingleCpuInput, usePickupBeforeC54,
+     & usePickupBeforeC35, debugMode, debugLevel, plotLevel,
      & allowFreezing, allowInteriorFreezing, useOldFreezing, ivdc_kappa,
      & hMixCriteria, dRhoSmall, hMixSmooth,
-     & usePickupBeforeC35, usePickupBeforeC54, debugMode, debugLevel,
      & tempAdvScheme, tempVertAdvScheme,
      & saltAdvScheme, saltVertAdvScheme, tracerAdvScheme,
      & multiDimAdvection, useEnergyConservingCoriolis,
@@ -222,32 +232,33 @@ C--   Continuous equation parameters (JML: added balanced surface relaxation)
      & selectAddFluid, useRealFreshWaterFlux, convertFW2Salt,
      & temp_EvPrRn, salt_EvPrRn, trac_EvPrRn,
      & temp_addMass, salt_addMass, zonal_filt_lat,
-     & inAdExact, smoothAbsFuncRange,
+     & smoothAbsFuncRange,
      & balanceEmPmR, balanceQnet, balancePrintMean,
-     & balanceSrelax, balanceTrelax
+     & balanceThetaClimRelax, balanceSaltClimRelax
 
 C--   Elliptic solver parameters
       NAMELIST /PARM02/
-     & cg2dMaxIters, cg2dChkResFreq, cg2dTargetResidual,
-     & cg2dTargetResWunit, cg2dpcOffDFac, cg2dPreCondFreq,
+     & cg2dMaxIters, cg2dChkResFreq, cg2dUseMinResSol,
+     & cg2dTargetResidual, cg2dTargetResWunit,
+     & cg2dpcOffDFac, cg2dPreCondFreq,
      & cg3dMaxIters, cg3dChkResFreq, cg3dTargetResidual,
      & useSRCGSolver, printResidualFreq
 
 C--   Time stepping parammeters
       NAMELIST /PARM03/
-     & nIter0, nTimeSteps, nEndIter,
+     & nIter0, nTimeSteps, nTimeSteps_l2, nEndIter,
      & baseTime, startTime, endTime,
-     & deltaT, deltaTClock, deltaTmom,
-     & deltaTtracer, dTtracerLev, deltaTfreesurf,
+     & deltaT, deltaTClock, deltaTMom,
+     & deltaTtracer, dTtracerLev, deltaTFreeSurf,
      & forcing_In_AB, momForcingOutAB, tracForcingOutAB,
      & momDissip_In_AB, doAB_onGtGs,
-     & abEps, alph_AB, beta_AB, startFromPickupAB2,
+     & abEps, alph_AB, beta_AB, startFromPickupAB2, applyExchUV_early,
      & tauCD, rCD, epsAB_CD, cAdjFreq,
      & chkPtFreq, pChkPtFreq, pickupSuff, pickupStrictlyMatch,
      & writePickupAtEnd,
      & dumpFreq, dumpInitAndLast, adjDumpFreq, taveFreq, tave_lastIter,
      & diagFreq, monitorFreq, adjMonitorFreq, monitorSelect,
-     & outputTypesInclusive,
+     & outputTypesInclusive, rwSuffixType,
      & tauThetaClimRelax, tauSaltClimRelax, latBandClimRelax,
      & tauThetaClimRelax3Dim, tauSaltClimRelax3Dim,
      & periodicExternalForcing, externForcingPeriod, externForcingCycle,
@@ -260,15 +271,18 @@ C--   Gridding parameters
      & xgOrigin, ygOrigin, dxSpacing, dySpacing,
      & delX, delY, delXFile, delYFile, horizGridFile,
      & phiEuler, thetaEuler, psiEuler,
-     & rSphere, radius_fromHorizGrid, deepAtmosphere,
+     & rSphere, radius_fromHorizGrid, deepAtmosphere, seaLev_Z,
+     & top_Pres, delZ, delP, delR, delRc, delRFile, delRcFile,
+     & useMin4hFacEdges, interViscAr_pCell, interDiffKr_pCell,
+     & pCellMix_select, pCellMix_maxFac, pCellMix_delR,
+     & pCellMix_viscAr, pCellMix_diffKr,
      & selectSigmaCoord, rSigmaBnd, hybSigmFile,
-     & Ro_SeaLevel, delZ, delP, delR, delRc, delRFile, delRcFile,
-     & rkFac, groundAtK1, thetaMin, phiMin
+     & Ro_SeaLevel, rkFac, groundAtK1, thetaMin, phiMin
 
-C--   Input files (JML: added files for specified surface relaxation)
+C--   Input files (JML: added files for prescribed surface relaxation)
       NAMELIST /PARM05/
-     & bathyFile, topoFile, shelfIceFile, diffKrFile,
-     & viscAhDfile, viscAhZfile, viscA4Dfile, viscA4Zfile,
+     & bathyFile, topoFile, addWwallFile, addSwallFile, shelfIceFile,
+     & diffKrFile, viscAhDfile, viscAhZfile, viscA4Dfile, viscA4Zfile,
      & hydrogThetaFile, hydrogSaltFile,
      & maskIniTemp, maskIniSalt, checkIniTemp, checkIniSalt,
      & zonalWindFile, meridWindFile,
@@ -276,8 +290,8 @@ C--   Input files (JML: added files for specified surface relaxation)
      & surfQfile, surfQnetFile, surfQswFile, EmPmRfile, saltFluxFile,
      & lambdaThetaFile, lambdaSaltFile,
      & uVelInitFile, vVelInitFile, pSurfInitFile,
-     & dQdTFile, ploadFile,tCylIn,tCylOut,
-     & eddyPsiXFile, eddyPsiYFile,
+     & dQdTFile, ploadFile, addMassFile, tCylIn, tCylOut,
+     & eddyPsiXFile, eddyPsiYFile, geothermalFile,
      & mdsioLocalDir, adTapeDir,
      & the_run_name
 CEOP
@@ -322,14 +336,17 @@ C--   Initialise retired parameters to unlikely value
       usePickupBeforeC35    = .FALSE.
       saveDebugMode   = debugMode
       allowInteriorFreezing = .FALSE.
+      useOldFreezing  = .FALSE.
       tauThetaClimRelax3Dim = UNSET_RL
       tauSaltClimRelax3Dim  = UNSET_RL
       calendarDumps   = .FALSE.
+      Ro_SeaLevel     = UNSET_RL
       rkFac           = UNSET_RL
       groundAtK1      = .FALSE.
       thetaMin        = UNSET_RL
       phiMin          = UNSET_RL
       shelfIceFile    = ' '
+      dQdTFile        = ' '
 
 C--   Open the parameter file
       WRITE(msgBuf,'(A)')
@@ -360,26 +377,15 @@ C--   Set default "physical" parameters
       diffKzS  = UNSET_RL
       diffKpS  = UNSET_RL
       diffKrS  = UNSET_RL
-      DO k=1,Nr
-       viscArNr(k)  = UNSET_RL
-       diffKrNrT(k) = UNSET_RL
-       diffKrNrS(k) = UNSET_RL
-       tRef(k)      = UNSET_RL
-       sRef(k)      = UNSET_RL
-      ENDDO
-      gBaro    = UNSET_RL
-      rhoConst = UNSET_RL
-      omega    = UNSET_RL
-      hFacMinDr           = UNSET_RL
-      hFacMinDz           = UNSET_RL
-      hFacMinDp           = UNSET_RL
-      rhoConstFresh  = UNSET_RL
-      convertFW2Salt = UNSET_RL
-      tAlpha              = UNSET_RL
-      sBeta               = UNSET_RL
-      implicitNHPress     = UNSET_RL
+      hFacMinDr         = UNSET_RL
+      hFacMinDz         = UNSET_RL
+      hFacMinDp         = UNSET_RL
+      tAlpha            = UNSET_RL
+      sBeta             = UNSET_RL
+      implicitNHPress   = UNSET_RL
       tempVertAdvScheme = 0
       saltVertAdvScheme = 0
+      plotLevel         = UNSET_I
 C--   z,p,r coord input switching.
       WRITE(msgBuf,'(A)') ' INI_PARMS ; starts to read PARM01'
       CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
@@ -449,7 +455,7 @@ C-     No barotropic solver selected => use implicitFreeSurface as default
       ELSE
         rotationPeriod = 2. _d 0 * PI / omega
       ENDIF
-      IF (atm_Rd .EQ. UNSET_RL) THEN
+      IF ( atm_Rd .EQ. UNSET_RL ) THEN
         atm_Rd = atm_Cp * atm_kappa
       ELSE
         atm_kappa = atm_Rd / atm_Cp
@@ -464,65 +470,79 @@ C--   Non-hydrostatic/quasi-hydrostatic
 C--  Advection and Forcing for Temp and salt
       IF (tempVertAdvScheme.EQ.0) tempVertAdvScheme = tempAdvScheme
       IF (saltVertAdvScheme.EQ.0) saltVertAdvScheme = saltAdvScheme
-C--  horizontal viscosity for vertical moments
-      IF ( viscAhW .EQ. UNSET_RL ) viscAhW = viscAh
-      IF ( viscA4W .EQ. UNSET_RL ) viscA4W = viscA4
 C--  horizontal viscosity (acting on Divergence or Vorticity)
       IF ( viscAhD .EQ. UNSET_RL ) viscAhD = viscAh
       IF ( viscAhZ .EQ. UNSET_RL ) viscAhZ = viscAh
       IF ( viscA4D .EQ. UNSET_RL ) viscA4D = viscA4
       IF ( viscA4Z .EQ. UNSET_RL ) viscA4Z = viscA4
+C--  horizontal viscosity for vertical moments
+      IF ( viscAhW .EQ. UNSET_RL ) viscAhW = viscAhD
+      IF ( viscA4W .EQ. UNSET_RL ) viscA4W = viscA4D
 C--   z,p,r coord input switching.
       IF ( viscAz .NE. UNSET_RL ) zCoordInputData = .TRUE.
       IF ( viscAp .NE. UNSET_RL ) pCoordInputData = .TRUE.
       IF ( viscAr .NE. UNSET_RL ) rCoordInputData = .TRUE.
       IF ( viscAr .EQ. UNSET_RL )          viscAr = viscAz
       IF ( viscAr .EQ. UNSET_RL )          viscAr = viscAp
-      IF ( viscAr .EQ. UNSET_RL )          viscAr = viscArDefault
       vertSetCount = 0
       DO k=1,Nr
-        IF ( viscArNr(k).EQ.UNSET_RL ) THEN
-          viscArNr(k) = viscAr
-        ELSE
-          vertSetCount = vertSetCount + 1
-        ENDIF
+        IF ( viscArNr(k).NE.UNSET_RL ) vertSetCount = vertSetCount + 1
       ENDDO
-      IF ( viscAr.NE.viscArDefault .AND. vertSetCount.GT.0 ) THEN
-       WRITE(msgBuf,'(2A)') 'S/R INI_PARMS: Cannot set both ',
-     &    'viscArNr and viscAr (or Ap,Az) in param file data'
-       CALL PRINT_ERROR( msgBuf, myThid )
-       errCount = errCount + 1
-      ELSEIF ( vertSetCount.GT.0 .AND. vertSetCount.LT.Nr ) THEN
-       WRITE(msgBuf,'(A,2(I5,A))') 'S/R INI_PARMS: Partial setting (',
-     &       vertSetCount, ' /', Nr, ') of viscArNr is not allowed'
-       CALL PRINT_ERROR( msgBuf, myThid )
-       errCount = errCount + 1
+      IF ( vertSetCount.GT.0 .AND. vertSetCount.LT.Nr ) THEN
+        WRITE(msgBuf,'(A,2(I5,A))') 'S/R INI_PARMS: Partial setting (',
+     &        vertSetCount, ' /', Nr, ') of viscArNr is not allowed'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        errCount = errCount + 1
       ENDIF
+      IF ( viscAr .EQ. UNSET_RL ) THEN
+        viscAr = viscArDefault
+      ELSEIF ( vertSetCount.GT.0 ) THEN
+        WRITE(msgBuf,'(2A)') 'S/R INI_PARMS: Cannot set both ',
+     &     'viscArNr and viscAr (or Ap,Az) in param file data'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        errCount = errCount + 1
+      ENDIF
+      IF ( vertSetCount.EQ.0 ) THEN
+        DO k=1,Nr
+          viscArNr(k) = viscAr
+        ENDDO
+      ENDIF
+#ifdef ALLOW_MOM_COMMON
+C-    set default scheme for quadratic bottom-drag
+      IF ( selectBotDragQuadr.EQ.-1 .AND. bottomDragQuadratic.NE.0. )
+     &  selectBotDragQuadr = 0
+#endif /* ALLOW_MOM_COMMON */
 
       IF ( diffKzT .NE. UNSET_RL ) zCoordInputData  = .TRUE.
       IF ( diffKpT .NE. UNSET_RL ) pCoordInputData  = .TRUE.
       IF ( diffKrT .NE. UNSET_RL ) rCoordInputData  = .TRUE.
       IF ( diffKrT .EQ. UNSET_RL )          diffKrT = diffKzT
       IF ( diffKrT .EQ. UNSET_RL )          diffKrT = diffKpT
-      IF ( diffKrT .EQ. UNSET_RL )          diffKrT = diffKrTDefault
       vertSetCount = 0
       DO k=1,Nr
-        IF ( diffKrNrT(k).EQ.UNSET_RL ) THEN
-          diffKrNrT(k) = diffKrT
-        ELSE
-          vertSetCount = vertSetCount + 1
-        ENDIF
+        IF ( diffKrNrT(k).NE.UNSET_RL ) vertSetCount = vertSetCount + 1
       ENDDO
-      IF ( diffKrT.NE.diffKrTDefault .AND. vertSetCount.GT.0 ) THEN
-       WRITE(msgBuf,'(2A)') 'S/R INI_PARMS: Cannot set both ',
-     &    'diffKrNrT and diffKrT (or Kp,Kz) in param file data'
-       CALL PRINT_ERROR( msgBuf, myThid )
-       errCount = errCount + 1
-      ELSEIF ( vertSetCount.GT.0 .AND. vertSetCount.LT.Nr ) THEN
-       WRITE(msgBuf,'(A,2(I5,A))') 'S/R INI_PARMS: Partial setting (',
-     &       vertSetCount, ' /', Nr, ') of diffKrNrT is not allowed'
-       CALL PRINT_ERROR( msgBuf, myThid )
-       errCount = errCount + 1
+      IF ( vertSetCount.GT.0 .AND. vertSetCount.LT.Nr ) THEN
+        WRITE(msgBuf,'(A,2(I5,A))') 'S/R INI_PARMS: Partial setting (',
+     &        vertSetCount, ' /', Nr, ') of diffKrNrT is not allowed'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        errCount = errCount + 1
+      ENDIF
+      specifiedDiffKrT = vertSetCount.EQ.Nr
+      IF ( diffKrT .EQ. UNSET_RL ) THEN
+        diffKrT = diffKrTDefault
+      ELSEIF ( vertSetCount.GT.0 ) THEN
+        WRITE(msgBuf,'(2A)') 'S/R INI_PARMS: Cannot set both ',
+     &     'diffKrNrT and diffKrT (or Kp,Kz) in param file data'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        errCount = errCount + 1
+      ELSE
+        specifiedDiffKrT = .TRUE.
+      ENDIF
+      IF ( vertSetCount.EQ.0 ) THEN
+        DO k=1,Nr
+          diffKrNrT(k) = diffKrT
+        ENDDO
       ENDIF
 
       IF ( diffKzS .NE. UNSET_RL ) zCoordInputData  = .TRUE.
@@ -530,25 +550,36 @@ C--   z,p,r coord input switching.
       IF ( diffKrS .NE. UNSET_RL ) rCoordInputData  = .TRUE.
       IF ( diffKrS .EQ. UNSET_RL )          diffKrS = diffKzS
       IF ( diffKrS .EQ. UNSET_RL )          diffKrS = diffKpS
-      IF ( diffKrS .EQ. UNSET_RL )          diffKrS = diffKrSDefault
       vertSetCount = 0
       DO k=1,Nr
-        IF ( diffKrNrS(k).EQ.UNSET_RL ) THEN
-          diffKrNrS(k) = diffKrS
-        ELSE
-          vertSetCount = vertSetCount + 1
-        ENDIF
+        IF ( diffKrNrS(k).NE.UNSET_RL ) vertSetCount = vertSetCount + 1
       ENDDO
-      IF ( diffKrS.NE.diffKrSDefault .AND. vertSetCount.GT.0 ) THEN
-       WRITE(msgBuf,'(2A)') 'S/R INI_PARMS: Cannot set both ',
-     &    'diffKrNrS and diffKrS (or Kp,Kz) in param file data'
-       CALL PRINT_ERROR( msgBuf, myThid )
-       errCount = errCount + 1
-      ELSEIF ( vertSetCount.GT.0 .AND. vertSetCount.LT.Nr ) THEN
-       WRITE(msgBuf,'(A,2(I5,A))') 'S/R INI_PARMS: Partial setting (',
-     &       vertSetCount, ' /', Nr, ') of diffKrNrS is not allowed'
-       CALL PRINT_ERROR( msgBuf, myThid )
-       errCount = errCount + 1
+      IF ( vertSetCount.GT.0 .AND. vertSetCount.LT.Nr ) THEN
+        WRITE(msgBuf,'(A,2(I5,A))') 'S/R INI_PARMS: Partial setting (',
+     &        vertSetCount, ' /', Nr, ') of diffKrNrS is not allowed'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        errCount = errCount + 1
+      ENDIF
+      IF ( vertSetCount.EQ.Nr ) THEN
+        specifiedDiffKrS = .TRUE.
+        IF ( diffKrS.NE.UNSET_RL ) THEN
+         WRITE(msgBuf,'(2A)') 'S/R INI_PARMS: Cannot set both ',
+     &     'diffKrNrS and diffKrS (or Kp,Kz) in param file data'
+         CALL PRINT_ERROR( msgBuf, myThid )
+         errCount = errCount + 1
+        ENDIF
+      ELSEIF ( diffKrS.NE.UNSET_RL ) THEN
+        specifiedDiffKrS = .TRUE.
+        DO k=1,Nr
+          diffKrNrS(k) = diffKrS
+        ENDDO
+      ELSE
+        specifiedDiffKrS = .FALSE.
+        diffKrS = diffKrSDefault
+C-    use temp diffusivity as default salt diffusivity:
+        DO k=1,Nr
+          diffKrNrS(k) = diffKrNrT(k)
+        ENDDO
       ENDIF
 
       IF (diffKrBLEQsurf .EQ. UNSET_RL) diffKrBLEQsurf = diffKrBL79surf
@@ -581,7 +612,7 @@ C--   for backward compatibility :
         ENDIF
       ENDIF
 
-      IF ( ivdc_kappa .NE. 0. .AND. .NOT. implicitDiffusion ) THEN
+      IF ( ivdc_kappa.NE.zeroRL .AND. .NOT.implicitDiffusion ) THEN
         WRITE(msgBuf,'(A,A)')
      &  'S/R INI_PARMS: To use ivdc_kappa you must enable implicit',
      &  ' vertical diffusion.'
@@ -619,8 +650,6 @@ C--   for backward compatibility :
      &  'S/R INI_PARMS: HeatCapacity_Cp must be greater than 0.'
        CALL PRINT_ERROR( msgBuf, myThid )
        errCount = errCount + 1
-      ELSE
-       recip_Cp = 1. _d 0 / HeatCapacity_Cp
       ENDIF
       IF ( gravity .LE. 0. ) THEN
        WRITE(msgBuf,'(A)')
@@ -631,9 +660,14 @@ C--   for backward compatibility :
       ELSE
        recip_gravity = 1. _d 0 / gravity
       ENDIF
+
 C-    set default printResidualFreq according to debugLevel
       printResidualFreq = 0
       IF ( debugLevel.GE.debLevE ) printResidualFreq = 1
+      IF ( plotLevel.EQ.UNSET_I ) plotLevel = debugLevel
+
+C-    set useSingleCpuInput=.TRUE. if useSingleCpuIO==.TRUE.
+      IF ( useSingleCpuIO ) useSingleCpuInput=.TRUE.
 
 C     Check for retired parameters still being used
       nRetired = 0
@@ -760,6 +794,12 @@ C     Check for retired parameters still being used
      &  ' by pkg/frazil and is no longer allowed in file "data"'
        CALL PRINT_ERROR( msgBuf, myThid )
       ENDIF
+      IF ( useOldFreezing ) THEN
+       nRetired = nRetired+1
+       WRITE(msgBuf,'(A,A)') 'S/R INI_PARMS: "useOldFreezing" ',
+     &  'is no longer supported & not longer allowed in file "data"'
+       CALL PRINT_ERROR( msgBuf, myThid )
+      ENDIF
 
 C--   Elliptic solver parameters
       WRITE(msgBuf,'(A)') ' INI_PARMS ; starts to read PARM02'
@@ -843,8 +883,8 @@ C     o Time step size
       ENDIF
       IF ( deltaT       .EQ. 0. ) deltaT       = deltaTClock
       IF ( deltaT       .EQ. 0. ) deltaT       = deltaTtracer
-      IF ( deltaT       .EQ. 0. ) deltaT       = deltaTmom
-      IF ( deltaT       .EQ. 0. ) deltaT       = deltaTfreesurf
+      IF ( deltaT       .EQ. 0. ) deltaT       = deltaTMom
+      IF ( deltaT       .EQ. 0. ) deltaT       = deltaTFreeSurf
       IF ( deltaT       .EQ. 0. ) THEN
         WRITE(msgBuf,'(2A)') 'S/R INI_PARMS: ',
      &   'need to specify in file "data", namelist "PARM03"'
@@ -855,7 +895,7 @@ C     o Time step size
         errCount = errCount + 1
         deltaT = 1.
       ENDIF
-      IF ( deltaTmom    .EQ. 0. ) deltaTmom    = deltaT
+      IF ( deltaTMom    .EQ. 0. ) deltaTMom    = deltaT
       IF ( deltaTtracer .EQ. 0. ) deltaTtracer = deltaT
       IF ( deltaTClock  .EQ. 0. ) deltaTClock  = deltaT
       DO k=1,Nr
@@ -866,7 +906,7 @@ C but this would change a lot of existing set-ups so we are
 C obliged to set the default inappropriately.
 C Be advised that when using asynchronous time stepping
 C it is better to set deltaTreesurf=deltaTtracer
-      IF ( deltaTfreesurf .EQ. 0. ) deltaTfreesurf  = deltaTmom
+      IF ( deltaTFreeSurf .EQ. 0. ) deltaTFreeSurf  = deltaTMom
       IF ( periodicExternalForcing ) THEN
        IF ( externForcingCycle*externForcingPeriod .EQ. 0. ) THEN
         WRITE(msgBuf,'(A)')
@@ -885,9 +925,9 @@ C it is better to set deltaTreesurf=deltaTtracer
         CALL PRINT_ERROR( msgBuf, myThid )
         errCount = errCount + 1
        ENDIF
-       IF ( externForcingPeriod.LT.deltaTclock ) THEN
+       IF ( externForcingPeriod.LT.deltaTClock ) THEN
         WRITE(msgBuf,'(A)')
-     &   'S/R INI_PARMS: externForcingPeriod < deltaTclock'
+     &   'S/R INI_PARMS: externForcingPeriod < deltaTClock'
         CALL PRINT_ERROR( msgBuf, myThid )
         errCount = errCount + 1
        ENDIF
@@ -914,7 +954,7 @@ C     o Convection frequency
       ENDIF
       IF (useCDscheme) THEN
 C     o CD coupling (CD scheme):
-        IF ( tauCD .EQ. 0. _d 0 ) tauCD = deltaTmom
+        IF ( tauCD .EQ. 0. _d 0 ) tauCD = deltaTMom
         IF ( rCD .LT. 0. ) rCD = 1. _d 0 - deltaTMom/tauCD
         IF ( epsAB_CD .EQ. UNSET_RL ) epsAB_CD = abEps
       ENDIF
@@ -925,36 +965,37 @@ C     o set default value for start time & nIter0
         nIter0 = 0
       ELSEIF ( startTime.EQ.UNSET_RL ) THEN
 C     o set start time from nIter0
-         startTime = baseTime + deltaTClock*float(nIter0)
+         startTime = baseTime + deltaTClock*DFLOAT(nIter0)
       ELSEIF ( nIter0.EQ.-1 ) THEN
 C     o set nIter0 from start time
          nIter0 = NINT( (startTime-baseTime)/deltaTClock )
       ELSEIF ( baseTime.EQ.0. ) THEN
 C     o set base time from the 2 others
-         baseTime = startTime - deltaTClock*float(nIter0)
+         baseTime = startTime - deltaTClock*DFLOAT(nIter0)
       ENDIF
 
+      nTimeSteps_l2 = 4
 C     o nTimeSteps 1
       IF ( nTimeSteps .EQ. 0 .AND. nEndIter .NE. 0 )
      &     nTimeSteps = nEndIter-nIter0
 C     o nTimeSteps 2
       IF ( nTimeSteps .EQ. 0 .AND. endTime .NE. 0. )
-     &     nTimeSteps = NINT((endTime-startTime)/deltaTclock)
+     &     nTimeSteps = NINT((endTime-startTime)/deltaTClock)
 C     o nEndIter 1
       IF ( nEndIter .EQ. 0 .AND. nTimeSteps .NE. 0 )
      &     nEndIter = nIter0+nTimeSteps
 C     o nEndIter 2
       IF ( nEndIter .EQ. 0 .AND. endTime .NE. 0. )
-     &     nEndIter = NINT((endTime-baseTime)/deltaTclock)
+     &     nEndIter = NINT((endTime-baseTime)/deltaTClock)
 C     o End Time 1
       IF ( endTime .EQ. 0. .AND. nTimeSteps .NE. 0 )
-     &     endTime = startTime + deltaTClock*float(nTimeSteps)
+     &     endTime = startTime + deltaTClock*DFLOAT(nTimeSteps)
 C     o End Time 2
       IF ( endTime .EQ. 0. .AND. nEndIter .NE. 0 )
-     &     endTime = baseTime + deltaTClock*float(nEndIter)
+     &     endTime = baseTime + deltaTClock*DFLOAT(nEndIter)
 
 C     o Consistent?
-      IF ( startTime .NE. baseTime+deltaTClock*float(nIter0) ) THEN
+      IF ( startTime .NE. baseTime+deltaTClock*DFLOAT(nIter0) ) THEN
        WRITE(msgBuf,'(A)')
      & 'S/R INI_PARMS: startTime, baseTime and nIter0 are inconsistent'
        CALL PRINT_ERROR( msgBuf, myThid )
@@ -995,7 +1036,7 @@ C     o Monitor (should also add CPP flag for monitor?)
      &         monitorFreq=chkPtFreq
        IF (pChkPtFreq.NE.0..AND.pChkPtFreq.LT.monitorFreq)
      &         monitorFreq=pChkPtFreq
-       IF (monitorFreq.EQ.0.) monitorFreq=deltaTclock
+       IF (monitorFreq.EQ.0.) monitorFreq=deltaTClock
       ENDIF
       IF ( monitorSelect.EQ.UNSET_I ) THEN
         monitorSelect = 2
@@ -1012,10 +1053,21 @@ C     In cartesian coords distances are in metres
 C     In spherical polar distances are in degrees
       dxSpacing = UNSET_RL
       dySpacing = UNSET_RL
+C-    pCell-Mix  parameters:
+      interViscAr_pCell = .FALSE.
+      interDiffKr_pCell = .FALSE.
+      pCellMix_select = 0
+      pCellMix_maxFac = 1. _d 4
+      pCellMix_delR = 0.
+      DO k=1,Nr
+        pCellMix_viscAr(k) = viscArNr(k)
+        pCellMix_diffKr(k) = diffKrNrT(k)
+      ENDDO
+
       WRITE(msgBuf,'(A)') ' INI_PARMS ; starts to read PARM04'
       CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,
      &                    SQUEEZE_RIGHT, myThid )
-      READ(UNIT=iUnit,NML=PARM04,IOSTAT=errIO)
+      READ(UNIT=iUnit,NML=PARM04) !,IOSTAT=errIO)
       IF ( errIO .LT. 0 ) THEN
        WRITE(msgBuf,'(A)')
      &  'S/R INI_PARMS: Error reading model parameter file "data"'
@@ -1030,6 +1082,27 @@ C     In spherical polar distances are in degrees
       ENDIF
 
 C     Check for retired parameters still being used
+      IF ( Ro_SeaLevel .NE. UNSET_RL ) THEN
+c      nRetired = nRetired+1
+       IF ( usingPCoords ) THEN
+        WRITE(msgBuf,'(2A)') '** WARNING ** INI_PARMS: ',
+     &   '"Ro_SeaLevel" (P @ bottom) depreciated (backward compat'
+       ELSEIF ( usingZCoords ) THEN
+        WRITE(msgBuf,'(2A)') '** WARNING ** INI_PARMS: ',
+     &   '"Ro_SeaLevel" (Z @ top) depreciated (backward compat'
+       ENDIF
+       CALL PRINT_MESSAGE( msgBuf, errorMessageUnit,
+     &                     SQUEEZE_RIGHT, myThid )
+       IF ( usingPCoords ) THEN
+        WRITE(msgBuf,'(2A)') '** WARNING ** INI_PARMS: ',
+     &   ' only). To set vert. axis, use instead "top_Pres".'
+       ELSEIF ( usingZCoords ) THEN
+        WRITE(msgBuf,'(2A)') '** WARNING ** INI_PARMS: ',
+     &   ' only). To set vert. axis, use instead "seaLev_Z".'
+       ENDIF
+       CALL PRINT_MESSAGE( msgBuf, errorMessageUnit,
+     &                     SQUEEZE_RIGHT, myThid )
+      ENDIF
       IF ( rkFac .NE. UNSET_RL ) THEN
        nRetired = nRetired+1
        WRITE(msgBuf,'(A,A)')
@@ -1133,6 +1206,26 @@ C-    Radius of the Planet:
       ELSE
        recip_rSphere = 0.
       ENDIF
+C--   Default vertical axis origin
+      IF ( Ro_SeaLevel .NE. UNSET_RL ) THEN
+       IF ( usingPCoords .AND. top_Pres.NE.UNSET_RL ) THEN
+        WRITE(msgBuf,'(2A)') 'S/R INI_PARMS: ',
+     &       'Cannot set both "Ro_SeaLevel" and "top_Pres"'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        errCount = errCount + 1
+       ENDIF
+       IF ( usingZCoords .AND. seaLev_Z.NE.UNSET_RL ) THEN
+        WRITE(msgBuf,'(2A)') 'S/R INI_PARMS: ',
+     &       'Cannot set both "Ro_SeaLevel" and "seaLev_Z"'
+        CALL PRINT_ERROR( msgBuf, myThid )
+        errCount = errCount + 1
+       ENDIF
+       rF(1) = Ro_SeaLevel
+      ELSE
+       rF(1) = UNSET_RS
+      ENDIF
+      IF ( top_Pres.EQ.UNSET_RL ) top_Pres = 0.
+      IF ( seaLev_Z.EQ.UNSET_RL ) seaLev_Z = 0.
 C--   Default origin for  X & Y axis (longitude & latitude origin):
       IF ( xgOrigin .EQ. UNSET_RL ) xgOrigin = 0.
       IF ( ygOrigin .EQ. UNSET_RL ) THEN
@@ -1189,6 +1282,7 @@ C     note: done later (once domain size is known) if using CartesianGrid
         IF ( usingSphericalPolarGrid ) latBandClimRelax= 180. _d 0
         IF ( usingCurvilinearGrid )    latBandClimRelax= 180. _d 0
       ENDIF
+
 C--   set cell Center depth and put Interface at the middle between 2 C
       setCenterDr = .FALSE.
       DO k=1,Nr+1
@@ -1291,6 +1385,12 @@ C     Check for retired parameters still being used
      &  'substitute "SHELFICEtopoFile" in data.shelfice'
        CALL PRINT_ERROR( msgBuf, myThid )
       ENDIF
+      IF ( dQdTFile .NE. ' ' ) THEN
+       nRetired = nRetired+1
+       WRITE(msgBuf,'(A,A)')
+     &  'S/R INI_PARMS: "dQdTFile" has been retired from file "data"'
+       CALL PRINT_ERROR( msgBuf, myThid )
+      ENDIF
 C     Check if two conflicting I/O directories have been specified
       IF (mdsioLocalDir .NE. ' ' .AND. adTapeDir .NE. ' ') THEN
          WRITE(msgBuf,'(A)')
@@ -1323,6 +1423,21 @@ C     Check for relaxation term:
          CALL PRINT_ERROR( msgBuf, myThid )
          errCount = errCount + 1
        ENDIF
+C     Check vertical diffusivity setting:
+#ifdef ALLOW_3D_DIFFKR
+       IF ( specifiedDiffKrT ) THEN
+         WRITE(msgBuf,'(2A)') '** WARNING ** INI_PARMS: Ignores diffKr',
+     &   'T (or Kp,Kz) setting in file "data" with ALLOW_3D_DIFFKR'
+         CALL PRINT_MESSAGE( msgBuf, errorMessageUnit,
+     &                       SQUEEZE_RIGHT, myThid )
+       ENDIF
+       IF ( specifiedDiffKrS .AND. diffKrFile.NE.' ' ) THEN
+         WRITE(msgBuf,'(2A)') '** WARNING ** INI_PARMS: Ignores diffKr',
+     &   'S (or Kp,Kz) setting in file "data" and uses diffKrFile'
+         CALL PRINT_MESSAGE( msgBuf, errorMessageUnit,
+     &                       SQUEEZE_RIGHT, myThid )
+       ENDIF
+#endif
 
 C--   Set Units conversion factor required to incorporate
 C     surface forcing into z-p isomorphic equations:
@@ -1337,21 +1452,25 @@ C     rUnit2mass: from r-coordinate to mass per unit area [kg/m2] (z:=rho;p:=1/g
       ENDIF
 
 C--   For backward compatibility, set temp_addMass and salt_addMass
-C     to temp_EvPrRn and salt_EvPrRn in they are not set in data file
+C     to temp_EvPrRn and salt_EvPrRn if not set in parameter file "data"
       IF (temp_addMass .EQ. UNSET_RL) temp_addMass = temp_EvPrRn
       IF (salt_addMass .EQ. UNSET_RL) salt_addMass = salt_EvPrRn
 
-C--   flag for approximate adjoint
-      IF ( inAdExact ) THEN
-       inAdTrue  = .FALSE.
-       inAdFALSE = .FALSE.
-      ELSE
-       inAdTrue  = .TRUE.
-       inAdFALSE = .FALSE.
+C--   Make a choice (if unset) regarding using CG2D solver min.-residual sol.
+C      for simple set-up (cartesian grid + flat bottom), default is to
+C      use the solver minimum residual solution (cg2dUseMinResSol=1).
+      IF ( cg2dUseMinResSol.EQ.UNSET_I ) THEN
+        cg2dUseMinResSol = 0
+        IF ( topoFile.EQ.' ' .AND. bathyFile.EQ.' '
+     &       .AND. usingCartesianGrid ) cg2dUseMinResSol = 1
       ENDIF
 
 C--   Close the open data file
+#ifdef SINGLE_DISK_IO
       CLOSE(iUnit)
+#else
+      CLOSE(iUnit,STATUS='DELETE')
+#endif /* SINGLE_DISK_IO */
 
       WRITE(msgBuf,'(A)') ' INI_PARMS: finished reading file "data"'
       CALL PRINT_MESSAGE( msgBuf, standardMessageUnit,

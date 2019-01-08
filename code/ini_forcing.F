@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/model/src/ini_forcing.F,v 1.51 2011/04/14 21:11:21 jmc Exp $
-C $Name:  $
-
 #include "PACKAGES_CONFIG.h"
 #include "CPP_OPTIONS.h"
 
@@ -40,77 +37,12 @@ C     i, j   :: Loop counters
 CEOP
 
 C-    Initialise all arrays in common blocks
+C     <-- moved to new S/R INI_FFIELDS
+
       DO bj = myByLo(myThid), myByHi(myThid)
        DO bi = myBxLo(myThid), myBxHi(myThid)
         DO j=1-OLy,sNy+OLy
          DO i=1-OLx,sNx+OLx
-          fu              (i,j,bi,bj) = 0. _d 0
-          fv              (i,j,bi,bj) = 0. _d 0
-          Qnet            (i,j,bi,bj) = 0. _d 0
-          EmPmR           (i,j,bi,bj) = 0. _d 0
-          saltFlux        (i,j,bi,bj) = 0. _d 0
-          SST             (i,j,bi,bj) = 0. _d 0
-          SSS             (i,j,bi,bj) = 0. _d 0
-          Qsw             (i,j,bi,bj) = 0. _d 0
-          pLoad           (i,j,bi,bj) = 0. _d 0
-          sIceLoad        (i,j,bi,bj) = 0. _d 0
-          surfaceForcingU (i,j,bi,bj) = 0. _d 0
-          surfaceForcingV (i,j,bi,bj) = 0. _d 0
-          surfaceForcingT (i,j,bi,bj) = 0. _d 0
-          surfaceForcingS (i,j,bi,bj) = 0. _d 0
-          surfaceForcingTice(i,j,bi,bj) = 0. _d 0
-C JML Add fixed surface relaxation initialisation
-#ifdef ALLOW_FIXEDTRELAX
-          surfaceRelaxT   (i,j,bi,bj) = 0. _d 0
-#endif
-#ifdef ALLOW_FIXEDSRELAX
-          surfaceRelaxS   (i,j,bi,bj) = 0. _d 0
-#endif
-#ifndef EXCLUDE_FFIELDS_LOAD
-          taux0           (i,j,bi,bj) = 0. _d 0
-          taux1           (i,j,bi,bj) = 0. _d 0
-          tauy0           (i,j,bi,bj) = 0. _d 0
-          tauy1           (i,j,bi,bj) = 0. _d 0
-          Qnet0           (i,j,bi,bj) = 0. _d 0
-          Qnet1           (i,j,bi,bj) = 0. _d 0
-          EmPmR0          (i,j,bi,bj) = 0. _d 0
-          EmPmR1          (i,j,bi,bj) = 0. _d 0
-          saltFlux0       (i,j,bi,bj) = 0. _d 0
-          saltFlux1       (i,j,bi,bj) = 0. _d 0
-          SST0            (i,j,bi,bj) = 0. _d 0
-          SST1            (i,j,bi,bj) = 0. _d 0
-          SSS0            (i,j,bi,bj) = 0. _d 0
-          SSS1            (i,j,bi,bj) = 0. _d 0
-#ifdef SHORTWAVE_HEATING
-          Qsw0            (i,j,bi,bj) = 0. _d 0
-          Qsw1            (i,j,bi,bj) = 0. _d 0
-#endif
-C JML Add fixed surface relaxation initialisation
-#ifdef ALLOW_FIXEDTRELAX
-          surfaceRelaxT0  (i,j,bi,bj) = 0. _d 0
-		  surfaceRelaxT1  (i,j,bi,bj) = 0. _d 0
-#endif
-#ifdef ALLOW_FIXEDSRELAX
-          surfaceRelaxS0  (i,j,bi,bj) = 0. _d 0
-		  surfaceRelaxS1  (i,j,bi,bj) = 0. _d 0
-#endif
-#ifdef ATMOSPHERIC_LOADING
-          pLoad0          (i,j,bi,bj) = 0. _d 0
-          pLoad1          (i,j,bi,bj) = 0. _d 0
-#endif
-#endif /* EXCLUDE_FFIELDS_LOAD */
-         ENDDO
-        ENDDO
-#ifndef EXCLUDE_FFIELDS_LOAD
-        loadedRec(bi,bj) = 0
-#endif /* EXCLUDE_FFIELDS_LOAD */
-       ENDDO
-      ENDDO
-
-      DO bj = myByLo(myThid), myByHi(myThid)
-       DO bi = myBxLo(myThid), myBxHi(myThid)
-        DO j=1-Oly,sNy+Oly
-         DO i=1-Olx,sNx+Olx
           IF ( doThetaClimRelax .AND.
      &         ABS(yC(i,j,bi,bj)).LE.latBandClimRelax ) THEN
            lambdaThetaClimRelax(i,j,bi,bj) = 1. _d 0/tauThetaClimRelax
@@ -149,8 +81,8 @@ c      IF ( convertEmP2rUnit.EQ.mass2rUnit ) THEN
 C-     EmPmR is now (after c59h) expressed in kg/m2/s (fresh water mass flux)
         DO bj = myByLo(myThid), myByHi(myThid)
          DO bi = myBxLo(myThid), myBxHi(myThid)
-          DO j=1-Oly,sNy+Oly
-           DO i=1-Olx,sNx+Olx
+          DO j=1-OLy,sNy+OLy
+           DO i=1-OLx,sNx+OLx
             EmPmR(i,j,bi,bj) = EmPmR(i,j,bi,bj)*rhoConstFresh
            ENDDO
           ENDDO
@@ -193,7 +125,6 @@ C JML Add fixed surface relaxation initialisation
        CALL READ_FLD_XY_RS( surfQswFile, ' ', Qsw, 0, myThid )
        IF ( surfQFile .NE. ' '  ) THEN
 C-     Qnet is now (after c54) the net Heat Flux (including SW)
-        _BARRIER
         DO bj = myByLo(myThid), myByHi(myThid)
          DO bi = myBxLo(myThid), myBxHi(myThid)
           DO j=1-OLy,sNy+OLy
@@ -211,6 +142,23 @@ C-     Qnet is now (after c54) the net Heat Flux (including SW)
        CALL READ_FLD_XY_RS( pLoadFile, ' ', pLoad, 0, myThid )
       ENDIF
 #endif
+#ifdef ALLOW_ADDFLUID
+      IF ( addMassFile .NE. ' ' ) THEN
+       CALL READ_FLD_XYZ_RL( addMassFile, ' ', addMass, 0, myThid )
+       CALL EXCH_XYZ_RL( addMass, myThid )
+      ENDIF
+#endif /* ALLOW_ADDFLUID */
+#ifdef ALLOW_GEOTHERMAL_FLUX
+      IF ( geothermalFile .NE. ' ' ) THEN
+       CALL READ_FLD_XY_RS( geothermalFile, ' ',
+     &  geothermalFlux, 0, myThid )
+       CALL EXCH_XY_RS( geothermalFlux, myThid )
+# ifdef ALLOW_MONITOR
+       CALL MON_PRINTSTATS_RS(
+     &  1,geothermalFlux,'geothermalFlux',myThid)
+# endif
+      ENDIF
+#endif /* ALLOW_GEOTHERMAL_FLUX */
 
       CALL EXCH_UV_XY_RS( fu,fv, .TRUE., myThid )
       CALL EXCH_XY_RS( Qnet , myThid )
@@ -229,7 +177,6 @@ C-     Qnet is now (after c54) the net Heat Flux (including SW)
 #ifdef SHORTWAVE_HEATING
       CALL EXCH_XY_RS(Qsw  , myThid )
 #endif
-
 #ifdef ATMOSPHERIC_LOADING
       CALL EXCH_XY_RS(pLoad  , myThid )
 C     CALL PLOT_FIELD_XYRS( pLoad, 'S/R INI_FORCING pLoad',1,myThid)
