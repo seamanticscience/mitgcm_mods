@@ -17,6 +17,8 @@ One might use this code (partially or in its entirety) by:
 
 `git checkout -b my_model checkpoint63m`
 
+OR download from http://mitgcm.org/download/other_checkpoints/MITgcm_c63m.tar.gz, extract, and `cd MITgcm_c63m` into the model directory.
+
 2.) Cloning the mitgcm_mods repository.
 
 `git clone https://github.com/seamanticscience/mitgcm_mods.git`
