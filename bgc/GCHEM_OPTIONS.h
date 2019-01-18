@@ -29,7 +29,7 @@ C    tendency to Advect-Diff tendency
 
 C Preformed tracers typically set to surface level values
 C    but here you can set the entire mixed layer.
-#undef GCHEM_PREFORMED_MLD
+#define GCHEM_PREFORMED_MLD
 C or just regularly at the surface
 #undef GCHEM_PREFORMED
 

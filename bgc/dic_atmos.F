@@ -59,7 +59,7 @@ C for carbon budget ouput
       _RL year_diff_ocean, year_diff_atmos, year_total
       _RL start_diff_ocean, start_diff_atmos, start_total
 C variables for reading CO2 input files
-      _RL tmp, emissions
+      _RL emissions
       _RL aWght, bWght
       _RL atm_pCO2
 C diagnostic

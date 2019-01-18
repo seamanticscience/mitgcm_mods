@@ -309,7 +309,9 @@ C       tendency multiplied by maskInC)
 C JML If the number of ptracers is greater than that required by 
 C  pkg DIC (or DARWIN) then run this routine for the preformed tracers.
        IF (gchem_sepFTr_num.GT.dic_offset) THEN
+C$taf loop = parallel
         DO bj=myByLo(myThid),myByHi(myThid)
+C$taf loop = parallel
          DO bi=myBxLo(myThid),myBxHi(myThid)
           CALL GCHEM_PREFORMED_TRACERS( dic_offset, bi, bj,  
      &                    myTime, myIter, myThid )

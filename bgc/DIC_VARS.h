@@ -283,7 +283,7 @@ C     For averages
 
 C     values for biogeochemistry
 C JML Added some extras for particle dependent Fe scavenging rates,
-C       prognostic Ligands, and hajoon's sediment source
+C       prognostic Ligands, and Elrod (via Hajoon) sediment source
 C   CHL           :: chlorophyll climatology [mg/m3]
 C   sedfe_factor :: ratio of sediment iron to sinking organic matter
 C   sedfe_offset      :: Sediment Fe flux, intersect value in:

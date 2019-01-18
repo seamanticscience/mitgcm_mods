@@ -151,7 +151,6 @@ C      Alpha productivity rate default is 2e-3 molP/m3/yr
 C      (as high as 6e-3 molP/m3/yr in Parekh etal 2005, GBC eqn3)       
        alphaUniform_yr  = 2. _d -3
        alphaUniform     = UNSET_RL
-
        rainRatioUniform = 7. _d -2
 
 #ifdef ALLOW_FE
@@ -171,7 +170,7 @@ C      poc_wsp is the sinking speed of POC used for for particle dependent scave
        poc_wsp        = 2900. _d 0/(360. _d 0*86400. _d 0)
 C      scav_exp is the Honeyman exponent for particle dependent scavenging  (==0.58)
        scav_exp       = 0.58 _d 0
-C      scav_ratio converts Honeyman's thorium scavenging rates to iron (==0.2) 
+C      scav_ratio converts Honeyman thorium scavenging rates to iron (==0.2) 
        scav_ratio     = 0.2 _d 0   
 C      Dust concentration-dependent scavenging requires iron input to be converted back
 C        to dust concentration (mol Fe/m2/s to g dust/m2/s)...

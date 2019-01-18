@@ -105,8 +105,12 @@ C  freefe                 :: iron not bound to ligand
       _RL  SEDFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  HYDROFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  freefe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
-      _RL  scav_poc, KScav_part, sed_poc
-      
+      _RL  scav_poc
+
+#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))      
+      _RL sed_poc
+#endif
+
 #ifdef ALLOW_VARIABLE_LIGANDS
       _RL  GLIG(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  lambda_lig(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)

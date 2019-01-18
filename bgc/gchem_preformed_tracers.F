@@ -130,8 +130,8 @@ C get tracer names that are within the dic package
        ENDDO
 
 C JML Do Preformed Tracers associated with the DIC package 
-      IF ( PTRACERS_numInUse .GT. dic_offset ) THEN
-       DO nTrac=dic_offset+1,PTRACERS_numInUse
+      IF ( gchem_sepFTr_num .GT. dic_offset ) THEN
+       DO nTrac=dic_offset+1,gchem_sepFTr_num
         fldName=PTRACERS_names(nTrac)
                        
         IF ( fldName(1:7) .EQ. 'passive' ) THEN
@@ -139,110 +139,140 @@ C JML Do Preformed Tracers associated with the DIC package
         IF (debugMode) CALL DEBUG_MSG(
      &      'EVALUATING PASSIVE TRACER',myThid)
 #endif 
-C Passive tracer set to a constant concentration at the surface (template)        
-C            DO bj = myByLo(myThid), myByHi(myThid)
-C             DO bi = myBxLo(myThid), myBxHi(myThid)
-              DO j=jMin,jMax
-               DO i=iMin,iMax
-                DO k=1,kmld(i,j,bi,bj)
-                 pTracer(i,j,k,bi,bj,nTrac)=1. _d 0
-                ENDDO
-               ENDDO
-              ENDDO
-C             ENDDO
-C            ENDDO
+C Passive tracer set, or relax to a constant concentration at the surface (template)        
+         DO j=jMin,jMax
+          DO i=iMin,iMax
+           DO k=1,kmld(i,j,bi,bj)
+            IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
+             pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,nTrac)
+     &           +  (1. _d 0/PTRACERS_prefSurfTauRelax(nTrac)
+     &             *(1. _d 0-pTracer(i,j,k,bi,bj,nTrac))
+     &             *_hFacC(i,j,k,bi,bj))
+     &             *PTRACERS_dTLev(k)
+            ELSE
+             pTracer(i,j,k,bi,bj,nTrac)=0. _d 0
+            ENDIF
+           ENDDO
+          ENDDO
+         ENDDO
                        
         ELSEIF ( fldName(1:4) .EQ. 'cpre' ) THEN 
 #ifdef ALLOW_DEBUG
         IF (debugMode) CALL DEBUG_MSG(
      &         'EVALUATING CPRE TRACER',myThid)
 #endif     
-C Preformed Carbon, set to surface DIC concentration      
-C            DO bj = myByLo(myThid), myByHi(myThid)
-C             DO bi = myBxLo(myThid), myBxHi(myThid)
-              DO j=jMin,jMax
-               DO i=iMin,iMax
-                DO k=1,kmld(i,j,bi,bj)
-                 pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,iDIC)
-                ENDDO
-               ENDDO
-              ENDDO
-C             ENDDO
-C            ENDDO
+C Preformed Carbon, set or relax to surface DIC concentration      
+         DO j=jMin,jMax
+          DO i=iMin,iMax
+           DO k=1,kmld(i,j,bi,bj)
+            IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
+             pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,nTrac)
+     &           +  (1. _d 0/PTRACERS_prefSurfTauRelax(nTrac)
+     &             *(pTracer(i,j,k,bi,bj,iDIC)
+     &                    -pTracer(i,j,k,bi,bj,nTrac))
+     &             *_hFacC(i,j,k,bi,bj))
+     &             *PTRACERS_dTLev(k)  
+            ELSE
+		     pTracer(i,j,k,bi,bj,nTrac)=0. _d 0
+		    ENDIF               
+           ENDDO
+          ENDDO
+         ENDDO
             
         ELSEIF ( fldName(1:4) .EQ. 'apre' ) THEN
 #ifdef ALLOW_DEBUG
         IF (debugMode) CALL DEBUG_MSG(
      &         'EVALUATING APRE TRACER',myThid)
 #endif 
-C Preformed Alkalinity, set to surface ALK concentration
-C            DO bj = myByLo(myThid), myByHi(myThid)
-C             DO bi = myBxLo(myThid), myBxHi(myThid)
-              DO j=jMin,jMax
-               DO i=iMin,iMax
-                DO k=1,kmld(i,j,bi,bj)
-                 pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,iALK)
-                ENDDO
-               ENDDO
-              ENDDO
-C             ENDDO
-C            ENDDO
-            iAPRE=nTrac 
+C Preformed Alkalinity, set or relax to surface ALK concentration
+         DO j=jMin,jMax
+          DO i=iMin,iMax
+           DO k=1,kmld(i,j,bi,bj)
+            IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
+             pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,nTrac)
+     &           +  (1. _d 0/PTRACERS_prefSurfTauRelax(nTrac)
+     &             *(pTracer(i,j,k,bi,bj,iALK)
+     &                    -pTracer(i,j,k,bi,bj,nTrac))
+     &             *_hFacC(i,j,k,bi,bj))
+     &             *PTRACERS_dTLev(k)  
+            ELSE
+		     pTracer(i,j,k,bi,bj,nTrac)=0. _d 0
+		    ENDIF   
+           ENDDO
+          ENDDO
+         ENDDO
+
+         iAPRE=nTrac 
             
         ELSEIF ( fldName(1:4) .EQ. 'ppre' ) THEN
 #ifdef ALLOW_DEBUG
         IF (debugMode) CALL DEBUG_MSG(
      &         'EVALUATING PPRE TRACER',myThid)
 #endif 
-C Preformed Phosphate, set to surface PO4 concentration    
-C            DO bj = myByLo(myThid), myByHi(myThid)
-C             DO bi = myBxLo(myThid), myBxHi(myThid)
-              DO j=jMin,jMax
-               DO i=iMin,iMax
-                DO k=1,kmld(i,j,bi,bj)
-                 pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,iPO4)
-                ENDDO
-               ENDDO
-              ENDDO
-C             ENDDO
-C            ENDDO
-            iPPRE=nTrac   
+C Preformed Phosphate, set or relax to surface PO4 concentration    
+         DO j=jMin,jMax
+          DO i=iMin,iMax
+           DO k=1,kmld(i,j,bi,bj)
+            IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
+              pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,nTrac)
+     &            +  (1. _d 0/PTRACERS_prefSurfTauRelax(nTrac)
+     &              *(pTracer(i,j,k,bi,bj,iPO4)
+     &                     -pTracer(i,j,k,bi,bj,nTrac))
+     &              *_hFacC(i,j,k,bi,bj))
+     &              *PTRACERS_dTLev(k)   
+            ELSE
+		     pTracer(i,j,k,bi,bj,nTrac)=0. _d 0
+			ENDIF  
+           ENDDO
+          ENDDO
+         ENDDO
+
+         iPPRE=nTrac   
                       
         ELSEIF ( fldName(1:4) .EQ. 'opre' ) THEN
 #ifdef ALLOW_DEBUG
         IF (debugMode) CALL DEBUG_MSG(
      &         'EVALUATING OPRE TRACER',myThid)
 #endif 
-C Preformed Oxygen, set to surface O2 concentration            
-C            DO bj = myByLo(myThid), myByHi(myThid)
-C             DO bi = myBxLo(myThid), myBxHi(myThid)
-              DO j=jMin,jMax
-               DO i=iMin,iMax
-                DO k=1,kmld(i,j,bi,bj)
-                 pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,iDO2)
-                ENDDO
-               ENDDO
-              ENDDO
-C             ENDDO
-C            ENDDO      
-            
+C Preformed Oxygen, set or relax to surface O2 concentration            
+         DO j=jMin,jMax
+          DO i=iMin,iMax
+           DO k=1,kmld(i,j,bi,bj)
+            IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
+             pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,nTrac)
+     &           +  (1. _d 0/PTRACERS_prefSurfTauRelax(nTrac)
+     &             *(pTracer(i,j,k,bi,bj,iDO2)
+     &                      -pTracer(i,j,k,bi,bj,nTrac))
+     &             *_hFacC(i,j,k,bi,bj))
+     &             *PTRACERS_dTLev(k) 
+           ELSE
+		    pTracer(i,j,k,bi,bj,nTrac)=0. _d 0
+		   ENDIF    
+          ENDDO
+         ENDDO
+        ENDDO
+
         ELSEIF ( fldName(1:6) .EQ.'wm_age') THEN 
 #ifdef ALLOW_DEBUG
         IF (debugMode) CALL DEBUG_MSG(
      &          'EVALUATING AGE TRACER',myThid)
 #endif   
-C Watermass Age Tracer, set to zero seconds at the surface           
-C            DO bj = myByLo(myThid), myByHi(myThid)
-C             DO bi = myBxLo(myThid), myBxHi(myThid)
-              DO j=jMin,jMax
-               DO i=iMin,iMax
-                DO k=1,kmld(i,j,bi,bj)
-                 pTracer(i,j,k,bi,bj,nTrac)= 0. _d 0
-                ENDDO
-               ENDDO
-              ENDDO
-C             ENDDO
-C            ENDDO      
+C Watermass Age Tracer, set or relax to zero seconds at the surface           
+         DO j=jMin,jMax
+          DO i=iMin,iMax
+           DO k=1,kmld(i,j,bi,bj)
+            IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
+             pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,nTrac)
+     &           +  (1. _d 0/PTRACERS_prefSurfTauRelax(nTrac)
+     &             *(0. _d 0-pTracer(i,j,k,bi,bj,nTrac))
+     &             *_hFacC(i,j,k,bi,bj))
+     &             *PTRACERS_dTLev(k)  
+           ELSE
+		    pTracer(i,j,k,bi,bj,nTrac)=0. _d 0
+		   ENDIF   
+          ENDDO
+         ENDDO
+        ENDDO
 
         ELSEIF ( fldName(1:7) .EQ. 'atmpco2' ) THEN
 #ifdef ALLOW_DEBUG
@@ -252,17 +282,24 @@ C            ENDDO
 C Atmospheric CO2 tracer, set surface to current atmpco2
 C   Records what the atmosphere was last time the watermass was at the 
 C   surface - may be useful for calculating anthropogenic CO2
-C            DO bj = myByLo(myThid), myByHi(myThid)
-C             DO bi = myBxLo(myThid), myBxHi(myThid)
-              DO j=jMin,jMax
-               DO i=iMin,iMax
-                DO k=1,kmld(i,j,bi,bj)
-                 pTracer(i,j,k,bi,bj,nTrac)=AtmospCO2(i,j,bi,bj)*1. _d 6
-                ENDDO
-               ENDDO
-              ENDDO
-C             ENDDO
-C            ENDDO 
+C Set or relax to surface values
+         DO j=jMin,jMax
+          DO i=iMin,iMax
+           DO k=1,kmld(i,j,bi,bj)
+            IF ( maskC(i,j,k,bi,bj).NE.0. _d 0 ) then 
+             pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,nTrac)
+     &           +  (1. _d 0/PTRACERS_prefSurfTauRelax(nTrac)
+     &             *(AtmospCO2(i,j,bi,bj)*1. _d 6
+     &                      -pTracer(i,j,k,bi,bj,nTrac))
+     &             *_hFacC(i,j,k,bi,bj))
+     &             *PTRACERS_dTLev(k) 
+            ELSE
+			 pTracer(i,j,k,bi,bj,nTrac)=0. _d 0
+			ENDIF                 
+           ENDDO
+          ENDDO
+         ENDDO
+
             iPCO2=nTrac
         ENDIF 
        ENDDO

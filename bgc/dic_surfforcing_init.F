@@ -34,7 +34,7 @@ C  myThid               :: thread number
 C !LOCAL VARIABLES: ====================================================
        INTEGER i,j,kLev,pco2_init_iter
        INTEGER intimeP, intime0, intime1
-       _RL aWght, bWght, co3dummy
+       _RL aWght, bWght
 C Number of iterations for pCO2 solvers...
 C Solubility relation coefficients
 C local variables for carbon chem
@@ -45,7 +45,7 @@ C local variables for carbon chem
       _RL surftemp(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL surfsalt(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL surfdic(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
-      INTEGER iprt,jprt
+C      INTEGER iprt,jprt
       LOGICAL pH_isLoaded
 CEOP
 

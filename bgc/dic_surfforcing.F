@@ -188,7 +188,7 @@ C calculate SCHMIDT NO. for CO2
      &          + sca2 * theta(i,j,kLev,bi,bj)
      &          + sca3 * theta(i,j,kLev,bi,bj)*theta(i,j,kLev,bi,bj)
      &          + sca4 * theta(i,j,kLev,bi,bj)*theta(i,j,kLev,bi,bj)
-     &                *theta(i,j,kLev,bi,bj)
+     &                 * theta(i,j,kLev,bi,bj)
 c make sure Schmidt number is not negative (will happen if temp>39C)
              SchmidtNoDIC(i,j)=max(1.0 _d -2, SchmidtNoDIC(i,j))
 

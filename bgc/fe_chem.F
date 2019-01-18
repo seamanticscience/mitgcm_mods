@@ -69,7 +69,7 @@ C  Fill in ligand array with constant conc
        ENDDO
       ENDDO
       
-#elif (defined(VARIABLE_LIGAND_BACKGROUND))
+#if (defined(ALLOW_VARIABLE_LIGANDS) && defined(VARIABLE_LIGAND_BACKGROUND)) 
 C  Add uniform background to ligand array
        DO k=1,Nr
         DO j=jMin,jMax

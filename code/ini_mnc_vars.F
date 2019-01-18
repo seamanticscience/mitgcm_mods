@@ -294,25 +294,6 @@ C     format: seconds since 1992-01-01 00:00:00
       CALL MNC_CW_ADD_VNAME('gW',     'Cen_xy_Hn__L__t', 4,5, myThid)
       CALL MNC_CW_ADD_VNAME('gWnm1',  'Cen_xy_Hn__L__t', 4,5, myThid)
 
-C     Write coordinates to "state" file
-C     CALL MNC_CW_SET_UDIM('state', 0, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'XC',xC, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'YC',yC, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'XU',xG, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'YU',yC, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'XV',xC, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'YV',yG, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'XG',xG, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'YG',yG, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'RC',rC, myThid)
-C     CALL MNC_CW_RS_W('R','state',0,0,'RF',rF, myThid)
-
-C     Define variables used in mom_vecinv
-C     CALL MNC_CW_ADD_VNAME('fV', 'Cen_xy_Hn__-__t', 0,0, myThid)
-C     CALL MNC_CW_ADD_VATTR_TEXT('','units','', myThid)
-C     CALL MNC_CW_ADD_VATTR_TEXT('','long_name',
-C     &     'potential_temperature', myThid)
-
       CALL MNC_CW_ADD_VNAME('fV', 'V_xy_Hn__C__t', 0,0, myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('fV','units','m/s^2', myThid)
       CALL MNC_CW_ADD_VATTR_TEXT('fV','description',

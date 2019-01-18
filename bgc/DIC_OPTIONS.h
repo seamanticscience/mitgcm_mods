@@ -28,7 +28,7 @@ C these all need to be defined for coupling to atmospheric model
 
 C use surface salinity forcing (scaled by mean surf value) for DIC & ALK forcing
 C could also set PTRACERS_EvPrRn(n)=0., may need PTRACERS_ref in data.ptracers
-#define ALLOW_OLD_VIRTUALFLUX
+#undef ALLOW_OLD_VIRTUALFLUX
 
 C put back bugs related to Water-Vapour in carbonate chemistry & air-sea fluxes
 #undef WATERVAP_BUG
