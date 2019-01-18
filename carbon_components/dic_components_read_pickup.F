@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_read_co2_pickup.F,v 1.2 2011/03/14 01:38:04 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 
       SUBROUTINE DIC_COMPONENTS_READ_PICKUP( pH_3disLoaded,
@@ -38,7 +35,6 @@ C     == Local variables ==
       CHARACTER*(MAX_LEN_MBUF) msgBuf
       CHARACTER*(8) fldName
       LOGICAL useCurrentDir, fileExist, pH_3disLoaded
-      INTEGER length_of_rec
       _RL vec(1-Olx:sNx+Olx,1-Oly:sNy+Oly,Nr,nSx,nSy)
 CEOP
 #ifdef DIC_CARBON_COMPONENTS
@@ -119,7 +115,7 @@ C-      Old meta-file without List of Fields
 C---   New way to read ptracer pickup:
         nj = 0
 C---    read pH 3-D fields for restart
-          fldName = 'pH_INIT   '
+          fldName = 'pH_ini   '
           CALL READ_MFLDS_3D_RL( fldName,
      O                     vec,
      &                     nj, prec, Nr, myIter, myThid )
@@ -130,14 +126,14 @@ C---    read pH 3-D fields for restart
           DO k=1,Nr
            DO j=1-Oly,sNy+Oly
             DO i=1-Olx,sNx+Olx
-             pH_INIT(i,j,k,bi,bj) = vec(i,j,k,bi,bj)
+             pH_ini(i,j,k,bi,bj) = vec(i,j,k,bi,bj)
             ENDDO
            ENDDO
           ENDDO
          ENDDO
         ENDDO
         
-          fldName = 'pH_GLOB   '
+          fldName = 'pH_glob   '
           CALL READ_MFLDS_3D_RL( fldName,
      O                     vec,
      &                     nj, prec, Nr, myIter, myThid )
@@ -148,7 +144,7 @@ C---    read pH 3-D fields for restart
           DO k=1,Nr
            DO j=1-Oly,sNy+Oly
             DO i=1-Olx,sNx+Olx
-             pH_GLOB(i,j,k,bi,bj) = vec(i,j,k,bi,bj)
+             pH_glob(i,j,k,bi,bj) = vec(i,j,k,bi,bj)
             ENDDO
            ENDDO
           ENDDO
@@ -156,7 +152,7 @@ C---    read pH 3-D fields for restart
         ENDDO
         
 #ifdef DIC_INSITU_COMPONENTS         
-          fldName = 'pH_INSIT  '
+          fldName = 'pH_loc  '
           CALL READ_MFLDS_3D_RL( fldName,
      O                     vec,
      &                     nj, prec, Nr, myIter, myThid )
@@ -167,7 +163,7 @@ C---    read pH 3-D fields for restart
           DO k=1,Nr
            DO j=1-Oly,sNy+Oly
             DO i=1-Olx,sNx+Olx
-             pH_INSIT(i,j,k,bi,bj) = vec(i,j,k,bi,bj)
+             pH_loc(i,j,k,bi,bj) = vec(i,j,k,bi,bj)
             ENDDO
            ENDDO
           ENDDO

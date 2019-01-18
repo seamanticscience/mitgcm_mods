@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/DIC_OPTIONS.h,v 1.14 2016/01/11 21:46:55 jmc Exp $
-C $Name:  $
-
 #ifndef DIC_OPTIONS_H
 #define DIC_OPTIONS_H
 #include "PACKAGES_CONFIG.h"
@@ -21,18 +18,16 @@ C Prognostic Iron Binding Ligands
 
 #define ALLOW_O2
 #undef READ_PAR
-C could also set PTRACERS_EvPrRn(n)=0., 
-C may need PTRACERS_ref(1,n)=??? in data.ptracers
 #define AD_SAFE
 #define DIC_NO_NEG
 #undef ALLOW_DIC_COST
-C these all need to be defined for coupling to
-C atmospheric model
+C these all need to be defined for coupling to atmospheric model
 #undef USE_QSW
 #undef USE_QSW_UNDERICE
 #undef USE_PLOAD
 
 C use surface salinity forcing (scaled by mean surf value) for DIC & ALK forcing
+C could also set PTRACERS_EvPrRn(n)=0., may need PTRACERS_ref in data.ptracers
 #undef ALLOW_OLD_VIRTUALFLUX
 
 C put back bugs related to Water-Vapour in carbonate chemistry & air-sea fluxes
@@ -42,9 +37,6 @@ C define to include carbon component calculations
 #define DIC_CARBON_COMPONENTS
 #define DIC_COMPONENT_DIAGS
 #define DIC_INSITU_COMPONENTS
-
-C define to include C13 calculations
-#undef ALLOW_C13
 
 C dissolution only below saturation horizon following method by Karsten Friis
 #undef CAR_DISS

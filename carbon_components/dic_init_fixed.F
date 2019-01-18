@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_init_fixed.F,v 1.13 2016/01/11 21:46:55 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
@@ -22,16 +19,21 @@ C     !USES:
 #include "DIC_VARS.h"
 #include "DIC_ATMOS.h"
 #include "DIC_LOAD.h"
-
+#ifdef DIC_CARBON_COMPONENTS
+#include "PTRACERS_SIZE.h"
+#include "PTRACERS_FIELDS.h"
+#include "PTRACERS_PARAMS.h"
+#endif
 C     !INPUT PARAMETERS:
 C     myThid       :: my Thread Id number
       INTEGER myThid
 CEOP
 
 #ifdef ALLOW_DIC
-      INTEGER i,j,k,bi,bj
+      INTEGER k
       CHARACTER*(MAX_LEN_MBUF) msgBuf
-      INTEGER iUnit
+      CHARACTER*(MAX_LEN_MBUF) fldName
+      INTEGER iUnit, nTrac
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
@@ -77,29 +79,6 @@ C                   dic_int4=timestep between file entries)
         ENDDO
         CLOSE(iUnit)
       ENDIF
-
-#ifdef DIC_CARBON_COMPONENTS
-        IF ( DIC_silicaFile .NE. ' '  ) THEN
-          CALL READ_FLD_XYZ_RL( DIC_silicaFile, ' ', SILICA, 0, myThid )
-        ENDIF
-        
-       DO bj = myByLo(myThid), myByHi(myThid)
-        DO bi = myBxLo(myThid), myBxHi(myThid)
-         DO k=1,Nr
-          DO j=1-Oly,sNy+Oly
-           DO i=1-Olx,sNx+Olx
-            IF (maskC(i,j,k,bi,bj).EQ.0.) SILICA(i,j,k,bi,bj) = 0.
-           ENDDO
-          ENDDO
-         ENDDO 
-        ENDDO 
-       ENDDO  
-       
-      IF ( debugLevel.GE.debLevC ) THEN 
-         CALL PLOT_FIELD_XYZRL( SILICA, '3d Silica',
-     &                         Nr, 1, myThid )
-       ENDIF       
-#endif /* ifdef DIC_CARBON_COMPONENTS */
 
 #ifdef DIC_BIOTIC
 
@@ -152,10 +131,76 @@ C--   Print out nlev values :
       ENDIF
 #endif /* ALLOW_MNC */
 
+#ifdef DIC_CARBON_COMPONENTS
+C Find the locations of tracers in the ptracers array
+       DO nTrac=1,PTRACERS_numInUse
+        fldName=PTRACERS_names(nTrac)
+        
+        SELECT CASE (fldName(1:3))
+         CASE ("dic")
+          iDIC=nTrac
+          CALL WRITE_0D_I( iDIC, INDEX_NONE, 'iDIC =',
+     &   ' /* Index of the DIC tracer */')          
+         CASE ("alk")
+          iALK=nTrac
+         CALL WRITE_0D_I( iALK, INDEX_NONE, 'iALK =',
+     &   ' /* Index of the ALK tracer */')          
+         CASE ("po4")
+          iPO4=nTrac   
+         CALL WRITE_0D_I( iPO4, INDEX_NONE, 'iPO4 =',
+     &   ' /* Index of the PO4 tracer */')          
+         CASE ("dop")
+          iDOP=nTrac    
+         CALL WRITE_0D_I( iDOP, INDEX_NONE, 'iDOP =',
+     &   ' /* Index of the DOP tracer */')          
+         CASE ("o2")
+          iDO2=nTrac     
+         CALL WRITE_0D_I( iDO2, INDEX_NONE, 'iDO2 =',
+     &   ' /* Index of the O2 tracer */')          
+         CASE ("fe")
+          iDFE=nTrac
+         CALL WRITE_0D_I( iDFE, INDEX_NONE, 'iDFE =',
+     &   ' /* Index of the FE tracer */')          
+         CASE ("cpre")
+          iCPRE=nTrac
+         CALL WRITE_0D_I( iCPRE, INDEX_NONE, 'iCPRE =',
+     &   ' /* Index of the CPRE tracer */')          
+         CASE ("apre")
+          iAPRE=nTrac   
+         CALL WRITE_0D_I( iAPRE, INDEX_NONE, 'iAPRE =',
+     &   ' /* Index of the APRE tracer */')          
+         CASE ("ppre")
+          iPPRE=nTrac 
+         CALL WRITE_0D_I( iPPRE, INDEX_NONE, 'iPPRE =',
+     &   ' /* Index of the PPRE tracer */')          
+         CASE ("opre")
+          iOPRE=nTrac
+         CALL WRITE_0D_I( iOPRE, INDEX_NONE, 'iOPRE =',
+     &   ' /* Index of the OPRE tracer */')          
+         CASE ("wm_age")
+          iAGE=nTrac  
+         CALL WRITE_0D_I( iAGE, INDEX_NONE, 'iAGE =',
+     &   ' /* Index of the AGE tracer */')          
+         CASE ("atmpco2")
+          iPCO2=nTrac
+         CALL WRITE_0D_I( iPCO2, INDEX_NONE, 'iPCO2 =',
+     &   ' /* Index of the PCO2 tracer */')          
+         CASE ("csat")
+          iCSAT=nTrac
+         CALL WRITE_0D_I( iCSAT, INDEX_NONE, 'iCSAT =',
+     &   ' /* Index of the CSAT tracer */')          
+         CASE ("cdis")
+          iCDIS=nTrac
+         CALL WRITE_0D_I( iCDIS, INDEX_NONE, 'iCDIS =',
+     &   ' /* Index of the CDIS tracer */')          
+         END SELECT
+        ENDDO 
+#endif
+
 #ifdef ALLOW_DIAGNOSTICS
       IF ( useDIAGNOSTICS ) THEN
         CALL DIC_DIAGNOSTICS_INIT( myThid )
-        CALL CARBON_COMPONENT_DIAGS_INIT( myThid )
+        CALL DIC_COMPONENT_DIAGS_INIT( myThid )
       ENDIF
 #endif /* ALLOW_DIAGNOSTICS */
 

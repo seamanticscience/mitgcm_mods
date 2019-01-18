@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_readparms.F,v 1.16 2017/08/09 15:23:38 mlosch Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 
 CBOP
@@ -49,7 +46,7 @@ C Pa2Atm   :: Conversion factor for atmospheric pressure pLoad (when coupled
 C             to atmospheric model) into Atm. Default assumes pLoad in Pascal
 C             1 Atm = 1.01325e5 Pa = 1013.25 mb
 
-      NAMELIST /ABIOTIC_PARMS/ permil, Pa2Atm
+      NAMELIST /ABIOTIC_PARMS/ permil, Pa2Atm, selectK1K2const
 
 #ifdef DIC_BIOTIC
 
@@ -106,7 +103,7 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
      & lig_q10, lig_tref,
 #endif
      & alphaUniform_yr, alphaUniform, rainRatioUniform 
-#endif
+#endif  /* DIC_BIOTIC */
 
       NAMELIST /DIC_FORCING/
      &          DIC_windFile, DIC_atmospFile, DIC_iceFile,
@@ -117,18 +114,15 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
 #endif
      &          DIC_forcingPeriod, DIC_forcingCycle,
      &          dic_int1, dic_int2, dic_int3, dic_int4, dic_pCO2
-#ifdef ALLOW_C13
-     &          , dic_p13co2, c13airseafac, c13biofac
-#endif
-#ifdef DIC_CARBON_COMPONENTS
-     &          , dic_pCO2_ref
-#endif
+
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
       _BEGIN_MASTER(myThid)
 
        permil      = 1. _d 0 / 1024.5 _d 0
        Pa2Atm      = 1.01325 _d 5
+       selectK1K2const = 1
+       
 #ifdef DIC_BIOTIC
        DOPfraction = 0.67 _d 0
        KDOPRemin   = 1. _d 0/(6. _d 0*30. _d 0*86400. _d 0)
@@ -149,6 +143,7 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        KFE         = 1.2 _d -7
        alpfe       = 0.01 _d 0
        freefemax   = 3. _d -7
+
 C JML general point:
 C      1/yr values are easier to put in the data.dic file. Set those
 C      default values here. Also set the 1/s values to "unset" here,
@@ -203,7 +198,8 @@ C sedimentary iron source
        fe_sed_depth_max = 6000. _d 0
 C    For Elrod et al (2004) use:
        sedfe_factor = 6.8 _d -4       
-       sedfe_offset      = -0.5 _d -6 / 86400. _d 0
+       sedfe_offset = -0.5 _d -6 / 86400. _d 0
+
 C    For Dale et al (2015) use:
 C       sedfe_factor = 170. _d 0 / (86400. _d 0 * 1. _d 6)      
 C       sedfe_offset      = 0
@@ -212,8 +208,10 @@ C       sedfe_offset      = 0
 C Ligand parameters for the iron cycle       
        ligand_stab = 1. _d 8
        ligand_tot  = 1. _d -6
+       
 #ifdef ALLOW_VARIABLE_LIGANDS 
-C JML Added vars for prognostic Ligands       
+C JML Added vars for prognostic Ligands 
+       ligand_tot        = 0. _d 0     
        gamma_lig         = 0. _d 0
        lambda_over_gamma = 0. _d 0
 C lambda_ref is calculated in dic_init_fixed
@@ -224,11 +222,6 @@ C lambda_ref is calculated in dic_init_fixed
 #endif /* ALLOW_FE */
 #endif /* DIC_BIOTIC */
 
-#ifdef ALLOW_C13
-       dic_p13co2 = 0. _d 0
-       c13airseafac = 0. _d 0
-       c13biofac = 0. _d 0
-#endif
        DIC_windFile  = ' '
        DIC_atmospFile= ' '
        DIC_iceFile   = ' '
@@ -246,7 +239,7 @@ C JML include iron source due to hydrothermal input into bottom layer
        dic_int4    = 0
        dic_pCO2    = 278. _d -6
 #ifdef DIC_CARBON_COMPONENTS
-C Reference for saturated carbon diagnostic CSATINIT
+C Reference for saturated carbon diagnostic C_satINI
        dic_pCO2_ref = UNSET_RL
 #endif
 
@@ -451,6 +444,7 @@ C JML write out particle depended scavenging parameters
      &  ' /* Ligand-free iron stability constant (m3/mol) */')
        CALL WRITE_0D_RL( ligand_tot, INDEX_NONE,'ligand_tot =',
      &  ' /* Total free ligand  (mol/m3) */')
+
 #endif /* ALLOW_FE */
        CALL WRITE_0D_RL( alphaUniform_yr,INDEX_NONE,'alphaUniform_yr =',
      &  ' /* Timescale for biological activity (1/yr) */')     
@@ -501,14 +495,7 @@ C- namelist DIC_FORCING
      &  '  /*  */')
        CALL WRITE_0D_RL( dic_pCO2, INDEX_NONE,'dic_pCO2 =',
      &  ' /* Atmospheric pCO2 to be read in data.dic */')
-#ifdef ALLOW_C13
-       CALL WRITE_0D_RL( dic_p13co2, INDEX_NONE,'dic_p13co2 =',
-     &  ' /* Atmospheric p13CO2 to be read in data.dic */')
-#endif
-#ifdef DIC_CARBON_COMPONENTS
-       CALL WRITE_0D_RL( dic_pCO2_ref, INDEX_NONE,'dic_pCO2_ref =',
-     &  ' /* Atmospheric pCO2 reference for Csat_init component */')
-#endif
+
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
       IF ( dic_int1.EQ.0 .AND. dic_pCO2.NE.278. _d -6 ) THEN

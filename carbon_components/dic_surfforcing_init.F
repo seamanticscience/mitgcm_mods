@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_surfforcing_init.F,v 1.37 2015/01/11 20:02:41 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 #include "PTRACERS_OPTIONS.h"
 
@@ -35,9 +32,9 @@ C  myThid               :: thread number
 #ifdef ALLOW_DIC
 
 C !LOCAL VARIABLES: ====================================================
-       INTEGER i,j,kLev,pco2_init_iter
+       INTEGER i,j,k,kLev,pco2_init_iter
        INTEGER intimeP, intime0, intime1
-       _RL aWght, bWght, co3dummy
+       _RL aWght, bWght
 C Number of iterations for pCO2 solvers...
 C Solubility relation coefficients
 C local variables for carbon chem
@@ -48,7 +45,7 @@ C local variables for carbon chem
       _RL surftemp(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL surfsalt(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL surfdic(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
-      INTEGER iprt,jprt
+C       INTEGER iprt,jprt
       LOGICAL pH_isLoaded
 CEOP
 
@@ -60,7 +57,6 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 ccccccccccccccccccccccccccccccccccccccccc
       IF ( periodicExternalForcing ) THEN
-#ifndef DIC_CARBON_COMPONENTS
 c read in silica field
          CALL LEF_ZERO( silica0,myThid )
          CALL LEF_ZERO( silica1,myThid )
@@ -78,19 +74,38 @@ C--   Now calculate whether it is time to update the forcing arrays
      &   ' : Reading new data, i0,i1=', intime0, intime1
        _END_MASTER(myThid)
 
+#ifdef DIC_CARBON_COMPONENTS
+       IF ( DIC_silicaFile .NE. ' '  ) THEN
+         CALL READ_REC_XYZ_RS( DIC_silicaFile,silica0,intime0,
+     &        nIter0,myThid )
+         CALL READ_REC_XYZ_RS( DIC_silicaFile,silica1,intime1,
+     &        nIter0,myThid )
+       ENDIF
+
+       _EXCH_XYZ_RS(silica0, myThid )
+       _EXCH_XYZ_RS(silica1, myThid )
+
+       IF ( DIC_silicaFile .NE. ' '  ) THEN
+        DO bj = myByLo(myThid), myByHi(myThid)
+         DO bi = myBxLo(myThid), myBxHi(myThid)
+          DO k=1,Nr
+           DO j=1-OLy,sNy+OLy
+            DO i=1-OLx,sNx+OLx
+             SILICA(i,j,k,bi,bj)= bWght*silica0(i,j,k,bi,bj)
+     &                          + aWght*silica1(i,j,k,bi,bj)
+            ENDDO
+           ENDDO
+          ENDDO
+         ENDDO
+        ENDDO
+       ENDIF
+#else
        IF ( DIC_silicaFile .NE. ' '  ) THEN
          CALL READ_REC_XY_RS( DIC_silicaFile,silica0,intime0,
      &        nIter0,myThid )
          CALL READ_REC_XY_RS( DIC_silicaFile,silica1,intime1,
      &        nIter0,myThid )
        ENDIF
-
-c#ifdef ALLOW_OFFLINE
-C--    This call has been moved to S/R OFFLINE_INIT_VARIA
-c      IF ( useOffLine ) THEN
-c        CALL OFFLINE_FIELDS_LOAD( startTime, nIter0, myThid )
-c      ENDIF
-c#endif
 
        _EXCH_XY_RS(silica0, myThid )
        _EXCH_XY_RS(silica1, myThid )
@@ -118,6 +133,19 @@ C =================================================================
       iMin=1
       iMax=sNx
 
+#ifdef DIC_CARBON_COMPONENTS  
+      DO bj=myByLo(myThid),myByHi(myThid)
+       DO bi=myBxLo(myThid),myBxHi(myThid)
+         DO j=1-OLy,sNy+OLy
+          DO i=1-OLx,sNx+OLx
+           DO k=1,Nr
+            pH(i,j,k,bi,bj) = 8. _d 0
+           ENDDO
+          ENDDO
+         ENDDO
+       ENDDO
+      ENDDO
+#else
       DO bj=myByLo(myThid),myByHi(myThid)
        DO bi=myBxLo(myThid),myBxHi(myThid)
          DO j=1-OLy,sNy+OLy
@@ -127,30 +155,68 @@ C =================================================================
          ENDDO
        ENDDO
       ENDDO
+#endif
 
+#ifdef DIC_CARBON_COMPONENTS           
+C Initiate all coefficients here, as we are called before dic_components_init
+       DO bj=myByLo(myThid),myByHi(myThid)
+        DO bi=myBxLo(myThid),myBxHi(myThid)
+         DO j=1-OLy,sNy+OLy
+          DO i=1-OLx,sNx+OLx
+           DO k=1,Nr
+            fugf (i,j,k,bi,bj) = 0. _d 0
+            ff   (i,j,k,bi,bj) = 0. _d 0
+            ak0  (i,j,k,bi,bj) = 0. _d 0
+            ak1  (i,j,k,bi,bj) = 0. _d 0
+            ak2  (i,j,k,bi,bj) = 0. _d 0
+            akb  (i,j,k,bi,bj) = 0. _d 0
+            ak1p (i,j,k,bi,bj) = 0. _d 0
+            ak2p (i,j,k,bi,bj) = 0. _d 0
+            ak3p (i,j,k,bi,bj) = 0. _d 0
+            aksi (i,j,k,bi,bj) = 0. _d 0
+            akw  (i,j,k,bi,bj) = 0. _d 0
+            aks  (i,j,k,bi,bj) = 0. _d 0
+            akf  (i,j,k,bi,bj) = 0. _d 0
+            bt   (i,j,k,bi,bj) = 0. _d 0
+            st   (i,j,k,bi,bj) = 0. _d 0
+            ft   (i,j,k,bi,bj) = 0. _d 0
+            cat  (i,j,k,bi,bj) = 0. _d 0
+            co3  (i,j,k,bi,bj) = 0. _d 0
+            hco3 (i,j,k,bi,bj) = 0. _d 0
+            co2aq(i,j,k,bi,bj)= 0. _d 0
+            Ksp_TP_Calc(i,j,k,bi,bj) = 0. _d 0
+            Ksp_TP_Arag(i,j,k,bi,bj) = 0. _d 0
+           ENDDO
+          ENDDO
+         ENDDO
+        ENDDO
+       ENDDO
+#else
       DO bj=myByLo(myThid),myByHi(myThid)
        DO bi=myBxLo(myThid),myBxHi(myThid)
         DO j=1-OLy,sNy+OLy
          DO i=1-OLx,sNx+OLx
-          ak0(i,j,bi,bj)=0. _d 0
-          ak1(i,j,bi,bj)=0. _d 0
-          ak2(i,j,bi,bj)=0. _d 0
-          akw(i,j,bi,bj)=0. _d 0
-          akb(i,j,bi,bj)=0. _d 0
-          akf(i,j,bi,bj)=0. _d 0
-          ak1p(i,j,bi,bj)=0. _d 0
-          ak2p(i,j,bi,bj)=0. _d 0
-          ak3p(i,j,bi,bj)=0. _d 0
-          aksi(i,j,bi,bj)=0. _d 0
-          fugf(i,j,bi,bj)=0. _d 0
-          ff(i,j,bi,bj)=0. _d 0
-          ft(i,j,bi,bj)=0. _d 0
-          st(i,j,bi,bj)=0. _d 0
-          bt(i,j,bi,bj)=0. _d 0
+            ak0  (i,j,k,bi,bj) = 0. _d 0
+            ak1  (i,j,k,bi,bj) = 0. _d 0
+            ak2  (i,j,k,bi,bj) = 0. _d 0
+            akb  (i,j,k,bi,bj) = 0. _d 0
+            ak1p (i,j,k,bi,bj) = 0. _d 0
+            ak2p (i,j,k,bi,bj) = 0. _d 0
+            ak3p (i,j,k,bi,bj) = 0. _d 0
+            aksi (i,j,k,bi,bj) = 0. _d 0
+            akw  (i,j,k,bi,bj) = 0. _d 0
+            aks  (i,j,k,bi,bj) = 0. _d 0
+            akf  (i,j,k,bi,bj) = 0. _d 0
+            fugf (i,j,k,bi,bj) = 0. _d 0
+            ff   (i,j,k,bi,bj) = 0. _d 0
+            bt   (i,j,k,bi,bj) = 0. _d 0
+            st   (i,j,k,bi,bj) = 0. _d 0
+            ft   (i,j,k,bi,bj) = 0. _d 0
          ENDDO
         ENDDO
        ENDDO
       ENDDO
+#endif
 
       pH_isLoaded = .FALSE.
       IF ( nIter0.GT.PTRACERS_Iter0 .OR.
@@ -214,27 +280,66 @@ C FOR 2d NON-INTERACTIVE Si
          ENDDO
         ENDDO
 
+#ifdef DIC_CARBON_COMPONENTS
+C Fill 3d values using coeffs from dic_carbon_components_chem
+       DO k=1,Nr
+        CALL CARBON_COEFFS_SURF(
+     I              bi,bj,iMin,iMax,jMin,jMax,
+     I              k,myThid)
+     
+         IF ( k .GT. 1 ) THEN
+          CALL CARBON_COEFFS_DEPTH(
+     I              bi,bj,iMin,iMax,jMin,jMax,
+     I              k,myThid)
+         ENDIF
+       ENDDO
+#else
         CALL CARBON_COEFFS(
-     I                       surftemp,surfsalt,
-     I                       bi,bj,iMin,iMax,jMin,jMax,myThid)
+     I              surftemp,surfsalt,
+     I              bi,bj,iMin,iMax,jMin,jMax,myThid)
+#endif /* DIC_CARBON_COMPONENTS */
 
 C====================================================================
 
         IF ( .NOT.pH_isLoaded ) THEN
 C set guess of pH for first step here
-
           WRITE(standardMessageUnit,*) 'QQ: pCO2 approximation method'
 c first approximation
 C$TAF LOOP = parallel
           DO j=jMin,jMax
 C$TAF LOOP = parallel
            DO i=iMin,iMax
-            IF ( maskC(i,j,kLev,bi,bj) .NE. 0. _d 0) THEN
-C$TAF init dic_surf = static, 10
-             DO pco2_init_iter=1,10
+            DO pco2_init_iter=1,10
 C$TAF STORE pH(i,j,bi,bj)                              = dic_surf
 C$TAF STORE surfalk(i,j), surfphos(i,j), surfsi(i,j)   = dic_surf
-              CALL CALC_PCO2_APPROX(
+#ifdef DIC_CARBON_COMPONENTS
+C Use 3d values using coeffs from dic_carbon_components_chem
+             DO k=1,Nr
+              IF ( maskC(i,j,k,bi,bj) .NE. 0. _d 0) THEN
+               CALL CALC_PCO2_APPROX(
+     I        theta(i,j,k,bi,bj),salt(i,j,k,bi,bj),
+     I        PTRACER(i,j,k,bi,bj,iDIC), PTRACER(i,j,k,bi,bj,iPO4),
+     I        SILICA(i,j,k,bi,bj),PTRACER(i,j,k,bi,bj,iALK),
+     I        ak1(i,j,k,bi,bj),ak2(i,j,k,bi,bj),
+     I        ak1p(i,j,k,bi,bj),ak2p(i,j,k,bi,bj),
+     I        ak3p(i,j,k,bi,bj),
+     I        aks(i,j,k,bi,bj),akb(i,j,k,bi,bj),
+     I        akw(i,j,k,bi,bj),
+     I        aksi(i,j,k,bi,bj),akf(i,j,k,bi,bj),
+     I        ak0(i,j,k,bi,bj), fugf(i,j,k,bi,bj),
+     I        ff(i,j,k,bi,bj),
+     I        bt(i,j,k,bi,bj),st(i,j,k,bi,bj),
+     I        ft(i,j,k,bi,bj),
+     U        pH(i,j,k,bi,bj),pCO2(i,j,k,bi,bj),
+     U        co3(i,j,k,bi,bj),hco3(i,j,k,bi,bj),
+     U        co2aq(i,j,k,bi,bj),
+     I        i,j,k,bi,bj,pco2_init_iter,myThid )
+              ENDIF
+             ENDDO
+#else
+             IF ( maskC(i,j,kLev,bi,bj) .NE. 0. _d 0) THEN
+C$TAF init dic_surf = static, 10
+               CALL CALC_PCO2_APPROX(
      I        surftemp(i,j),surfsalt(i,j),
      I        surfdic(i,j), surfphos(i,j),
      I        surfsi(i,j),surfalk(i,j),
@@ -248,10 +353,11 @@ C$TAF STORE surfalk(i,j), surfphos(i,j), surfsi(i,j)   = dic_surf
      U        pH(i,j,bi,bj),pCO2(i,j,bi,bj),
      U        co3(i,j,bi,bj),hco3(i,j,bi,bj),co2aq(i,j,bi,bj),
      I        i,j,kLev,bi,bj,pco2_init_iter,myThid )
-             ENDDO
-            ENDIF
+             ENDIF
+#endif /* DIC_CARBON_COMPONENTS */
+            ENDDO
            ENDDO
-          ENDDO
+          ENDDO 
 C          iprt = MIN(20,sNx)
 C          jprt = MIN(20,sNy)
 C          WRITE(standardMessageUnit,*) 'QQ first guess pH',
@@ -259,10 +365,9 @@ C     &        pH(iprt,jprt,bi,bj),
 C     &        theta(iprt,jprt,1,bi,bj), salt(iprt,jprt,1,bi,bj),
 C     &        surfdic(iprt,jprt), surfphos(iprt,jprt),
 C     &        surfsi(iprt,jprt),surfalk(iprt,jprt)
-          CALL PLOT_FIELD_XYRL(pH, 
-     &         'First Guess pH (dic_surfforcing_init)', 1, myThid)
-        ENDIF
-
+C          CALL PLOT_FIELD_XYRL(pH, 
+C     &         'First Guess pH (dic_surfforcing_init)', 1, myThid)
+        ENDIF /* .NOT.pH_isLoaded */
 C     end bi,bj loops
        ENDDO
       ENDDO

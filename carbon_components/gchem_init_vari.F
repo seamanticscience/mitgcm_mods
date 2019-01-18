@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/gchem/gchem_init_vari.F,v 1.15 2016/05/23 13:09:31 jmc Exp $
-C $Name:  $
-
 #include "GCHEM_OPTIONS.h"
 #ifdef ALLOW_BLING
 # include "BLING_OPTIONS.h"
@@ -21,22 +18,48 @@ C !USES: ===============================================================
 #include "SIZE.h"
 #include "EEPARAMS.h"
 #include "PARAMS.h"
-#include "GCHEM.h"
 #ifdef ALLOW_AUTODIFF
 # include "GRID.h"
 # include "DYNVARS.h"
 #endif /* ALLOW_AUTODIFF */
+#include "GCHEM.h"
+#include "GCHEM_SIZE.h"
+#include "GCHEM_FIELDS.h"
 
 C !INPUT PARAMETERS: ===================================================
 C  myThid               :: thread number
       INTEGER myThid
 CEOP
 
-#ifdef ALLOW_GCHEM
+C !LOCAL VARIABLES: ====================================================
+C  i,j,k,bi,bj          :: loop indices
+C  jTr                  :: ptracer number
+#ifdef GCHEM_ADD2TR_TENDENCY
+      INTEGER i,j,k
+      INTEGER bi,bj
+      INTEGER jTr
+#endif /* GCHEM_ADD2TR_TENDENCY */
 
-ccccccccccccccccccccccccccc
-c initialize parameters   c
-ccccccccccccccccccccccccccc
+C--   Initialise GCHEM variables:
+
+#ifdef GCHEM_ADD2TR_TENDENCY
+      DO jTr = 1, GCHEM_tendTr_num
+       DO bj=myByLo(myThid),myByHi(myThid)
+        DO bi=myBxLo(myThid),myBxHi(myThid)
+         DO k = 1, Nr
+          DO j = 1-OLy, sNy+OLy
+           DO i = 1-OLx, sNx+OLx
+            gchemTendency(i,j,k,bi,bj,jTr) = 0. _d 0
+           ENDDO
+          ENDDO
+         ENDDO
+        ENDDO
+       ENDDO
+      ENDDO
+#endif /* GCHEM_ADD2TR_TENDENCY */
+
+C--   Initialise other Geo-Chemistry pkg variables:
+
 #ifdef ALLOW_DIC
 # ifdef ALLOW_AUTODIFF
       IF ( .NOT.useDIC ) STOP 'ABNORMAL END: S/R GCHEM_INIT_VARI'
@@ -50,9 +73,9 @@ ccccccccccccccccccccccccccc
 #ifdef DIC_CARBON_COMPONENTS
 #ifdef ALLOW_DEBUG
       IF (debugMode) CALL DEBUG_CALL(
-     &                 'DIC_CARBON_COMPONENTS_INIT',myThid)
+     &                 'DIC_COMPONENTS_INIT',myThid)
 #endif
-         CALL DIC_CARBON_COMPONENTS_INIT(myThid)
+         CALL DIC_COMPONENTS_INIT(myThid)
 #endif         
 # ifdef ALLOW_CTRL
          CALL DIC_SET_CONTROL(myThid)
@@ -74,6 +97,12 @@ ccccccccccccccccccccccccccc
 # endif
 #endif /* ALLOW_BLING */
 
+#ifdef ALLOW_SPOIL
+      IF ( useSPOIL ) THEN
+         CALL SPOIL_INIT_VARIA( myThid )
+      ENDIF
+#endif /* ALLOW_SPOIL */
+
 #ifdef ALLOW_DARWIN
       IF ( useDARWIN ) THEN
          CALL DARWIN_INIT_VARI(myThid )
@@ -81,12 +110,15 @@ ccccccccccccccccccccccccccc
          CALL DIC_SURFFORCING_INIT(myThid)
          CALL DIC_DIAGS_INIT(myThid)
 #ifdef DIC_CARBON_COMPONENTS
-         CALL DIC_CARBON_COMPONENTS_INIT(myThid)
+#ifdef ALLOW_DEBUG
+      IF (debugMode) CALL DEBUG_CALL(
+     &                 'DIC_COMPONENTS_INIT',myThid)
+#endif
+         CALL DIC_COMPONENTS_INIT(myThid)
 #endif
 #endif
       ENDIF
-#endif
-#endif /* ALLOW_GCHEM */
+#endif /* ALLOW_DARWIN */
 
       RETURN
       END

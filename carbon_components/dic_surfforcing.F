@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_surfforcing.F,v 1.30 2015/01/11 20:02:41 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 #include "PTRACERS_OPTIONS.h"
 
@@ -129,9 +126,15 @@ cQQQQ check ptracer numbers
           ENDDO
          ENDDO
 
-         CALL CARBON_COEFFS(
-     I                       surftemp,surfsalt,
-     I                       bi,bj,iMin,iMax,jMin,jMax,myThid)
+#ifdef DIC_CARBON_COMPONENTS
+C Fill 3d values using coeffs from dic_carbon_components_chem
+        CALL CARBON_COEFFS_SURF(
+     I              bi,bj,iMin,iMax,jMin,jMax,kLev,myThid)
+#else
+        CALL CARBON_COEFFS(
+     I              surftemp,surfsalt,
+     I              bi,bj,iMin,iMax,jMin,jMax,myThid)
+#endif /* DIC_CARBON_COMPONENTS */
 C====================================================================
 
        DO j=jMin,jMax
@@ -161,7 +164,30 @@ C$TAF LOOP = parallel
        DO j=jMin,jMax
 C$TAF LOOP = parallel
         DO i=iMin,iMax
-
+#ifdef DIC_CARBON_COMPONENTS
+          IF ( maskC(i,j,kLev,bi,bj).NE.0. _d 0 ) THEN
+            CALL CALC_PCO2_APPROX(
+     I        surftemp(i,j),surfsalt(i,j),
+     I        surfdic(i,j), surfphos(i,j),
+     I        surfsi(i,j),surfalk(i,j),
+     I        ak1(i,j,kLev,bi,bj),ak2(i,j,kLev,bi,bj),
+     I        ak1p(i,j,kLev,bi,bj),ak2p(i,j,kLev,bi,bj),
+     I        ak3p(i,j,kLev,bi,bj),
+     I        aks(i,j,kLev,bi,bj),akb(i,j,kLev,bi,bj),
+     I        akw(i,j,kLev,bi,bj),
+     I        aksi(i,j,kLev,bi,bj),akf(i,j,kLev,bi,bj),
+     I        ak0(i,j,kLev,bi,bj), fugf(i,j,kLev,bi,bj),
+     I        ff(i,j,kLev,bi,bj),
+     I        bt(i,j,kLev,bi,bj),st(i,j,kLev,bi,bj),
+     I        ft(i,j,kLev,bi,bj),
+     U        pH(i,j,kLev,bi,bj),pCO2(i,j,kLev,bi,bj),
+     U        co3(i,j,kLev,bi,bj),hco3(i,j,kLev,bi,bj),
+     U        co2aq(i,j,kLev,bi,bj),
+     I        i,j,kLev,bi,bj,myIter,myThid )
+          ELSE
+            pCO2(i,j,kLev,bi,bj)=0. _d 0
+          ENDIF
+#else
           IF ( maskC(i,j,kLev,bi,bj).NE.0. _d 0 ) THEN
             CALL CALC_PCO2_APPROX(
      I        surftemp(i,j),surfsalt(i,j),
@@ -180,6 +206,7 @@ C$TAF LOOP = parallel
           ELSE
             pCO2(i,j,bi,bj)=0. _d 0
           ENDIF
+#endif
         ENDDO
        ENDDO
 
@@ -193,7 +220,7 @@ C calculate SCHMIDT NO. for CO2
      &          + sca2 * theta(i,j,kLev,bi,bj)
      &          + sca3 * theta(i,j,kLev,bi,bj)*theta(i,j,kLev,bi,bj)
      &          + sca4 * theta(i,j,kLev,bi,bj)*theta(i,j,kLev,bi,bj)
-     &                *theta(i,j,kLev,bi,bj)
+     &                 * theta(i,j,kLev,bi,bj)
 c make sure Schmidt number is not negative (will happen if temp>39C)
              SchmidtNoDIC(i,j)=max(1.0 _d -2, SchmidtNoDIC(i,j))
 
@@ -211,21 +238,37 @@ C Calculate flux in terms of DIC units using K0, solubility
 C Flux = Vp * ([CO2sat] - [CO2])
 C CO2sat = K0*pCO2atmos*P/P0
 C Converting pCO2 to [CO2] using ff, as in CALC_PCO2
+#ifdef DIC_CARBON_COMPONENTS
+              FluxCO2(i,j,bi,bj) =
+     &         Kwexch(i,j)*(
+     &         ak0(i,j,kLev,bi,bj)*pCO2sat(i,j) -
+     &         ff(i,j,kLev,bi,bj)*pCO2(i,j,kLev,bi,bj)
+     &         )
+#else
               FluxCO2(i,j,bi,bj) =
      &         Kwexch(i,j)*(
      &         ak0(i,j,bi,bj)*pCO2sat(i,j) -
      &         ff(i,j,bi,bj)*pCO2(i,j,bi,bj)
      &         )
+#endif
+
 #else
 C Corrected by Val Bennington Nov 2010 per G.A. McKinley s finding
 C of error in application of water vapor correction
 c Flux = kw*rho*(ff*pCO2atm-k0*FugFac*pCO2ocean)
+#ifdef DIC_CARBON_COMPONENTS
+               FluxCO2(i,j,bi,bj) =
+     &          Kwexch(i,j)*(
+     &            ff(i,j,kLev,bi,bj)*pCO2sat(i,j) -
+     &            pCO2(i,j,kLev,bi,bj)*fugf(i,j,kLev,bi,bj)
+     &            *ak0(i,j,kLev,bi,bj) )
+#else
                FluxCO2(i,j,bi,bj) =
      &          Kwexch(i,j)*(
      &            ff(i,j,bi,bj)*pCO2sat(i,j) -
      &            pCO2(i,j,bi,bj)*fugf(i,j,bi,bj)
      &            *ak0(i,j,bi,bj) )
-     &
+#endif
 #endif
           ELSE
               Kwexch(i,j)        = 0. _d 0
@@ -239,13 +282,26 @@ C JML Add some more diagnostics
         IF (maskC(i,j,kLev,bi,bj).NE.0. _d 0) THEN
 #ifdef WATERVAP_BUG
           IF ( useDiagnostics ) THEN
+#ifdef DIC_CARBON_COMPONENTS
+           catm(i,j) = (ff(i,j,kLev,bi,bj)*pCO2sat(i,j))/permil
+		   cocean(i,j) = (pCO2(i,j,kLev,bi,bj)*fugf(i,j,kLev,bi,bj)
+     &                    *ak0(i,j,kLev,bi,bj))/permil
+#else
            catm(i,j) = (ff(i,j,bi,bj)*pCO2sat(i,j))/permil
-		   cocean(i,j) = (pCO2(i,j,bi,bj)*fugf(i,j,bi,bj)*ak0(i,j,bi,bj))/permil
+		   cocean(i,j) = (pCO2(i,j,bi,bj)*fugf(i,j,bi,bj)
+     &                    *ak0(i,j,bi,bj))/permil
+#endif
 	      ENDIF
 #else
           IF ( useDiagnostics ) THEN
+#ifdef DIC_CARBON_COMPONENTS
+           catm(i,j) = (ak0(i,j,kLev,bi,bj)*pCO2sat(i,j))/permil
+		   cocean(i,j) = (ff(i,j,kLev,bi,bj)
+     &                 *pCO2(i,j,kLev,bi,bj))/permil
+#else
            catm(i,j) = (ak0(i,j,bi,bj)*pCO2sat(i,j))/permil
 		   cocean(i,j) = (ff(i,j,bi,bj)*pCO2(i,j,bi,bj))/permil
+#endif
 	      ENDIF
 #endif
         ELSE

@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_ini_atmos.F,v 1.3 2015/12/25 00:48:45 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 #include "PTRACERS_OPTIONS.h"
 
@@ -93,7 +90,7 @@ C             dic_int4=timestep between file entries)
         atm_pCO2 = co2atmos(ntim)*bWght + co2atmos(ntim+1)*aWght
         WRITE(ioUnit,*) 'weights',ntim, aWght, bWght, atm_pCO2
 
-      ELSEIF (dic_int1.EQ.3) THEN
+      ELSEIF (dic_int1.GE.3) THEN
 C interactive atmosphere
 
 C Mass dry atmosphere = (5.1352+/-0.0003)d18 kg (Trenberth & Smith,
@@ -189,7 +186,7 @@ C capture initial pCO2 or set from specified reference
           DO bi = myBxLo(myThid), myBxHi(myThid)
            DO j=1-Oly,sNy+Oly
             DO i=1-Olx,sNx+Olx
-              dic_pCO2_init(i,j,bi,bj)=AtmospCO2(i,j,bi,bj)
+              dic_pCO2_ini(i,j,bi,bj)=AtmospCO2(i,j,bi,bj)
             ENDDO
            ENDDO
           ENDDO
@@ -199,35 +196,13 @@ C capture initial pCO2 or set from specified reference
           DO bi = myBxLo(myThid), myBxHi(myThid)
            DO j=1-Oly,sNy+Oly
             DO i=1-Olx,sNx+Olx
-              dic_pCO2_init(i,j,bi,bj)=dic_pCO2_ref
+              dic_pCO2_ini(i,j,bi,bj)=dic_pCO2_ref
             ENDDO
            ENDDO
           ENDDO
          ENDDO         
         ENDIF
 #endif /* DIC_CARBON_COMPONENTS */
-
-#ifdef ALLOW_C13
-C Fill total_atmos_c13, atmos_13pco2
-		IF ( nIter0.GT.PTRACERS_Iter0 .OR.
-	 &       (nIter0.EQ.PTRACERS_Iter0 .AND. pickupSuff.NE.' ')
-	 &      ) THEN
-            CALL DIC_READ_13C_PICKUP( nIter0, myThid )
-        ELSE
-C Initialize from dic_p13co2 supplied in data.dic
-         DO bj = myByLo(myThid), myByHi(myThid)
-          DO bi = myBxLo(myThid), myBxHi(myThid)
-           DO j=1-Oly,sNy+Oly
-            DO i=1-Olx,sNx+Olx
-              total_atmos_c13(i,j,bi,bj)=dic_p13co2*1.77 _d 20
-              atmos_13pco2   (i,j,bi,bj)=dic_p13co2
-            ENDDO
-           ENDDO
-          ENDDO
-         ENDDO
-        ENDIF
-#endif /* ALLOW_C13 */
-
 #endif /* ALLOW_DIC */
 
       RETURN

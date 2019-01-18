@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_fields_load.F,v 1.36 2016/01/16 21:57:12 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 
 CBOP
@@ -33,7 +30,7 @@ C  myThid               :: thread number
 #ifdef ALLOW_DIC
 
 c !LOCAL VARIABLES: ===================================================
-      INTEGER bi, bj, i, j
+      INTEGER bi, bj, i, j, k
       INTEGER intimeP, intime0, intime1
       _RL aWght,bWght
 #ifdef READ_PAR
@@ -101,7 +98,15 @@ C     data for the period ahead and the period behind myTime.
      &        myIter,myThid )
         ENDIF
         
-#ifndef DIC_CARBON_COMPONENTS        
+#ifdef DIC_CARBON_COMPONENTS  
+C Silica is a 3d field      
+        IF ( DIC_silicaFile .NE. ' '  ) THEN
+         CALL READ_REC_XYZ_RS( DIC_silicaFile,silica0,intime0,
+     &        myIter,myThid )
+         CALL READ_REC_XYZ_RS( DIC_silicaFile,silica1,intime1,
+     &        myIter,myThid )
+        ENDIF
+#else
         IF ( DIC_silicaFile .NE. ' '  ) THEN
          CALL READ_REC_XY_RS( DIC_silicaFile,silica0,intime0,
      &        myIter,myThid )
@@ -155,7 +160,10 @@ C--   fill-in overlap after loading temp arrays:
         _EXCH_XY_RS(dicwind1, myThid )
         _EXCH_XY_RS(atmosp0, myThid )
         _EXCH_XY_RS(atmosp1, myThid )
-#ifndef DIC_CARBON_COMPONENTS    
+#ifdef DIC_CARBON_COMPONENTS    
+        _EXCH_XYZ_RS(silica0, myThid )
+        _EXCH_XYZ_RS(silica1, myThid )
+#else
         _EXCH_XY_RS(silica0, myThid )
         _EXCH_XY_RS(silica1, myThid )
 #endif
@@ -213,7 +221,18 @@ c          pisvel(i,j,bi,bj)  =0.337*wind(i,j,bi,bj)**2/3.6d5    !QQQQ
          ENDIF
 #endif
 
-#ifndef DIC_CARBON_COMPONENTS
+#ifdef DIC_CARBON_COMPONENTS
+         IF ( DIC_silicaFile .NE. ' '  ) THEN
+           DO k=1,Nr
+            DO j=1-OLy,sNy+OLy
+             DO i=1-OLx,sNx+OLx
+             SILICA(i,j,k,bi,bj) = bWght*silica0(i,j,k,bi,bj)
+     &                         + aWght*silica1(i,j,k,bi,bj)
+             ENDDO
+            ENDDO
+           ENDDO
+         ENDIF
+#else         
          IF ( DIC_silicaFile .NE. ' '  ) THEN
            DO j=1-OLy,sNy+OLy
             DO i=1-OLx,sNx+OLx

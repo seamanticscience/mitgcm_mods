@@ -1,6 +1,3 @@
-C $Header: /u/gcmpack/MITgcm/pkg/dic/dic_write_pickup.F,v 1.14 2016/01/11 21:46:55 jmc Exp $
-C $Name:  $
-
 #include "DIC_OPTIONS.h"
 
 CBOP
@@ -67,7 +64,7 @@ C     == Local variables ==
 c     IF ( DIC_pickup_write_mdsio ) THEN
         prec = precFloat64
 
-        IF ( dic_int1.EQ.3 ) THEN
+        IF ( dic_int1.GE.3 ) THEN
           WRITE(fn,'(A,A)') 'pickup_dic_co2atm.',suff
           ioUnit = 0
 #ifdef ALLOW_OPENAD
@@ -83,21 +80,6 @@ c     IF ( DIC_pickup_write_mdsio ) THEN
      I                         'RL', 2, tmpFld, dummyRS,
      I                         0, 0, 1, myIter, myThid )
 #endif
-
-#ifdef ALLOW_C13
-        IF ( dic_int1.EQ.3 ) THEN
-          WRITE(fn,'(A,A)') 'pickup_dic_13co2atm.',suff
-          ioUnit = 0
-          tmpFld(1) = total_atmos_c13
-          tmpFld(2) = atmos_13pco2
-#ifdef ALLOW_MDSIO
-          CALL MDS_WRITEVEC_LOC(
-     I                         fn, prec, ioUnit,
-     I                         'RL', 2, tmpFld, dummyRS,
-     I                         0, 0, 1, myIter, myThid )
-#endif
-        ENDIF
-#endif /* ALLOW_C13   */
         ENDIF
 
 #ifdef DIC_BIOTIC
@@ -157,22 +139,22 @@ C     Firstly, write 3-D fields as consecutive records,
 
           j = j + 1
           CALL WRITE_REC_3D_RL( fn, prec, Nr,
-     &         pH_INIT, -j, myIter, myThid )
+     &         pH_ini, -j, myIter, myThid )
           IF (j.LE.pHlistDim)
-     &      pHwrFldList(j) = 'pH_INIT   '
+     &      pHwrFldList(j) = 'pH_ini    '
     
           j = j + 1
           CALL WRITE_REC_3D_RL( fn, prec, Nr,
-     &         pH_GLOB, -j, myIter, myThid )
+     &         pH_glob, -j, myIter, myThid )
           IF (j.LE.pHlistDim)
-     &      pHwrFldList(j) = 'pH_GLOB   '
+     &      pHwrFldList(j) = 'pH_glob   '
 
 #ifdef DIC_INSITU_COMPONENTS        
           j = j + 1
           CALL WRITE_REC_3D_RL( fn, prec, Nr,
-     &         pH_INSIT, -j, myIter, myThid )
+     &         pH_loc, -j, myIter, myThid )
           IF (j.LE.pHlistDim)
-     &      pHwrFldList(j) = 'pH_INSIT  '
+     &      pHwrFldList(j) = 'pH_loc  '
 #endif      
 C--------------------------
         pHnWrFlds = j
