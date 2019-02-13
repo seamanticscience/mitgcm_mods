@@ -132,15 +132,16 @@ C--   Load chlorophyll climatology data, unit for chlorophyll : mg/m3
      &       myIter,myThid )
         ENDIF
         
-#ifdef HYDROTHERMAL_FE
+#ifdef SUBSURFACE_FE_SOURCES
 C JML include iron source due to hydrothermal input into bottom layer            
-        IF ( DIC_hydroventFile .NE. ' '  ) THEN
+        IF ( DIC_hydroventFile .NE. ' '  .AND.
+     &       selectFeHTVSource .EQ. 1   ) THEN      
          CALL READ_REC_XY_RS( DIC_hydroventFile,htvinput0,
      &       intime0,myIter,myThid )
          CALL READ_REC_XY_RS( DIC_hydroventFile,htvinput1,
      &       intime1,myIter,myThid )
         ENDIF
-#endif /* HYDROTHERMAL_FE */
+#endif /* SUBSURFACE_FE_SOURCES */
 #endif /* ALLOW_FE */
 
 C--   fill-in overlap after loading temp arrays:
@@ -162,11 +163,14 @@ C--   fill-in overlap after loading temp arrays:
 #ifdef ALLOW_FE
         _EXCH_XY_RS(feinput0, myThid )
         _EXCH_XY_RS(feinput1, myThid )
-#ifdef HYDROTHERMAL_FE
-C JML include iron source due to hydrothermal input into bottom layer            
-        _EXCH_XY_RS(htvinput0, myThid )
-        _EXCH_XY_RS(htvinput1, myThid )
-#endif /* HYDROTHERMAL_FE */
+#ifdef SUBSURFACE_FE_SOURCES
+C JML include iron source due to hydrothermal input into bottom layer    
+        IF ( DIC_hydroventFile .NE. ' '  .AND.
+     &       selectFeHTVSource .EQ. 1   ) THEN        
+            _EXCH_XY_RS(htvinput0, myThid )
+            _EXCH_XY_RS(htvinput1, myThid )
+        ENDIF
+#endif /* SUBSURFACE_FE_SOURCES */
 #endif /* ALLOW_FE */
 
 C-    save newly loaded time-record
@@ -255,9 +259,10 @@ c          pisvel(i,j,bi,bj)  =0.337*wind(i,j,bi,bj)**2/3.6d5    !QQQQ
            ENDDO
          ENDIF
          
-#ifdef HYDROTHERMAL_FE
+#ifdef SUBSURFACE_FE_SOURCES
 C JML include iron source due to hydrothermal input into bottom layer            
-         IF ( DIC_hydroventFile .NE. ' '  ) THEN
+         IF ( DIC_hydroventFile .NE. ' '  .AND.
+     &        selectFeHTVSource .EQ. 1   ) THEN      
            DO j=1-OLy,sNy+OLy
             DO i=1-OLx,sNx+OLx
              HydroInputHe3(i,j,bi,bj) = (
@@ -268,7 +273,7 @@ C JML include iron source due to hydrothermal input into bottom layer
             ENDDO
            ENDDO
          ENDIF
-#endif /* HYDROTHERMAL_FE */
+#endif /* SUBSURFACE_FE_SOURCES */
 #endif /* ALLOW_FE */
         ENDDO
        ENDDO

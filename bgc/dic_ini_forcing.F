@@ -54,7 +54,7 @@ C First call requires that we initialize everything to zero for safety
       CALL LEF_ZERO( feinput0,myThid )
       CALL LEF_ZERO( feinput1,myThid )
       
-#ifdef HYDROTHERMAL_FE
+#ifdef SUBSURFACE_FE_SOURCES
 C JML include iron source due to hydrothermal input into bottom layer            
       CALL LEF_ZERO( htvinput0,myThid )
       CALL LEF_ZERO( htvinput1,myThid )
@@ -93,7 +93,7 @@ C If the chlorophyll climatology is not provided, use this default value.
 #endif
 #ifdef ALLOW_FE
              InputFe(i,j,bi,bj)= 1. _d -11*maskC(i,j,1,bi,bj)
-#ifdef HYDROTHERMAL_FE
+#ifdef SUBSURFACE_FE_SOURCES
 C JML include iron source due to hydrothermal input into bottom layer            
              HydroInputHe3(i,j,bi,bj)= 0. _d 0*maskC(i,j,1,bi,bj)
 #endif
