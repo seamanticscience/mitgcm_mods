@@ -14,7 +14,7 @@ C     chlinput      :: chlorophyll climatology input field [mg/m3]
 #endif
 #ifdef ALLOW_FE
      &    ,feinput0,feinput1
-#ifdef HYDROTHERMAL_FE
+#ifdef SUBSURFACE_FE_SOURCES
      &    ,htvinput0,htvinput1
 #endif
 #endif
@@ -39,11 +39,11 @@ C     chlinput      :: chlorophyll climatology input field [mg/m3]
       _RS feinput0 (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RS feinput1 (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       
-#ifdef HYDROTHERMAL_FE
+#ifdef SUBSURFACE_FE_SOURCES
 C JML include iron source due to hydrothermal input into bottom layer            
       _RS htvinput0 (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RS htvinput1 (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
-#endif /* HYDROTHERMAL_FE */
+#endif /* SUBSURFACE_FE_SOURCES */
 #endif /* ALLOW_FE */
 #ifdef LIGHT_CHL
       _RS chlinput (1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)

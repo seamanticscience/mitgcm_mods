@@ -108,8 +108,12 @@ C  freefe                 :: iron not bound to ligand
       _RL  SEDFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  HYDROFE(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  freefe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
-      _RL  scav_poc, KScav_part, sed_poc
-      
+      _RL  scav_poc
+
+#ifdef SUBSURFACE_FE_SOURCES
+      _RL sed_poc
+#endif
+
 #ifdef ALLOW_VARIABLE_LIGANDS
       _RL  GLIG(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  lambda_lig(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
@@ -397,9 +401,7 @@ C          Modify the scavenging rate with other mechanisms (bkgrnd, dust)
 
 C Surface Sources and sinks
        DO j=jMin,jMax
-         DO i=iMin,iMax
-               kBottom   = MAX(kLowC(i,j,bi,bj),1)
-          
+         DO i=iMin,iMax         
                GALK(i,j,kSurface)=GALK(i,j,kSurface)+SURA(i,j)
                GDIC(i,j,kSurface)=GDIC(i,j,kSurface)+SURC(i,j)
 #ifdef ALLOW_O2
@@ -416,42 +418,48 @@ C Surface Sources and sinks
        
                GFE(i,j,kSurface)=GFE(i,j,kSurface)+SURFE(i,j)
 
-#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))
+#ifdef SUBSURFACE_FE_SOURCES
+       kBottom   = MAX(kLowC(i,j,bi,bj),1)
+       
        IF ( -rC(kBottom).LE.fe_sed_depth_max ) THEN         
+          IF ( selectFeSedSource.EQ.1 ) THEN
+C Elrod et al (2004) formulation 
 C include sediment iron source using the flux of po4 into bottom layer            
 C JML pflux*dz*RCP is mol C.m-2.s-1, sedfe_factor converts to mol Fe.m-2.s-1   
                sed_poc=MAX(0. _d 0,pflux(i,j,kBottom))
      &                          *R_CP*drF(kBottom)
 
-#ifdef SEDIMENT_FE_ELROD
-C Elrod et al (2004) formulation 
                SEDFE(i,j)  = MAX( 
      &              0. _d 0, sedfe_factor * sed_poc + sedfe_offset
      &            )*recip_drF(kBottom)*recip_hFacC(i,j,kBottom,bi,bj)
-#endif /* SEDIMENT_FE_ELROD */
-#ifdef SEDIMENT_FE_DALE
+          ELSEIF ( selectFeSedSource.EQ.2 ) THEN
 C Dale et al (2015) formulation. 
-C Here sedfe_factor is gamma = 170 umol Fe m-2 d-1 (170/(86400*1e6) mol Fe m-2 s-1)
-C      sed_poc is mmol m-2 d-1 and O2 is umol l-1
-               SEDFE(i,j)=sedfe_factor
-     &            * tanh( sed_poc*1000*86400 
-     &                  / PTR_O2(i,j,kBottom)*1000 )
-     &            *recip_drF(kBottom)*recip_hFacC(i,j,kBottom,bi,bj)
-#endif /* SEDIMENT_FE_DALE */
-       ENDIF
-#endif /* SEDIMENT_FE */
+C In this paper, gamma = 170 umol Fe m-2 d-1 (170/(86400*1e6) mol Fe m-2 s-1)
+C But that leads to HUGE sediment fluxes (>100 Gmol/yr) so here we reduce the
+C gamma to ~20 umol Fe m-2 d-1 (20/(86400*1e6) mol Fe m-2 s-1)
+C NOTE UNITS: sed_poc is mmol m-2 d-1 (from mol C.m-2.s-1) and O2 is umol l-1
+               sed_poc=MAX(0. _d 0,pflux(i,j,kBottom))
+     &                          *R_CP*drF(kBottom)
+     &                          *1000*86400 
 
-#ifdef HYDROTHERMAL_FE
+               SEDFE(i,j)=sedfe_factor
+     &            * tanh( sed_poc / PTR_O2(i,j,kBottom)*1000 )
+     &            *recip_drF(kBottom)*recip_hFacC(i,j,kBottom,bi,bj)
+          ENDIF
+       ENDIF    
+
+       IF ( selectFeHTVSource.EQ.1 .AND.       
+     &           -rC(kBottom).GE.fe_vent_depth_min ) THEN      
 C JML include iron source due to hydrothermal input into bottom layer   
 C                                         He3 flux is mol.m-2.s-1
-       IF ( -rC(kBottom).GE.fe_vent_depth_min ) THEN         
                HYDROFE(i,j)=R_FeHe3*solfe*HydroInputHe3(i,j,bi,bj)
      &             *recip_drF(kBottom)
      &             *recip_hFacC(i,j,kBottom,bi,bj)
        ENDIF
-#endif /* HYDROTHERMAL_FE */     
+
                GFE(i,j,kBottom)=GFE(i,j,kBottom)
      &            +SEDFE(i,j)+HYDROFE(i,j)
+#endif /* SUBSURFACE_FE_SOURCES */     
 #endif /* ALLOW_FE */
           ENDDO
          ENDDO
@@ -597,19 +605,17 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 #ifdef ALLOW_FE
         CALL DIAGNOSTICS_FILL(SURFE     ,'DICFEFLX',0,1 ,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(GFE       ,'DICGFE  ',0,Nr,2,bi,bj,myThid)
-#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))        
+#if SUBSURFACE_FE_SOURCES  
         CALL DIAGNOSTICS_FILL(SEDFE     ,'DICSEDFE',0,1 ,2,bi,bj,myThid)
-#endif
-#ifdef HYDROTHERMAL_FE
         CALL DIAGNOSTICS_FILL(HYDROFE   ,'DICHTVFE',0,1 ,2,bi,bj,myThid)
-#endif
+#endif /* SUBSURFACE_FE_SOURCES */
 #ifdef ALLOW_VARIABLE_LIGANDS
         CALL DIAGNOSTICS_FILL(GLIG      ,'DICGLIG ',0,Nr,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(lambda_lig,'LIGLAMDA',0,Nr,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(lig_incr  ,'LIGINCR ',0,Nr,2,bi,bj,myThid)
         CALL DIAGNOSTICS_FILL(lig_decr  ,'LIGDECR ',0,Nr,2,bi,bj,myThid)
-#endif
-#endif
+#endif /* ALLOW_VARIABLE_LIGANDS */
+#endif /* ALLOW_FE */
       ENDIF
 #endif /* ALLOW_DIAGNOSTICS */
 

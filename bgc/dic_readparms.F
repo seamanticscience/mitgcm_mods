@@ -101,18 +101,19 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
      & alpfe, freefemax, ligand_stab, ligand_tot, 
      & sedfe_factor, sedfe_offset, solfe, R_FeHe3,
      & fe_vent_depth_min, fe_sed_depth_max,
-#ifdef ALLOW_VARIABLE_LIGANDS     
+#if ((defined ALLOW_FE) && (defined ALLOW_VARIABLE_LIGANDS))          
      & gamma_lig, lambda_over_gamma, lambda_ref,
      & lig_q10, lig_tref,
 #endif
-     & alphaUniform_yr, alphaUniform, rainRatioUniform 
+     & alphaUniform_yr, alphaUniform, rainRatioUniform, 
+     & selectFeSedSource, selectFeHTVSource
 #endif  /* DIC_BIOTIC */
 
       NAMELIST /DIC_FORCING/
      &          DIC_windFile, DIC_atmospFile, DIC_iceFile,
      &          DIC_ironFile, DIC_silicaFile, DIC_parFile,
      &          DIC_chlaFile, 
-#if ((defined ALLOW_FE) && (defined HYDROTHERMAL_FE))    
+#if ((defined ALLOW_FE) && (defined SUBSURFACE_FE_SOURCES))    
      &          DIC_hydroventFile,
 #endif
      &          DIC_forcingPeriod, DIC_forcingCycle,
@@ -144,6 +145,7 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        KFE         = 1.2 _d -7
        alpfe       = 0.01 _d 0
        freefemax   = 3. _d -7
+
 C JML general point:
 C      1/yr values are easier to put in the data.dic file. Set those
 C      default values here. Also set the 1/s values to "unset" here,
@@ -186,14 +188,16 @@ C      KScav_background is an additional rate added on top of the other values
        KScav_background_yr = 0. _d 0 
        KScav_background    = UNSET_RL
 
-#ifdef HYDROTHERMAL_FE
+       selectFeSedSource = 0
+       selectFeHTVSource = 0
+       
+#ifdef SUBSURFACE_FE_SOURCES
 C These values for hydrothermal input of iron from Tagliabue et al (2014)       
        R_FeHe3     = 4.5 _d 8
        solfe       = 2. _d -3
        fe_vent_depth_min = 750. _d 0
-#endif
+       DIC_hydroventFile=' '  
 
-#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))    
 C sedimentary iron source 
        fe_sed_depth_max = 6000. _d 0
 C    For Elrod et al (2004) use:
@@ -202,7 +206,7 @@ C    For Elrod et al (2004) use:
 C    For Dale et al (2015) use:
 C       sedfe_factor = 170. _d 0 / (86400. _d 0 * 1. _d 6)      
 C       sedfe_offset      = 0
-#endif
+#endif /* SUBSURFACE_FE_SOURCES */
        
 C Ligand parameters for the iron cycle       
        ligand_stab = 1. _d 8
@@ -226,10 +230,7 @@ C lambda_ref is calculated in dic_init_fixed
        DIC_silicaFile= ' '
        DIC_parFile   = ' '
        DIC_chlaFile  = ' '
-#if ((defined ALLOW_FE) && (defined HYDROTHERMAL_FE))
-C JML include iron source due to hydrothermal input into bottom layer            
-       DIC_hydroventFile=' '       
-#endif
+
        dic_int1    = 0
        dic_int2    = 0
        dic_int3    = 0
@@ -384,28 +385,82 @@ C JML Prognostic Ligand parameters
       ENDIF
 #endif /* ALLOW_VARIABLE_LIGANDS */
 
-#ifdef HYDROTHERMAL_FE
-C JML Hydrothermal iron input parameters
-        IF ( DIC_hydroventFile .NE. ' '  ) THEN
-            CALL WRITE_0D_RL(R_FeHe3, INDEX_NONE,'R_FeHe3 =',
-     &  ' /* Ratio of iron to 3He in vent fluid */')   
-            CALL WRITE_0D_RL(solfe, INDEX_NONE,'solfe =',
-     &  ' /* Solubility of hydrothermal iron */')   
-            CALL WRITE_0D_RL(fe_vent_depth_min, 
-     &                INDEX_NONE,'fe_vent_depth_min =',
-     &  ' /* Minimum depth that hydrothermal iron is input */')   
-      ENDIF
-#endif /* HYDROTHERMAL_FE */
-
-#if ((defined SEDIMENT_FE_ELROD) || (defined SEDIMENT_FE_DALE))
-C JML Sediment iron input parameters
+#ifdef SUBSURFACE_FE_SOURCES     
+        IF ( selectFeHTVSource .EQ. 0 ) THEN
+                CALL WRITE_0D_RL(selectFeHTVSource,
+     &              INDEX_NONE,'selectFeHTVSource =',
+     &              ' /* NO Hydrothermal iron source selected */')
+        ELSEIF ( selectFeHTVSource .EQ. 1 ) THEN
+            IF ( DIC_hydroventFile .EQ. ' '  ) THEN
+C Conflicting option selected, raise an error        
+                WRITE(msgBuf,'(A)')
+     &              'DIC_READPARMS: vent source selected but'
+                CALL PRINT_ERROR( msgBuf, myThid )
+                WRITE(msgBuf,'(A)')
+     &              'DIC_READPARMS: no He3 file specified'
+                CALL PRINT_ERROR( msgBuf, myThid )
+                STOP 'ABNORMAL END: DIC_hydroventFile error'
+            ELSE
+C Print out Hydrothermal iron input parameters
+                CALL WRITE_0D_RL(selectFeHTVSource,
+     &              INDEX_NONE,'selectFeHTVSource =',
+     &              ' /* Hydrothermal iron source selected */')
+                CALL WRITE_0D_C( DIC_hydroventFile, -1,INDEX_NONE,
+     &               'DIC_hydroventFile=',
+     &               ' /* File name of hydrothermal 3He input */')
+                CALL WRITE_0D_RL(R_FeHe3, INDEX_NONE,'R_FeHe3 =',
+     &               ' /* Ratio of iron to 3He in vent fluid */')   
+                CALL WRITE_0D_RL(solfe, INDEX_NONE,'solfe =',
+     &               ' /* Solubility of hydrothermal iron */')   
+                CALL WRITE_0D_RL(fe_vent_depth_min, 
+     &               INDEX_NONE,'fe_vent_depth_min =',
+     &               ' /* Minimum depth that vent iron is input */')   
+            ENDIF   
+        ELSE
+C Invalid option selected, raise an error        
+                WRITE(msgBuf,'(A)')
+     &              'DIC_READPARMS: selectFeHTVSource <0 or >1'
+                CALL PRINT_ERROR( msgBuf, myThid )
+                WRITE(msgBuf,'(A)')
+     &              'DIC_READPARMS: valid options are 0 or 1'
+                CALL PRINT_ERROR( msgBuf, myThid )
+                STOP 'ABNORMAL END: selectFeHTVSource error'
+        ENDIF               
+               
+C Print out Sediment iron input parameters
+        IF ( selectFeSedSource .EQ. 0 ) THEN
+                CALL WRITE_0D_RL(selectFeSedSource,
+     &              INDEX_NONE,'selectFeSedSource =',
+     &              ' /* NO sedimentary iron source selected */')
+        ELSEIF ( selectFeSedSource .EQ. 1  .OR. 
+     &           selectFeSedSource .EQ. 2 ) THEN
+            IF ( selectFeSedSource .EQ. 1 ) THEN
+                CALL WRITE_0D_RL(selectFeSedSource,
+     &              INDEX_NONE,'selectFeSedSource =',
+     &              ' /* ELROD sedimentary iron source selected */')
+            ELSEIF  
+                CALL WRITE_0D_RL(selectFeSedSource,
+     &              INDEX_NONE,'selectFeSedSource =',
+     &              ' /* DALE sedimentary iron source selected */')    
+            ENDIF
+            
             CALL WRITE_0D_RL(sedfe_factor, INDEX_NONE,'sedfe_factor =',
-     &  ' /* Gradient of sediment iron-poc relationship */')   
+     &          ' /* Gradient of sediment iron-poc relationship */')   
             CALL WRITE_0D_RL(sedfe_offset, INDEX_NONE,'sedfe_offset =',
-     &  ' /* Intercept of sediment iron-poc relationship */')   
+     &          ' /* Intercept of sediment iron-poc relationship */')   
             CALL WRITE_0D_RL(fe_sed_depth_max, INDEX_NONE,'fe_sed_depth_max =',
-     &  ' /*  Maximum depth that sediment iron is input */')   
-#endif /* SEDIMENT_FE_ELROD || SEDIMENT_FE_DALE */
+     &          ' /*  Maximum depth that sediment iron is input */')   
+        ELSE
+C Invalid option selected, raise an error        
+                WRITE(msgBuf,'(A)')
+     &              'DIC_READPARMS: selectFeSedSource <0 or >2'
+                CALL PRINT_ERROR( msgBuf, myThid )
+                WRITE(msgBuf,'(A)')
+     &              'DIC_READPARMS: valid options are 0-2'
+                CALL PRINT_ERROR( msgBuf, myThid )
+                STOP 'ABNORMAL END: selectFeSedSource error'        
+        ENDIF
+#endif /* SUBSURFACE_FE_SOURCES */
 
 C JML Fe Scavenging parameters
        CALL WRITE_0D_RL( KScav_yr, INDEX_NONE,'KScav_yr =',
@@ -458,11 +513,6 @@ C- namelist DIC_FORCING
 #ifdef ALLOW_FE
        CALL WRITE_0D_C( DIC_ironFile, -1, INDEX_NONE, 'DIC_ironFile =',
      & '  /* File name of aeolian iron flux */')
-#ifdef HYDROTHERMAL_FE
-       CALL WRITE_0D_C( DIC_hydroventFile, -1,INDEX_NONE,
-     & 'DIC_hydroventFile=',
-     & '  /* File name of Hydrothermal 3He input */')
-#endif /* HYDROTHERMAL_FE */
 #endif /* ALLOW_FE */
        CALL WRITE_0D_C( DIC_silicaFile, -1,INDEX_NONE,'DIC_silicaFile=',
      & '  /* File name of surface silica */')

@@ -145,10 +145,12 @@ C       and prognostic Ligands
      &     alphaUniform_yr, alphaUniform, rainRatioUniform,
      &     alphamax, alphamin,
      &     calpha, crain_ratio, cInputFe, calpfe, feload, cfeload,
-     &     nlev, QSW_underice
-
+     &     nlev, QSW_underice,
+     &     selectFeSedSource, selectFeHTVSource
+     
       INTEGER nlev
-
+      INTEGER selectFeSedSource, selectFeHTVSource
+      
 C     For averages
       _RL BIOave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
       _RL CARave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
