@@ -36,7 +36,7 @@ C     === Local variables ===
 C     msgBuf    :: Informational/error message buffer
 C     iUnit     :: Work variable for IO unit number
       CHARACTER*(MAX_LEN_MBUF) msgBuf
-      INTEGER iUnit
+      INTEGER iUnit, iter
 
 C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
