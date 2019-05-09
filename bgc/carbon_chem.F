@@ -1000,14 +1000,16 @@ c Following Takahashi (1981) GEOSECS report - quoting Culberson and
 c Pytkowicz (1968)
 c pressc = pressure in bars
            ak1(i,j,bi,bj) = ak1(i,j,bi,bj)*
-     &         exp( (24.2 _d 0-0.085 _d 0*t)*(pressc-1.0 _d 0)/(83.143 _d 0*tk) )
+     &         exp( (24.2 _d 0-0.085 _d 0*t)
+     &           *(pressc-1.0 _d 0)/(83.143 _d 0*tk) )
 c FIRST GO FOR K2: According to GEOSECS (1982) report
 c          ak2(i,j,bi,bj) = ak2(i,j,bi,bj)*
 c    &             exp( (26.4-0.040*t)*(pressc-1.0)/(83.143*tk) )
 c SECOND GO FOR K2: corrected coeff according to CO2sys documentation
 c                   E. Lewis and D. Wallace (1998) ORNL/CDIAC-105
            ak2(i,j,bi,bj) = ak2(i,j,bi,bj)*
-     &         exp( (16.4 _d 0-0.040 _d 0*t)*(pressc-1.0 _d 0)/(83.143 _d 0*tk) )
+     &         exp( (16.4 _d 0-0.040 _d 0*t)
+     &             *(pressc-1.0 _d 0)/(83.143 _d 0*tk) )
 C------------------------------------------------------------------------
 C kb = [H][BO2]/[HBO2]
 C Millero p.669 (1995) using data from dickson (1990)
@@ -1109,7 +1111,8 @@ C dickson and Riley (1979) -- change pH scale to total (following Dickson & Goye
            akf(i,j,bi,bj)=exp(1590.2 _d 0*invtk - 12.641 _d 0 
      &          + 1.525 _d 0*sqrtis      
      &          + log(1.0 _d 0 - 0.001005 _d 0*s)
-     &          + log(1.0 _d 0 + (0.1400 _d 0/96.062 _d 0)*(scl)/aks(i,j,bi,bj)))
+     &          + log(1.0 _d 0 + (0.1400 _d 0/96.062 _d 0)
+     &                *(scl)/aks(i,j,bi,bj)))
 C------------------------------------------------------------------------
 C Calculate concentrations for borate, sulfate, and fluoride
 C Uppstrom (1974)
