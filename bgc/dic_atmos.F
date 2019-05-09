@@ -172,7 +172,8 @@ c                   dic_int2=number entries to read
 c                   dic_int3=start timestep,
 c                   dic_int4=timestep between file entries)
       if (dic_int1.eq.4) then
-          if (co2atmos(ntim).ne.0. _d 0.or.co2atmos(ntim+1).ne.0. _d 0) then
+          if (co2atmos(ntim)  .ne.0. _d 0.or.
+    &         co2atmos(ntim+1).ne.0. _d 0) then
 c             linearly interpolate between file entries otherwise emissions remain 0
               ntim=int((myIter-dic_int3)/dic_int4)+1
               aWght = FLOAT(myIter-dic_int3)
