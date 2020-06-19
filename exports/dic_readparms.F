@@ -341,84 +341,39 @@ C- namelist BIOTIC_PARMS
        IF ( KRemin(1) .EQ. UNSET_RL ) THEN
 C Set some default values depending on the model chosen (default 2)
           IF ( selectExportRemin .EQ. 1 ) THEN
-C Exponential model (EQN1 Cael & Bisson) minimizing relative error
-             KRemin(1)=1.064 _d 0
-             KRemin(2)=16.228 _d 0
-             KRemin(3)=0. _d 0
-             KRemin(4)=0. _d 0
-          ELSEIF ( selectExportRemin .EQ. 2
-     &        .OR. selectExportRemin .EQ. 12 ) THEN
-C Power Law model/ Martin curve (EQN2 Cael & Bisson) minimizing relative error
-             KRemin(1)=0.9 _d 0
-             KRemin(2)=0. _d 0
-             KRemin(3)=0. _d 0
-             KRemin(4)=0. _d 0
-          ELSEIF ( selectExportRemin .EQ. 3 ) THEN
-C Ballast model (EQN3 Cael & Bisson) minimizing relative error
-             KRemin(1)=1.224 _d 0
-             KRemin(2)=4.302 _d 0
-             KRemin(3)=0.02423 _d 0
-             KRemin(4)=0. _d 0
-          ELSEIF ( selectExportRemin .EQ. 4 ) THEN
-C Rational model (EQN4 Cael & Bisson) minimizing relative error
-             KRemin(1)=1.425 _d 0
-             KRemin(2)=0.425 _d 0
-             KRemin(3)=0. _d 0
-             KRemin(4)=0. _d 0
-          ELSEIF ( selectExportRemin .EQ. 5 ) THEN
-C Double exponential model (EQN5 Cael & Bisson) minimizing relative error
-             KRemin(1)=1.374 _d 0
-             KRemin(2)=2.382 _d 0
-             KRemin(3)=0.0215 _d 0
-             KRemin(4)=46.84 _d 0
-          ELSEIF ( selectExportRemin .EQ. 6 ) THEN
-C Stretched exponential (EQN6 Cael & Bisson) minimizing relative error
-             KRemin(1)=6683 _d 0
-             KRemin(2)=8.806211389445233 _d 0
-C Third coefficient should be negative
-             KRemin(3)=-0.08683 _d 0
-             KRemin(4)=0. _d 0
-          ELSEIF ( selectExportRemin .EQ. 7 ) THEN
-C Gamma model (EQN7 Cael & Bisson) minimizing relative error
-             KRemin(1)=0.3341 _d 0
-             KRemin(2)=34.54 _d 0
-             KRemin(3)=0. _d 0
-             KRemin(4)=0. _d 0
-          ELSEIF ( selectExportRemin .EQ. 11 ) THEN
 C Exponential model (EQN1 Cael & Bisson) minimizing absolute error
              KRemin(1)=1.518 _d 0
              KRemin(2)=2.394 _d 0
              KRemin(3)=0. _d 0
              KRemin(4)=0. _d 0
-C          ELSEIF (selectExportRemin .EQ. 2) THEN
-CC Power Law model/ Martin curve (EQN2 Cael & Bisson) 
-C             KRemin(1)=0.9 _d 0
-          ELSEIF ( selectExportRemin .EQ. 13 ) THEN
+          ELSEIF (selectExportRemin .EQ. 2) THEN
+C Power Law model/ Martin curve (EQN2 Cael & Bisson) 
+             KRemin(1)=0.9 _d 0
+          ELSEIF ( selectExportRemin .EQ. 3 ) THEN
 C Ballast model (EQN3 Cael & Bisson) minimizing absolute error
              KRemin(1)=1.559 _d 0
              KRemin(2)=2.006 _d 0
              KRemin(3)=0.03394 _d 0
              KRemin(4)=0. _d 0
-          ELSEIF ( selectExportRemin .EQ. 14 ) THEN
+          ELSEIF ( selectExportRemin .EQ. 4 ) THEN
 C Rational model (EQN4 Cael & Bisson) minimizing absolute error
              KRemin(1)=1.2228 _d 0
              KRemin(2)=0.2228 _d 0
              KRemin(3)=0. _d 0
              KRemin(4)=0. _d 0
-          ELSEIF ( selectExportRemin .EQ. 15 ) THEN
+          ELSEIF ( selectExportRemin .EQ. 5 ) THEN
 C Double exponential model (EQN5 Cael & Bisson) minimizing absolute error
              KRemin(1)=1.669 _d 0
              KRemin(2)=1.3372 _d 0
              KRemin(3)=0.1323 _d 0
              KRemin(4)=19.42 _d 0
-          ELSEIF ( selectExportRemin .EQ. 16 ) THEN
+          ELSEIF ( selectExportRemin .EQ. 6 ) THEN
 C Stretched exponential (EQN6 Cael & Bisson) minimizing absolute error
              KRemin(1)=7387 _d 0
              KRemin(2)=8.934719866289981 _d 0
-C Third coefficient should be negative
-             KRemin(3)=-0.08685 _d 0
+             KRemin(3)=1.0 _d 0
              KRemin(4)=0. _d 0
-          ELSEIF ( selectExportRemin .EQ. 17 ) THEN
+          ELSEIF ( selectExportRemin .EQ. 7 ) THEN
 C Gamma model (EQN7 Cael & Bisson) minimizing absolute error
              KRemin(1)=0.6700 _d 0
              KRemin(2)=6.888 _d 0
@@ -427,20 +382,17 @@ C Gamma model (EQN7 Cael & Bisson) minimizing absolute error
           ENDIF
        ENDIF
        
-       IF ( selectExportRemin .EQ. 1 
-     & .OR. selectExportRemin .EQ. 11 ) THEN
+       IF ( selectExportRemin .EQ. 1 ) THEN
 C Exponential model (EQN1 Cael & Bisson)
            CALL WRITE_0D_RL( KRemin(1), INDEX_NONE,'KRemin(1) =',
      &  ' /* Remin exponential model coeff. */')
            CALL WRITE_0D_RL( KRemin(2), INDEX_NONE,'KRemin(2) =',
      &  ' /* Remin exponential model coeff. */')
-       ELSEIF ( selectExportRemin .EQ. 2 
-     &     .OR. selectExportRemin .EQ. 12 ) THEN
+       ELSEIF ( selectExportRemin .EQ. 2 ) THEN
 C Power Law model/ Martin curve (EQN2 Cael & Bisson) 
            CALL WRITE_0D_RL( KRemin(1), INDEX_NONE,'KRemin =',
      &  ' /* Remin power law coeff. */')
-       ELSEIF ( selectExportRemin .EQ. 3 
-     &     .OR. selectExportRemin .EQ. 13 ) THEN
+       ELSEIF ( selectExportRemin .EQ. 3 ) THEN
 C Ballast model (EQN3 Cael & Bisson)
            CALL WRITE_0D_RL( KRemin(1), INDEX_NONE,'KRemin(1) =',
      &  ' /* Remin ballast model coeff. */')
@@ -448,15 +400,13 @@ C Ballast model (EQN3 Cael & Bisson)
      &  ' /* Remin ballast model coeff. */')
            CALL WRITE_0D_RL( KRemin(3), INDEX_NONE,'KRemin(3) =',
      &  ' /* Remin ballast model coeff. */')
-       ELSEIF ( selectExportRemin .EQ. 4
-     &     .OR. selectExportRemin .EQ. 14 ) THEN
+       ELSEIF ( selectExportRemin .EQ. 4 ) THEN
 C Rational model (EQN4 Cael & Bisson)
            CALL WRITE_0D_RL( KRemin(1), INDEX_NONE,'KRemin(1) =',
      &  ' /* Remin rational model coeff. */')
            CALL WRITE_0D_RL( KRemin(2), INDEX_NONE,'KRemin(2) =',
      &  ' /* Remin rational model coeff. */')
-       ELSEIF ( selectExportRemin .EQ. 5
-     &     .OR. selectExportRemin .EQ. 15 ) THEN
+       ELSEIF ( selectExportRemin .EQ. 5 ) THEN
 C Double exponential model (EQN5 Cael & Bisson)
            CALL WRITE_0D_RL( KRemin(1), INDEX_NONE,'KRemin(1) =',
      &  ' /* Remin double exponential model coeff. */')
@@ -466,8 +416,7 @@ C Double exponential model (EQN5 Cael & Bisson)
      &  ' /* Remin double exponential coeff. */')
            CALL WRITE_0D_RL( KRemin(4), INDEX_NONE,'KRemin(4) =',
      &  ' /* Remin double exponential coeff. */')
-       ELSEIF ( selectExportRemin .EQ. 6 
-     &     .OR. selectExportRemin .EQ. 16 ) THEN
+       ELSEIF ( selectExportRemin .EQ. 6  ) THEN
 C Stretched exponential (EQN6 Cael & Bisson)
            CALL WRITE_0D_RL( KRemin(1), INDEX_NONE,'KRemin(1) =',
      &  ' /* Remin stretched exponential model coeff. */')
@@ -475,8 +424,7 @@ C Stretched exponential (EQN6 Cael & Bisson)
      &  ' /* Remin stretched exponential coeff. */')
            CALL WRITE_0D_RL( KRemin(3), INDEX_NONE,'KRemin(3) =',
      &  ' /* Remin stretched exponential coeff. */')
-       ELSEIF ( selectExportRemin .EQ. 7 
-     &     .OR. selectExportRemin .EQ. 17 ) THEN
+       ELSEIF ( selectExportRemin .EQ. 7 ) THEN
 C Gamma model (EQN7 Cael & Bisson)
            CALL WRITE_0D_RL( KRemin(1), INDEX_NONE,'KRemin(1) =',
      &  ' /* Remin gamma model coeff. */')
@@ -485,10 +433,10 @@ C Gamma model (EQN7 Cael & Bisson)
        ELSE
 C Invalid option selected, raise an error        
            WRITE(msgBuf,'(A)')
-     &          'DIC_READPARMS: selectExportRemin <0, 8-10 >17'
+     &          'DIC_READPARMS: selectExportRemin 0< >7'
            CALL PRINT_ERROR( msgBuf, myThid )
            WRITE(msgBuf,'(A)')
-     &          'DIC_READPARMS: valid options are 1-7 or 11-17'
+     &          'DIC_READPARMS: valid options are 1-7'
            CALL PRINT_ERROR( msgBuf, myThid )
            STOP 'ABNORMAL END: selectExportRemin error' 
        ENDIF

@@ -99,37 +99,31 @@ C     avoid making this code too complicated.
         depth_l  = -rF(ko) + drF(ko)
         flux_l   = 0. _d 0
         
-        IF ( selectExportRemin .EQ. 1 
-     & .OR.  selectExportRemin .EQ. 11 ) THEN
+        IF ( selectExportRemin .EQ. 1 ) THEN
 C Exponential model (EQN1 Cael & Bisson)
            reminFac = Kremin(1)*exp(-depth_l/(zbase*Kremin(2)))
-        ELSEIF ( selectExportRemin .EQ. 2 
-     &     .OR.  selectExportRemin .EQ. 12 ) THEN
+        ELSEIF ( selectExportRemin .EQ. 2 ) THEN
 C Power Law model/ Martin curve (EQN2 Cael & Bisson) 
 C       reminFac = (depth_l/zbase)**(-Kremin)
 C     The following form does the same, but is faster 
            reminFac = exp(-Kremin(1)*log(depth_l/zbase))
-        ELSEIF ( selectExportRemin .EQ. 3 
-     &     .OR.  selectExportRemin .EQ. 13 ) THEN
+        ELSEIF ( selectExportRemin .EQ. 3 ) THEN
 C Ballast model (EQN3 Cael & Bisson)
            reminFac = Kremin(1)*exp(-depth_l/(zbase*Kremin(2)))
      &                +Kremin(1)*Kremin(3)
-        ELSEIF ( selectExportRemin .EQ. 4 
-     &     .OR.  selectExportRemin .EQ. 14 ) THEN
+        ELSEIF ( selectExportRemin .EQ. 4 ) THEN
 C Rational model (EQN4 Cael & Bisson)
            reminFac = Kremin(1)/((depth_l/zbase)+Kremin(2))
-        ELSEIF ( selectExportRemin .EQ. 5 
-     &     .OR.  selectExportRemin .EQ. 15 ) THEN
+        ELSEIF ( selectExportRemin .EQ. 5 ) THEN
 C Double exponential model (EQN5 Cael & Bisson)
            reminFac = Kremin(1)*exp(-depth_l/(zbase*Kremin(2)))
-     &               +Kremin(3)*exp(-depth_l/(zbase*Kremin(4)))
-        ELSEIF ( selectExportRemin .EQ. 6 
-     &     .OR.  selectExportRemin .EQ. 16 ) THEN
+     &               +Kremin(1)*Kremin(3)
+     &                    *exp(-depth_l/(zbase*abs(Kremin(4))))
+        ELSEIF ( selectExportRemin .EQ. 6 ) THEN
 C Stretched exponential (EQN6 Cael & Bisson)
-           reminFac = Kremin(1)*exp(-Kremin(2)
-     &           *exp(-Kremin(3)*log(depth_l/zbase)))
-        ELSEIF ( selectExportRemin .EQ. 7 
-     &     .OR.  selectExportRemin .EQ. 17 ) THEN
+           reminFac = Kremin(1)*exp(-Kremin(3)*
+     &           exp(Kremin(2)*log(depth_l/zbase)))
+        ELSEIF ( selectExportRemin .EQ. 7 ) THEN
 C Gamma model (EQN7 Cael & Bisson)
            reminFac = Kremin(1)*
      &             EXPINT(1,depth_l/(zbase*Kremin(2)),myThid)
@@ -143,44 +137,39 @@ C Gamma model (EQN7 Cael & Bisson)
 C--   Lower flux (no flux to ocean bottom)
 #ifdef NONLIN_FRSURF
            depth_l  = -rF(ko) + drF(ko) * _hFacC(i,j,ko,bi,bj)
-           
-          IF ( selectExportRemin .EQ. 1 
-     & .OR.    selectExportRemin .EQ. 11 ) THEN
+
+        IF ( selectExportRemin .EQ. 1 ) THEN
 C Exponential model (EQN1 Cael & Bisson)
-           reminFac = Kremin(1)*exp(-depth_l/(zbase*Kremin(2)))   
-          ELSEIF ( selectExportRemin .EQ. 2 
-     &     .OR.    selectExportRemin .EQ. 12 ) THEN
-C Power Law model/ Martin curve (EQN2 Cael & Bisson) 
+           reminFac = Kremin(1)*exp(-depth_l/(zbase*Kremin(2)))
+        ELSEIF ( selectExportRemin .EQ. 2 ) THEN
+C Power Law model/ Martin curve (EQN2 Cael & Bisson)
 C       reminFac = (depth_l/zbase)**(-Kremin)
-C     The following form does the same, but is faster 
-           reminFac = exp(-Kremin(1)*log(depth_l/zbase)) 
-          ELSEIF ( selectExportRemin .EQ. 3 
-     &     .OR.    selectExportRemin .EQ. 13 ) THEN
+C     The following form does the same, but is faster
+           reminFac = exp(-Kremin(1)*log(depth_l/zbase))
+        ELSEIF ( selectExportRemin .EQ. 3 ) THEN
 C Ballast model (EQN3 Cael & Bisson)
            reminFac = Kremin(1)*exp(-depth_l/(zbase*Kremin(2)))
      &                +Kremin(1)*Kremin(3)
-          ELSEIF ( selectExportRemin .EQ. 4 
-     &     .OR.    selectExportRemin .EQ. 14 ) THEN
+        ELSEIF ( selectExportRemin .EQ. 4 ) THEN
 C Rational model (EQN4 Cael & Bisson)
            reminFac = Kremin(1)/((depth_l/zbase)+Kremin(2))
-          ELSEIF ( selectExportRemin .EQ. 5 
-     &     .OR.    selectExportRemin .EQ. 15 ) THEN
+        ELSEIF ( selectExportRemin .EQ. 5 ) THEN
 C Double exponential model (EQN5 Cael & Bisson)
            reminFac = Kremin(1)*exp(-depth_l/(zbase*Kremin(2)))
-     &               +Kremin(3)*exp(-depth_l/(zbase*Kremin(4)))       
-          ELSEIF ( selectExportRemin .EQ. 6 
-     &     .OR.    selectExportRemin .EQ. 16 ) THEN
+     &               +Kremin(1)*Kremin(3)
+     &                    *exp(-depth_l/(zbase*abs(Kremin(4))))
+        ELSEIF ( selectExportRemin .EQ. 6 ) THEN
 C Stretched exponential (EQN6 Cael & Bisson)
-           reminFac = Kremin(1)*exp(-Kremin(2)
-     &           *exp(-Kremin(3)*log(depth_l/zbase)))
-          ELSEIF ( selectExportRemin .EQ. 7 
-     &     .OR.    selectExportRemin .EQ. 17 ) THEN
+           reminFac = Kremin(1)*exp(-Kremin(3)*
+     &           exp(Kremin(2)*log(depth_l/zbase)))
+        ELSEIF ( selectExportRemin .EQ. 7 ) THEN
 C Gamma model (EQN7 Cael & Bisson)
            reminFac = Kremin(1)*
      &             EXPINT(1,depth_l/(zbase*Kremin(2)),myThid)
-         ELSE 
+        ELSE
            reminFac = 1. _d 0
-         ENDIF
+        ENDIF
+
 #endif
            flux_l   = bexport(i,j)*reminFac
      &          *maskC(i,j,kop1,bi,bj)
