@@ -377,6 +377,12 @@ C          and constant sinking rate (See Parekh etal 2005, GBC equation 11)
                    KScav=KScav_surf
                ELSE
 C          Calculate POC concentration from sinking particles
+                   IF ( poc_wsp_factor.GT.0. _d 0 ) THEN
+C Constant sinking speed if already set, else use a linear 
+C   increase may be consistent with the Martin Curve
+                       poc_wsp = -rC(k) * poc_wsp_factor
+     &                                  + poc_wsp_offset
+                   ENDIF
 C          Export flux is in mol P.m-3.s-1 and we need mg C.l-1, R_pop2poc does this               
                    scav_poc=MAX(0. _d 0,exportflux(i,j,k)/poc_wsp)
      &                          *R_pop2poc

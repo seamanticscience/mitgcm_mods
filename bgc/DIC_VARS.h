@@ -136,8 +136,8 @@ C       and prognostic Ligands
      &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP, R_SIP,
      &     alpfe, ligand_stab, ligand_tot, KFE, freefemax, 
      &     KScav, KScav_yr, KScav_surf, KScav_poc_yr, KScav_poc,
-     &     R_pop2poc, R_dust2fe, poc_wsp,  dust_wsp,
-     &     scav_exp, scav_ratio, KScav_dust_yr, 
+     &     R_pop2poc, poc_wsp, poc_wsp_factor, poc_wsp_factor,
+     &     R_dust2fe, dust_wsp,  scav_exp, scav_ratio, KScav_dust_yr, 
      &     KScav_dust, KScav_background, KScav_background_yr,
      &     sedfe_factor, sedfe_offset, fe_sed_depth_max,
      &     HydroInputHe3, solfe, R_FeHe3, fe_vent_depth_min,
@@ -205,6 +205,8 @@ C Scavenging values
       _RL R_pop2poc
       _RL R_dust2fe
       _RL poc_wsp
+      _RL poc_wsp_factor
+      _RL poc_wsp_offset
       _RL dust_wsp
       _RL scav_exp
       _RL scav_ratio

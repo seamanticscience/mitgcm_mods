@@ -172,6 +172,9 @@ C      R_pop2poc converts POP in mol P.m-3.s-1 to POC in mg C.l-1
        R_pop2poc      = R_CP * 12. _d 0
 C      poc_wsp is the sinking speed of POC used for for particle dependent scavenging 
        poc_wsp        = 2900. _d 0/(360. _d 0*86400. _d 0)
+C      Linearly increasing particle sinking speed, consistent with Martin Curve       
+       poc_wsp_factor = 0.03356/(86400. _d 0)
+       poc_wsp_offset = 0. _d 0
 C      scav_exp is the Honeyman exponent for particle dependent scavenging  (==0.58)
        scav_exp       = 0.58 _d 0
 C      scav_ratio converts Honeyman's thorium scavenging rates to iron (==0.2) 
