@@ -136,7 +136,7 @@ C       and prognostic Ligands
      &     KDOPremin,zca,R_op,R_cp,R_NP, R_FeP, R_SIP,
      &     alpfe, ligand_stab, ligand_tot, KFE, freefemax, 
      &     KScav, KScav_yr, KScav_surf, KScav_poc_yr, KScav_poc,
-     &     R_pop2poc, poc_wsp, poc_wsp_factor, poc_wsp_factor,
+     &     R_pop2poc, poc_wsp, poc_wsp_factor, poc_wsp_offset,
      &     R_dust2fe, dust_wsp,  scav_exp, scav_ratio, KScav_dust_yr, 
      &     KScav_dust, KScav_background, KScav_background_yr,
      &     sedfe_factor, sedfe_offset, fe_sed_depth_max,
