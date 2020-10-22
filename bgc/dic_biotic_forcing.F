@@ -125,6 +125,12 @@ C  freefe                 :: iron not bound to ligand
 #ifdef CAR_DISS
        INTEGER nCALCITEstep
 #endif
+
+C JML add Transport Matrix Method tags to use with driver routines 
+#ifdef ALLOW_TMM
+#define ISDICBIOTICFORCING
+#include "TMM_MITGCHEM_DIAGS.h"
+#endif
 CEOP
 
 #ifdef ALLOW_DEBUG
@@ -362,8 +368,8 @@ C Ligand concentration decreases according to the Q10 rate
 C Make sure this is always negative        
            lig_decr(i,j,k) = MIN(-lambda_lig(i,j,k)
      &                        *PTR_LIG(i,j,k)*maskC(i,j,k,bi,bj)
-C                             may also decrease as DOP is consumed  
-C     &                        -gamma_lig*R_CP*RDOP(i,j,k)
+C                             may also decrease as labile DOP is consumed  
+     &                        -gamma_lig*R_CP*RDOP(i,j,k)
      &                        ,0. _d 0)
                 
 C Now do ligand tendency

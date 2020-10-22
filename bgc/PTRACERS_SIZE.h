@@ -16,8 +16,8 @@ C  and is set here (default 1)
 C
 C     Number of tracers
       INTEGER PTRACERS_num
-C      PARAMETER(PTRACERS_num = 6 )
-      PARAMETER(PTRACERS_num = 7 )
+      PARAMETER(PTRACERS_num = 6 )
+C      PARAMETER(PTRACERS_num = 7 )
 
 #ifdef ALLOW_AUTODIFF_TAMC
       INTEGER    iptrkey

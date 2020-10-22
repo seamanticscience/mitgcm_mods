@@ -10,6 +10,13 @@ C $Name:  $
 C     Package-specific Options & Macros go here
 
 #define DIC_BIOTIC
+#define DIC_NO_NEG
+#define AD_SAFE
+#undef ALLOW_DIC_COST
+#undef READ_PAR
+
+#define ALLOW_O2
+
 #define ALLOW_FE
 #define MINFE
 #undef SUBSURFACE_FE_SOURCES  
@@ -17,19 +24,15 @@ C     Package-specific Options & Macros go here
 C Prognostic Iron Binding Ligands
 #undef ALLOW_VARIABLE_LIGANDS
 
-#define ALLOW_O2
-#undef READ_PAR
-#define AD_SAFE
-#define DIC_NO_NEG
-#undef ALLOW_DIC_COST
 C these all need to be defined for coupling to atmospheric model
 #undef USE_QSW
 #undef USE_QSW_UNDERICE
 #undef USE_PLOAD
+#undef USE_ATMOSCO2
 
 C use surface salinity forcing (scaled by mean surf value) for DIC & ALK forcing
 C could also set PTRACERS_EvPrRn(n)=0., may need PTRACERS_ref in data.ptracers
-#define ALLOW_OLD_VIRTUALFLUX
+#undef ALLOW_OLD_VIRTUALFLUX
 
 C put back bugs related to Water-Vapour in carbonate chemistry & air-sea fluxes
 #undef WATERVAP_BUG
