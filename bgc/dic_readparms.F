@@ -435,13 +435,12 @@ C Print out Sediment iron input parameters
                 CALL WRITE_0D_RL(selectFeSedSource,
      &              INDEX_NONE,'selectFeSedSource =',
      &              ' /* NO sedimentary iron source selected */')
-        ELSEIF ( selectFeSedSource .EQ. 1  .OR. 
-     &           selectFeSedSource .EQ. 2 ) THEN
+        ELSEIF ( selectFeSedSource .LE. 2 ) THEN
             IF ( selectFeSedSource .EQ. 1 ) THEN
                 CALL WRITE_0D_RL(selectFeSedSource,
      &              INDEX_NONE,'selectFeSedSource =',
      &              ' /* ELROD sedimentary iron source selected */')
-            ELSEIF  
+            ELSEIF ( selectFeSedSource .EQ. 2 ) THEN
                 CALL WRITE_0D_RL(selectFeSedSource,
      &              INDEX_NONE,'selectFeSedSource =',
      &              ' /* DALE sedimentary iron source selected */')    
@@ -451,7 +450,8 @@ C Print out Sediment iron input parameters
      &          ' /* Gradient of sediment iron-poc relationship */')   
             CALL WRITE_0D_RL(sedfe_offset, INDEX_NONE,'sedfe_offset =',
      &          ' /* Intercept of sediment iron-poc relationship */')   
-            CALL WRITE_0D_RL(fe_sed_depth_max, INDEX_NONE,'fe_sed_depth_max =',
+            CALL WRITE_0D_RL(fe_sed_depth_max, INDEX_NONE,
+     &          'fe_sed_depth_max =',
      &          ' /*  Maximum depth that sediment iron is input */')   
         ELSE
 C Invalid option selected, raise an error        
