@@ -394,16 +394,18 @@ C JML Prognostic Ligand parameters
      &              INDEX_NONE,'selectFeHTVSource =',
      &              ' /* NO Hydrothermal iron source selected */')
         ELSEIF ( selectFeHTVSource .EQ. 1 ) THEN
+#ifndef ALLOW_TMM
             IF ( DIC_hydroventFile .EQ. ' '  ) THEN
 C Conflicting option selected, raise an error        
                 WRITE(msgBuf,'(A)')
      &              'DIC_READPARMS: vent source selected but'
                 CALL PRINT_ERROR( msgBuf, myThid )
                 WRITE(msgBuf,'(A)')
-     &              'DIC_READPARMS: no He3 file specified'
+     &              '**WARNING no He3 file specified'
                 CALL PRINT_ERROR( msgBuf, myThid )
-                STOP 'ABNORMAL END: DIC_hydroventFile error'
+C                STOP 'ABNORMAL END: DIC_hydroventFile error'
             ELSE
+#endif
 C Print out Hydrothermal iron input parameters
                 CALL WRITE_0D_RL(selectFeHTVSource,
      &              INDEX_NONE,'selectFeHTVSource =',
@@ -418,7 +420,9 @@ C Print out Hydrothermal iron input parameters
                 CALL WRITE_0D_RL(fe_vent_depth_min, 
      &               INDEX_NONE,'fe_vent_depth_min =',
      &               ' /* Minimum depth that vent iron is input */')   
-            ENDIF   
+#ifndef ALLOW_TMM
+            ENDIF
+#endif   
         ELSE
 C Invalid option selected, raise an error        
                 WRITE(msgBuf,'(A)')
