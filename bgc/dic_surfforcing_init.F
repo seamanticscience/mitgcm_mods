@@ -215,7 +215,12 @@ C====================================================================
         IF ( .NOT.pH_isLoaded ) THEN
 C set guess of pH for first step here
 
-          WRITE(standardMessageUnit,*) 'QQ: pCO2 approximation method'
+C          WRITE(standardMessageUnit,*) 'QQ: pCO2 approximation method'
+#ifdef ALLOW_DEBUG
+        IF (debugMode) CALL DEBUG_MSG('QQ: pCO2 approximation method',
+     &                                  myThid)
+#endif
+
 c first approximation
 C$TAF LOOP = parallel
           DO j=jMin,jMax
@@ -251,8 +256,11 @@ C     &        pH(iprt,jprt,bi,bj),
 C     &        theta(iprt,jprt,1,bi,bj), salt(iprt,jprt,1,bi,bj),
 C     &        surfdic(iprt,jprt), surfphos(iprt,jprt),
 C     &        surfsi(iprt,jprt),surfalk(iprt,jprt)
-          CALL PLOT_FIELD_XYRL(pH, 
+#ifdef ALLOW_DEBUG
+        IF (debugMode) CALL PLOT_FIELD_XYRL(pH, 
      &         'First Guess pH (dic_surfforcing_init)', 1, myThid)
+#endif
+C ENDIF NOT.pH_isLoaded
         ENDIF
 
 C     end bi,bj loops
