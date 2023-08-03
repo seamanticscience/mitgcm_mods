@@ -345,8 +345,9 @@ C add all tendencies for PO4, DOP, ALK, DIC
 C Prognostic Ligand code...
 C Here Ligand is produced by excretion during production (proportional to bioac)
 C     and release of iron binding sites during remineralization.           
-           lig_incr(i,j,k)  = (pflux(i,j,k)+BIOac(i,j,k)*DOPfraction)
-     &                             *R_CP*gamma_lig
+           lig_incr(i,j,k)= MAX( pflux(i,j,k)*R_CP*gamma_lig
+     &                     +BIOac(i,j,k)*DOPfraction*R_CP*gamma_lig
+     &                            ,0. _d 0)
 
 C Now calculate timescale for degredation 
 C  Initially, the first order way is kind of cheating as it fixes lambda to go exactly
@@ -358,14 +359,27 @@ C     constrained by gamma_over_lambda, global productivity/surface area
 C     and nominal ligand concentration
 C           lambda_lig(i,j,k)= gamma_lig/(-rC(k)*goverl_lig)
 C
-C So try to create a more dynamic consumption timescales using Q10
+C So try to create a more dynamic consumption timescales:
+          if ( selectLigDepthMethod .EQ. 0 ) then
+C  Using Q10 to control depth variation of ligand degradation
 C  lambda_ref calculated in dic_init_fixed from lambda_over_gamma
 C  and the value of gamma_lig
-           lambda_lig(i,j,k) = lambda_ref*
-     &        (lig_q10**((theta(i,j,k,bi,bj)-lig_tref)/10. _d 0))
+              lambda_lig(i,j,k) = lambda_ref*
+     &            (lig_q10**((theta(i,j,k,bi,bj)*maskC(i,j,k,bi,bj)
+     &                   -lig_tref)/10. _d 0))
+          elseif ( selectLigDepthMethod .EQ. 1 ) then
+C  Use a power law, with prescribed exponent to control depth variation of ligand degradation
+              lambda_lig(i,j,k) = lambda_ref*
+     &            exp(-lig_expb*log(-rC(k)/-rC(1)))
+          elseif ( selectLigDepthMethod .EQ. 2 ) then
+C Do both power law, and Q10 dependency to control depth variation of ligand degradation
+              lambda_lig(i,j,k) = lambda_ref*
+     &            (lig_q10**((theta(i,j,k,bi,bj)*maskC(i,j,k,bi,bj)
+     &                   -lig_tref)/10. _d 0))
+     &             *exp(-lig_expb*log(-rC(k)/-rC(1)))
+          endif
 
-C Ligand concentration decreases according to the Q10 rate
-C Make sure this is always negative        
+C Make sure degradation is always negative        
            lig_decr(i,j,k) = MIN(-lambda_lig(i,j,k)
      &                        *PTR_LIG(i,j,k)*maskC(i,j,k,bi,bj)
 C                             may also decrease as labile DOP is consumed  

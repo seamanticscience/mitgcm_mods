@@ -103,7 +103,7 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
      & fe_vent_depth_min, fe_sed_depth_max,
 #if ((defined ALLOW_FE) && (defined ALLOW_VARIABLE_LIGANDS))          
      & gamma_lig, lambda_over_gamma, lambda_ref,
-     & lig_q10, lig_tref,
+     & lig_q10, lig_tref, lig_expb, selectLigDepthMethod,
 #endif
      & alphaUniform_yr, alphaUniform, rainRatioUniform, 
      & selectFeSedSource, selectFeHTVSource
@@ -220,8 +220,12 @@ C JML Added vars for prognostic Ligands
        lambda_over_gamma = 0. _d 0
 C lambda_ref is calculated in dic_init_fixed
        lambda_ref  = 0. _d 0
+C selectLigDepthMethod for increasing lt lifetime at depth
+C 0 = q10 method; 1 = power-law method; 2 = combined 
+       selectLigDepthMethod = 0
        lig_q10     = 2. _d 0
        lig_tref    = 3.489 _d 0
+       lig_expb    = KRemin
 #endif /* ALLOW_VARIABLE_LIGANDS */
 #endif /* ALLOW_FE */
 #endif /* DIC_BIOTIC */
@@ -380,17 +384,47 @@ C JML Prognostic Ligand parameters
      &  ' /* Lambda over Gamma, ratio of ligand coefficients */')      
              CALL WRITE_0D_RL(lambda_over_gamma*gamma_lig, 
      &        INDEX_NONE,'lambda_ref =',
-     &  ' /* reference ligand degradation timescale */')   
-            CALL WRITE_0D_RL(lig_q10, INDEX_NONE,'lig_q10 =',
-     &  ' /* Variable ligand degradation Q10 value */')   
-            CALL WRITE_0D_RL(lig_tref, INDEX_NONE,'lig_tref =',
-     &  ' /* Variable ligand degradation reference temperature */')   
+     &  ' /* reference ligand degradation timescale */')
+            IF ( selectLigDepthMethod .EQ. 0 ) THEN
+                CALL WRITE_0D_I(selectLigDepthMethod, INDEX_NONE,
+     &              'selectLigDepthMethod =',
+     &              ' /* Using ligand degradation Q10 method */')   
+                CALL WRITE_0D_RL(lig_q10, INDEX_NONE,'lig_q10 =',
+     &              ' /* Ligand degradation Q10 value */')   
+                CALL WRITE_0D_RL(lig_tref, INDEX_NONE,'lig_tref =',
+     &             ' /* Ligand degradation reference temperature */') 
+            ELSEIF ( selectLigDepthMethod .EQ. 1 ) THEN 
+                CALL WRITE_0D_I(selectLigDepthMethod, INDEX_NONE,
+     &              'selectLigDepthMethod =',
+     &              ' /* Using ligand degradation power law method */')   
+                CALL WRITE_0D_RL(lig_expb, INDEX_NONE,'lig_expb =',
+     &              ' /* Ligand degradation power law exponent */')
+            ELSEIF ( selectLigDepthMethod .EQ. 2 ) THEN 
+                CALL WRITE_0D_I(selectLigDepthMethod, INDEX_NONE,
+     &              'selectLigDepthMethod =',
+     &              ' /* Using ligand degradation combined method */')   
+                CALL WRITE_0D_RL(lig_expb, INDEX_NONE,'lig_expb =',
+     &              ' /* Ligand degradation power law exponent */')
+                CALL WRITE_0D_RL(lig_q10, INDEX_NONE,'lig_q10 =',
+     &              ' /* Ligand degradation Q10 value */')   
+                CALL WRITE_0D_RL(lig_tref, INDEX_NONE,'lig_tref =',
+     &             ' /* Ligand degradation reference temperature */')
+            ELSE
+C Invalid option selected, raise an error        
+                WRITE(msgBuf,'(A)')
+     &              'DIC_READPARMS: selectLigDepthMethod <0 or >2'
+                CALL PRINT_ERROR( msgBuf, myThid )
+                WRITE(msgBuf,'(A)')
+     &              'DIC_READPARMS: valid options are 0, 1, or 2'
+                CALL PRINT_ERROR( msgBuf, myThid )
+                STOP 'ABNORMAL END: selectLigDepthMethod error' 
+            ENDIF
       ENDIF
 #endif /* ALLOW_VARIABLE_LIGANDS */
 
 #ifdef SUBSURFACE_FE_SOURCES     
         IF ( selectFeHTVSource .EQ. 0 ) THEN
-                CALL WRITE_0D_RL(selectFeHTVSource,
+                CALL WRITE_0D_I(selectFeHTVSource,
      &              INDEX_NONE,'selectFeHTVSource =',
      &              ' /* NO Hydrothermal iron source selected */')
         ELSEIF ( selectFeHTVSource .EQ. 1 ) THEN
@@ -407,7 +441,7 @@ C                STOP 'ABNORMAL END: DIC_hydroventFile error'
             ELSE
 #endif
 C Print out Hydrothermal iron input parameters
-                CALL WRITE_0D_RL(selectFeHTVSource,
+                CALL WRITE_0D_I(selectFeHTVSource,
      &              INDEX_NONE,'selectFeHTVSource =',
      &              ' /* Hydrothermal iron source selected */')
                 CALL WRITE_0D_C( DIC_hydroventFile, -1,INDEX_NONE,
@@ -436,16 +470,16 @@ C Invalid option selected, raise an error
                
 C Print out Sediment iron input parameters
         IF ( selectFeSedSource .EQ. 0 ) THEN
-                CALL WRITE_0D_RL(selectFeSedSource,
+                CALL WRITE_0D_I(selectFeSedSource,
      &              INDEX_NONE,'selectFeSedSource =',
      &              ' /* NO sedimentary iron source selected */')
         ELSEIF ( selectFeSedSource .LE. 2 ) THEN
             IF ( selectFeSedSource .EQ. 1 ) THEN
-                CALL WRITE_0D_RL(selectFeSedSource,
+                CALL WRITE_0D_I(selectFeSedSource,
      &              INDEX_NONE,'selectFeSedSource =',
      &              ' /* ELROD sedimentary iron source selected */')
             ELSEIF ( selectFeSedSource .EQ. 2 ) THEN
-                CALL WRITE_0D_RL(selectFeSedSource,
+                CALL WRITE_0D_I(selectFeSedSource,
      &              INDEX_NONE,'selectFeSedSource =',
      &              ' /* DALE sedimentary iron source selected */')    
             ENDIF

@@ -240,13 +240,16 @@ C   kchl    :: Light attentuation coefficient fct of chlorophyll [m2/mg]
 #ifdef ALLOW_VARIABLE_LIGANDS
       COMMON /PROGNOSTIC_LIGANDS/
      &     gamma_lig, lambda_over_gamma, lambda_ref,
-     &     lig_q10, lig_tref
+     &     lig_q10, lig_tref, lig_expb, selectLigDepthMethod
      
       _RL gamma_lig
       _RL lambda_over_gamma
       _RL lambda_ref
       _RL lig_q10
       _RL lig_tref
+      _RL lig_expb
+
+      INTEGER selectLigDepthMethod
 #endif
       
 #endif /* DIC_BIOTIC */
