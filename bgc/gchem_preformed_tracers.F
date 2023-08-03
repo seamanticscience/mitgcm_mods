@@ -63,7 +63,7 @@ C  k                    :: vertical level
       INTEGER iMin,iMax,jMin,jMax,i,j,k
       INTEGER nTrac
       INTEGER iDIC,iALK,iPO4,iDOP,iDO2,iDFE
-      INTEGER iAPRE,iPPRE,iPCO2
+      INTEGER iAPRE,iPPRE,iDPRE,iPCO2
       INTEGER kmld(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
 
       CHARACTER*(MAX_LEN_FNAM) fldName
@@ -80,6 +80,7 @@ C  k                    :: vertical level
       iDFE =UNSET_I
       iAPRE=UNSET_I
       iPPRE=UNSET_I
+      iDPRE=UNSET_I
       iPCO2=UNSET_I
       
       iMin=1-Olx
@@ -113,6 +114,27 @@ C        ENDDO
 C       ENDDO
 
 #ifdef ALLOW_DIC
+#ifdef ALLOW_TMM
+C Have to define tracer indicies for the TMM (no pkg/ptracers)
+       iDIC=1
+       iALK=2
+       iPO4=3
+       iDOP=4
+       iDO2=5
+       iDFE=6
+
+C Now loop through the tracers and do them in this specific order
+       DO nTrac=dic_offset+1,PTRACERS_numInUse
+              DO j=jMin,jMax
+               DO i=iMin,iMax
+                DO k=1,kmld(i,j,bi,bj)
+                 pTracer(i,j,k,bi,bj,nTrac)=
+     &                pTracer(i,j,k,bi,bj,nTrac-dic_offset)
+                ENDDO
+               ENDDO
+              ENDDO
+       ENDDO
+#else
 C get tracer names that are within the dic package
        DO nTrac=1,dic_offset
         fldName=PTRACERS_names(nTrac)
@@ -210,7 +232,26 @@ C             DO bi = myBxLo(myThid), myBxHi(myThid)
 C             ENDDO
 C            ENDDO
             iPPRE=nTrac   
-                      
+
+        ELSEIF ( fldName(1:4) .EQ. 'dpre' ) THEN
+#ifdef ALLOW_DEBUG
+        IF (debugMode) CALL DEBUG_MSG(
+     &         'EVALUATING DPRE TRACER',myThid)
+#endif 
+C Preformed Phosphate, set to surface PO4 concentration    
+C            DO bj = myByLo(myThid), myByHi(myThid)
+C             DO bi = myBxLo(myThid), myBxHi(myThid)
+              DO j=jMin,jMax
+               DO i=iMin,iMax
+                DO k=1,kmld(i,j,bi,bj)
+                 pTracer(i,j,k,bi,bj,nTrac)=pTracer(i,j,k,bi,bj,iDOP)
+                ENDDO
+               ENDDO
+              ENDDO
+C             ENDDO
+C            ENDDO
+            iDPRE=nTrac   
+
         ELSEIF ( fldName(1:4) .EQ. 'opre' ) THEN
 #ifdef ALLOW_DEBUG
         IF (debugMode) CALL DEBUG_MSG(
@@ -270,7 +311,7 @@ C            ENDDO
         ENDIF 
        ENDDO
       ENDIF
-      
+#endif /* ALLOW_TMM */
 #endif /* ALLOW_DIC */        
 #ifdef ALLOW_DEBUG
       IF (debugMode) CALL DEBUG_LEAVE('GCHEM_PREFORMED_TRACERS',myThid)
